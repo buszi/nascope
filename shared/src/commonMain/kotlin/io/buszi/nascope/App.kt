@@ -31,9 +31,12 @@ import io.buszi.nascope.ui.common.components.containers.ElevatedPanel
 import io.buszi.nascope.ui.common.components.containers.TelemetryCard
 import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
-import io.buszi.nascope.ui.common.components.inputs.Keycap
 import io.buszi.nascope.ui.common.components.buttons.PrimaryButton
 import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
+import io.buszi.nascope.ui.common.components.inputs.KeyCombination
+import io.buszi.nascope.ui.common.components.inputs.Keycap
+import io.buszi.nascope.ui.common.components.inputs.KeycapGroup
+import io.buszi.nascope.ui.common.components.inputs.ShortcutKey
 import io.buszi.nascope.ui.common.components.inputs.TelemetryTextField
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.theme.AppTheme
@@ -190,10 +193,7 @@ fun App() {
                     modifier = Modifier.weight(1f),
                     trailingIcon = if (!AppTheme.platform.isMobile) {
                         {
-                            Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs)) {
-                                Keycap(key = "⌘")
-                                Keycap(key = "K")
-                            }
+                            KeycapGroup(KeyCombination.commandOrControl("K"))
                         }
                     } else null,
                 )
@@ -234,7 +234,7 @@ fun App() {
                                     style = AppTheme.typography.labelCode,
                                     color = AppTheme.colors.textMuted,
                                 )
-                                Keycap(key = "Space")
+                                Keycap(key = ShortcutKey.Space)
                             }
                         }
                     }

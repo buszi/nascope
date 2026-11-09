@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.LocalPlatform
+import io.buszi.nascope.OperatingSystem
 import io.buszi.nascope.Platform
 import io.buszi.nascope.PlatformType
 import io.buszi.nascope.ui.common.theme.AppTheme
@@ -152,6 +153,7 @@ private fun KeycapPreview() {
             val mockMobilePlatform = object : Platform {
                 override val name: String = "Android Mobile"
                 override val type: PlatformType = PlatformType.Android
+                override val os: OperatingSystem = OperatingSystem.Android
             }
             AppTheme(platform = mockMobilePlatform) {
                 Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs)) {
