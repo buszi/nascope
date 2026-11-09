@@ -31,6 +31,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import io.buszi.nascope.ui.common.components.badges.StatusChip
+import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.containers.ElevatedPanel
 import io.buszi.nascope.ui.common.components.containers.TelemetryCard
 import io.buszi.nascope.ui.common.theme.AppTheme
@@ -70,12 +73,10 @@ fun App() {
                     )
                 }
 
-                StatusBadge(
-                    label = "ONLINE",
-                    backgroundColor = AppTheme.colors.healthyBadgeBackground,
-                    borderColor = AppTheme.colors.healthyBadgeBorder,
-                    textColor = AppTheme.colors.operational,
-                    dotColor = AppTheme.colors.operational,
+                StatusChip(
+                    text = "ONLINE",
+                    status = StatusLevel.Operational,
+                    pulsing = true,
                 )
             }
 
@@ -126,27 +127,9 @@ fun App() {
                     style = AppTheme.typography.labelUi,
                     color = AppTheme.colors.textMuted,
                 )
-                StatusBadge(
-                    label = "KUBE: HEALTHY",
-                    backgroundColor = AppTheme.colors.healthyBadgeBackground,
-                    borderColor = AppTheme.colors.healthyBadgeBorder,
-                    textColor = AppTheme.colors.operational,
-                    dotColor = AppTheme.colors.operational,
-                )
-                StatusBadge(
-                    label = "SYNC: LATENCY",
-                    backgroundColor = AppTheme.colors.warningBadgeBackground,
-                    borderColor = AppTheme.colors.warningBadgeBorder,
-                    textColor = AppTheme.colors.degraded,
-                    dotColor = AppTheme.colors.degraded,
-                )
-                StatusBadge(
-                    label = "QUEUE: 0 DROPS",
-                    backgroundColor = AppTheme.colors.elevatedOverlay,
-                    borderColor = AppTheme.colors.baseBorder,
-                    textColor = AppTheme.colors.textSecondary,
-                    dotColor = null,
-                )
+                StatusChip(text = "KUBE: HEALTHY", status = StatusLevel.Operational)
+                StatusChip(text = "SYNC: LATENCY", status = StatusLevel.Degraded)
+                TagChip(text = "QUEUE: 0 DROPS")
             }
 
             // Controls & Toggle
@@ -260,44 +243,6 @@ private fun MetricSummaryCard(
             text = trend,
             style = AppTheme.typography.labelCode,
             color = trendColor,
-        )
-    }
-}
-
-@Composable
-private fun StatusBadge(
-    label: String,
-    backgroundColor: Color,
-    borderColor: Color,
-    textColor: Color,
-    dotColor: Color?,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier
-            .clip(AppTheme.shapes.base)
-            .background(backgroundColor)
-            .border(
-                width = AppTheme.dimensions.hairlineBorder,
-                color = borderColor,
-                shape = AppTheme.shapes.base,
-            )
-            .padding(horizontal = 6.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        if (dotColor != null) {
-            Box(
-                modifier = Modifier
-                    .size(AppTheme.dimensions.statusDotSize)
-                    .clip(CircleShape)
-                    .background(dotColor),
-            )
-        }
-        Text(
-            text = label,
-            style = AppTheme.typography.labelCode,
-            color = textColor,
         )
     }
 }
