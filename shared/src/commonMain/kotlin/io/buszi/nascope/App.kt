@@ -1,48 +1,370 @@
 package io.buszi.nascope
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import io.buszi.nascope.resources.Res
-import io.buszi.nascope.resources.compose_multiplatform
-import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.unit.dp
+import io.buszi.nascope.ui.common.theme.AppTheme
 
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
+    AppTheme {
+        var expandedLogs by remember { mutableStateOf(false) }
+        val greeting = remember { Greeting().greet() }
+
         Column(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .fillMaxSize()
+                .background(AppTheme.colors.canvasBackground)
+                .verticalScroll(rememberScrollState())
+                .padding(AppTheme.spacing.margin),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceLg),
         ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
+            // Header: Section label & Node status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        text = "SYSTEM MONITOR // OBSIDIAN TELEMETRY",
+                        style = AppTheme.typography.labelUi,
+                        color = AppTheme.colors.textSecondary,
+                    )
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.space2xs))
+                    Text(
+                        text = "Node Cluster alpha-01",
+                        style = AppTheme.typography.headlineLg,
+                        color = AppTheme.colors.textPrimary,
+                    )
+                }
+
+                StatusBadge(
+                    label = "ONLINE",
+                    backgroundColor = AppTheme.colors.healthyBadgeBackground,
+                    borderColor = AppTheme.colors.healthyBadgeBorder,
+                    textColor = AppTheme.colors.operational,
+                    dotColor = AppTheme.colors.operational,
+                )
             }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+
+            // Metric Cards Grid / Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
+            ) {
+                // Card 1: Egress Metrics (Telemetry Series B)
+                TelemetryCard(
+                    modifier = Modifier.weight(1f),
+                    title = "NETWORK EGRESS",
+                    metric = "842.6",
+                    unit = "MB/s",
+                    trend = "+12.4% / 5m",
+                    trendColor = AppTheme.colors.operational,
+                    accentColor = AppTheme.colors.telemetryB,
+                )
+
+                // Card 2: CPU Pipeline (Telemetry Series A)
+                TelemetryCard(
+                    modifier = Modifier.weight(1f),
+                    title = "CLUSTER CPU",
+                    metric = "42.8",
+                    unit = "%",
+                    trend = "-1.8% / 5m",
+                    trendColor = AppTheme.colors.telemetryA,
+                    accentColor = AppTheme.colors.telemetryA,
+                )
+            }
+
+            // Status Badges Overview Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppTheme.colors.subSurface, AppTheme.shapes.lg)
+                    .border(
+                        width = AppTheme.dimensions.hairlineBorder,
+                        color = AppTheme.colors.baseBorder,
+                        shape = AppTheme.shapes.lg,
+                    )
+                    .padding(AppTheme.spacing.spaceMd),
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "SERVICES:",
+                    style = AppTheme.typography.labelUi,
+                    color = AppTheme.colors.textMuted,
+                )
+                StatusBadge(
+                    label = "KUBE: HEALTHY",
+                    backgroundColor = AppTheme.colors.healthyBadgeBackground,
+                    borderColor = AppTheme.colors.healthyBadgeBorder,
+                    textColor = AppTheme.colors.operational,
+                    dotColor = AppTheme.colors.operational,
+                )
+                StatusBadge(
+                    label = "SYNC: LATENCY",
+                    backgroundColor = AppTheme.colors.warningBadgeBackground,
+                    borderColor = AppTheme.colors.warningBadgeBorder,
+                    textColor = AppTheme.colors.degraded,
+                    dotColor = AppTheme.colors.degraded,
+                )
+                StatusBadge(
+                    label = "QUEUE: 0 DROPS",
+                    backgroundColor = AppTheme.colors.elevatedOverlay,
+                    borderColor = AppTheme.colors.baseBorder,
+                    textColor = AppTheme.colors.textSecondary,
+                    dotColor = null,
+                )
+            }
+
+            // Controls & Toggle
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(
+                    onClick = { expandedLogs = !expandedLogs },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppTheme.colors.buttonPrimary,
+                        contentColor = Color.White,
+                    ),
+                    shape = AppTheme.shapes.base,
+                    modifier = Modifier.height(AppTheme.dimensions.buttonHeightDense),
                 ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+                    Text(
+                        text = if (expandedLogs) "Collapse Telemetry" else "Inspect Telemetry",
+                        style = AppTheme.typography.bodySm,
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = { /* secondary action */ },
+                    shape = AppTheme.shapes.base,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = AppTheme.colors.textPrimary,
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        width = AppTheme.dimensions.hairlineBorder,
+                        color = AppTheme.colors.baseBorder,
+                    ),
+                    modifier = Modifier.height(AppTheme.dimensions.buttonHeightDense),
+                ) {
+                    Text(
+                        text = "Export CIDR",
+                        style = AppTheme.typography.bodySm,
+                    )
+                }
+            }
+
+            // Animated Log Drawer / Telemetry Details
+            AnimatedVisibility(visible = expandedLogs) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(AppTheme.colors.subSurface, AppTheme.shapes.lg)
+                        .border(
+                            width = AppTheme.dimensions.hairlineBorder,
+                            color = AppTheme.colors.baseBorder,
+                            shape = AppTheme.shapes.lg,
+                        )
+                        .padding(AppTheme.spacing.spaceLg),
+                    verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+                ) {
+                    Text(
+                        text = "LIVE TELEMETRY STREAM",
+                        style = AppTheme.typography.labelUi,
+                        color = AppTheme.colors.textSecondary,
+                    )
+                    TelemetryLogRow(timestamp = "14:44:02.112", address = "192.168.1.120:9092", latency = "1.42ms", status = "ACK")
+                    TelemetryLogRow(timestamp = "14:44:03.491", address = "10.0.4.88:443", latency = "3.11ms", status = "ESTABLISHED")
+                    TelemetryLogRow(timestamp = "14:44:04.008", address = "172.16.0.5:8080", latency = "0.85ms", status = "SYNC")
+
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.spaceXs))
+                    Text(
+                        text = "Target Runtime: $greeting",
+                        style = AppTheme.typography.codeBase,
+                        color = AppTheme.colors.telemetryA,
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TelemetryCard(
+    title: String,
+    metric: String,
+    unit: String,
+    trend: String,
+    trendColor: Color,
+    accentColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .background(AppTheme.colors.subSurface, AppTheme.shapes.lg)
+            .border(
+                width = AppTheme.dimensions.hairlineBorder,
+                color = AppTheme.colors.baseBorder,
+                shape = AppTheme.shapes.lg,
+            )
+            .padding(AppTheme.spacing.spaceLg),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                style = AppTheme.typography.labelUi,
+                color = AppTheme.colors.textSecondary,
+            )
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(accentColor),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(AppTheme.spacing.spaceSm))
+
+        Row(
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+        ) {
+            Text(
+                text = metric,
+                style = AppTheme.typography.metricDisplay,
+                color = AppTheme.colors.textPrimary,
+            )
+            Text(
+                text = unit,
+                style = AppTheme.typography.bodySm,
+                color = AppTheme.colors.textMuted,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(AppTheme.spacing.space2xs))
+
+        Text(
+            text = trend,
+            style = AppTheme.typography.labelCode,
+            color = trendColor,
+        )
+    }
+}
+
+@Composable
+private fun StatusBadge(
+    label: String,
+    backgroundColor: Color,
+    borderColor: Color,
+    textColor: Color,
+    dotColor: Color?,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(AppTheme.shapes.base)
+            .background(backgroundColor)
+            .border(
+                width = AppTheme.dimensions.hairlineBorder,
+                color = borderColor,
+                shape = AppTheme.shapes.base,
+            )
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (dotColor != null) {
+            Box(
+                modifier = Modifier
+                    .size(AppTheme.dimensions.statusDotSize)
+                    .clip(CircleShape)
+                    .background(dotColor),
+            )
+        }
+        Text(
+            text = label,
+            style = AppTheme.typography.labelCode,
+            color = textColor,
+        )
+    }
+}
+
+@Composable
+private fun TelemetryLogRow(
+    timestamp: String,
+    address: String,
+    latency: String,
+    status: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = AppTheme.dimensions.hairlineBorder,
+                color = AppTheme.colors.subtleDivider,
+                shape = AppTheme.shapes.base,
+            )
+            .background(AppTheme.colors.inputBackground, AppTheme.shapes.base)
+            .padding(horizontal = AppTheme.spacing.spaceSm, vertical = AppTheme.spacing.spaceXs),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = timestamp,
+            style = AppTheme.typography.codeBase,
+            color = AppTheme.colors.textMuted,
+        )
+        Text(
+            text = address,
+            style = AppTheme.typography.codeBase,
+            color = AppTheme.colors.textPrimary,
+        )
+        Text(
+            text = latency,
+            style = AppTheme.typography.codeBase,
+            color = AppTheme.colors.telemetryB,
+        )
+        Text(
+            text = status,
+            style = AppTheme.typography.labelCode,
+            color = AppTheme.colors.operational,
+        )
     }
 }

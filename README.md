@@ -1,31 +1,98 @@
-This is a Kotlin Multiplatform project targeting Android, Desktop (JVM).
+# Nascope
 
-* [/shared](./shared/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-    - [commonMain](./shared/src/commonMain/kotlin) is for code that’s common for all targets.
-    - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-      For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-      the [iosMain](./shared/src/iosMain/kotlin) folder would be the right place for such calls.
-      Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./shared/src/jvmMain/kotlin)
-      folder is the appropriate location.
-
-### Running the apps
-
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and
-options:
-
-- Android app: `./gradlew :androidApp:assembleDebug`
-- Desktop app:
-    - Hot reload: `./gradlew :desktopApp:hotRun --auto`
-    - Standard run: `./gradlew :desktopApp:run`
-
-### Running tests
-
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
-
-- Android tests: `./gradlew :shared:testAndroidHostTest`
-- Desktop tests: `./gradlew :shared:jvmTest`
+**Nascope** is a Kotlin Multiplatform telemetry and monitoring application engineered for systems engineers, homelab operators, and infrastructure architects. It targets **Android** and **Desktop (JVM)** with a unified UI built with **Compose Multiplatform** and **Material 3**.
 
 ---
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+## Architecture & Module Structure
+
+The project uses Gradle type-safe project accessors and custom convention plugins under `build-logic`:
+
+```
+nascope/
+├── build-logic/convention/       # Gradle convention plugins
+│   └── plugins:
+│       ├── plugins.kmp.library          # Multiplatform library setup
+│       ├── plugins.kmp.compose          # Compose Multiplatform dependencies & compiler
+│       ├── plugins.android.application  # Android application conventions
+│       └── plugins.desktop.application  # Desktop JVM application conventions
+├── resources/                    # Common Compose Multiplatform assets & resources
+│   └── src/commonMain/composeResources/
+├── shared/                       # Core shared business logic & UI components
+│   ├── src/commonMain/kotlin/
+│   │   └── io/buszi/nascope/
+│   │       ├── App.kt            # Root composable & telemetry dashboard preview
+│   │       └── ui/common/theme/  # Obsidian Telemetry Design System
+│   ├── src/androidMain/          # Android-specific implementations
+│   └── src/jvmMain/              # JVM-specific implementations
+├── androidApp/                   # Android entry point (MainActivity)
+└── desktopApp/                   # Desktop JVM entry point (main.kt)
+```
+
+---
+
+## Obsidian Telemetry Design System
+
+The application theme is located in [`io.buszi.nascope.ui.common.theme`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme) and is modeled after the **Obsidian Telemetry** design specification (OLED-optimized, low-light, high-contrast, technical instrument aesthetic).
+
+### Theme Accessor
+Theme tokens are exposed via `AppTheme` within any `@Composable`:
+
+```kotlin
+AppTheme {
+    // Access colors, typography, shapes, spacing, and dimensions
+    val bg = AppTheme.colors.canvasBackground
+    val metricStyle = AppTheme.typography.metricDisplay
+    val cardShape = AppTheme.shapes.lg
+    val pad = AppTheme.spacing.spaceLg
+}
+```
+
+### Theme Components
+
+| File | Responsibilities & Tokens |
+| :--- | :--- |
+| **[`AppTheme.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/AppTheme.kt)** | Entry composable `AppTheme(...)` providing `CompositionLocalProvider` for all token groups; `object AppTheme` for static, ergonomic token access (`colors`, `colorScheme`, `typography`, `materialTypography`, `shapes`, `materialShapes`, `spacing`, `dimensions`). |
+| **[`Colors.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Colors.kt)** | • **`DarkColorScheme`**: Full Material 3 dark color scheme mapping.<br>• **`AppColors`**:<br>&nbsp;&nbsp;- *Base / Surfaces*: `canvasBackground` (`#0B0F17`), `subSurface` (`#12141A`), `elevatedOverlay` (`#181C24`), `activeHoverRowFill` (`#1E232F40`), `inputBackground` (`#0E121A`).<br>&nbsp;&nbsp;- *Borders*: `baseBorder` (`#1E232F`), `subtleDivider` (`#171B26`), `focusHighlight` (`#384259`), `elevatedBorder` (`#282E3E`).<br>&nbsp;&nbsp;- *Telemetry*: `operational` (`#10B981`) + halo, `degraded` (`#F59E0B`) + halo, `critical` (`#F43F5E`) + halo, `telemetryA` (`#8B5CF6` core pipelines), `telemetryB` (`#06B6D4` network I/O).<br>&nbsp;&nbsp;- *Text Stack*: `textPrimary` (`#F1F5F9`), `textSecondary` (`#94A3B8`), `textMuted` (`#64748B`), `textDisabled` (`#334155`).<br>&nbsp;&nbsp;- *Badges & Buttons*: `healthyBadgeBackground` / `border`, `warningBadgeBackground` / `border`, `criticalBadgeBackground` / `border`, `buttonPrimary`, `buttonPrimaryHover` (`#7C3AED`). |
+| **[`Typography.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Typography.kt)** | • **Dual-Type Strategy**:<br>&nbsp;&nbsp;- **Inter** (`interFontFamily`): `headlineXl` (36sp), `headlineXlMobile` (28sp), `headlineLg` (24sp), `headlineSm` (18sp), `bodyLg` (15sp), `bodyMd` (14sp), `bodySm` (12sp), `labelUi` (11sp with positive tracking `0.04em`).<br>&nbsp;&nbsp;- **JetBrains Mono** (`monoFontFamily`): `metricDisplay` (32sp), `metricMd` (20sp), `codeBase` (13sp), `labelCode` (11sp with `0.02em` tracking). All telemetry styles use **tabular numerals** (`fontFeatureSettings = "tnum"`).<br>• Fully mapped to Material 3 `Typography`. |
+| **[`Shapes.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Shapes.kt)** | Tight technical radiuses: `sm` (2dp), `base` (4dp), `md` (6dp), `lg` (8dp), `xl` (12dp), `full` (CircleShape / 9999px for status dots and badges). Also configures Material 3 `Shapes`. |
+| **[`Spacing.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Spacing.kt)** | • **`AppSpacing`**: Micro & structural cadence (`space2xs` = 2dp, `spaceXs` = 4dp, `spaceSm` = 8dp, `spaceMd` = 12dp, `spaceLg` = 16dp, `spaceXl` = 24dp, `space2xl` = 32dp), margins, and gutters.<br>• **`AppDimensions`**: Hairline border (1dp), focus ring (2dp), status dot (6dp), button heights (32dp dense / 36dp regular), input height (32dp), table header (28dp), sidebar desktop (240dp), sidebar tablet (56dp), log drawer (320dp), command palette width (580dp). |
+
+---
+
+## Context & Guidelines for AI Agents
+
+When working on this repository, follow these conventions:
+
+- **Theme Usage**: Always consume colors, typography, shapes, and spacing from `AppTheme` (e.g., `AppTheme.colors.canvasBackground`, `AppTheme.typography.codeBase`, `AppTheme.shapes.base`). Do not hardcode ad-hoc hex values, paddings, or font sizes.
+- **Surface Elevation**: Follow the 1px border hierarchy rather than heavy drop shadows:
+  - Layer 0 (Canvas): `AppTheme.colors.canvasBackground`
+  - Layer 1 (Cards/Panels): `AppTheme.colors.subSurface` with `1.dp` border `AppTheme.colors.baseBorder`
+  - Layer 2 (Modals/Popovers): `AppTheme.colors.elevatedOverlay` with `1.dp` border `AppTheme.colors.elevatedBorder`
+- **Monospace Telemetry**: Use `AppTheme.typography.metricDisplay`, `metricMd`, or `codeBase` for all numeric metrics, memory addresses, CIDR blocks, IPs, and timestamps.
+- **Resource Placement**: Shared drawables, strings, and fonts belong in `:resources/src/commonMain/composeResources/` and should be referenced via `io.buszi.nascope.resources.Res`.
+- **Shared Code**: Shared business logic and UI should stay in `:shared/src/commonMain/`. Platform-specific code should be kept in `androidMain/` or `jvmMain/` via expect/actual or interfaces.
+
+---
+
+## Build & Run Commands
+
+- **Build all targets**:
+  ```bash
+  ./gradlew assemble
+  ```
+- **Run Desktop App**:
+  ```bash
+  ./gradlew :desktopApp:run
+  # Or with hot reload:
+  ./gradlew :desktopApp:hotRun --auto
+  ```
+- **Build Android App**:
+  ```bash
+  ./gradlew :androidApp:assembleDebug
+  ```
+- **Run Tests**:
+  ```bash
+  ./gradlew :shared:jvmTest
+  ./gradlew :shared:testAndroidHostTest
+  ```
