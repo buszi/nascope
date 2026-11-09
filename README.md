@@ -23,7 +23,7 @@ nascope/
 │   │   └── io/buszi/nascope/
 │   │       ├── App.kt            # Root composable & telemetry dashboard preview
 │   │       ├── ui/common/theme/  # Obsidian Telemetry Design System
-│   │       └── ui/common/components/  # Reusable UI primitives (containers, badges, …)
+│   │       └── ui/common/components/  # Reusable UI primitives
 │   ├── src/androidMain/          # Android-specific implementations
 │   └── src/jvmMain/              # JVM-specific implementations
 ├── androidApp/                   # Android entry point (MainActivity)
@@ -91,7 +91,7 @@ Shared core features are augmented with desktop and mobile platform capabilities
 
 ## Context & Guidelines for AI Agents
 
-**Read [`docs/CONVENTIONS.md`](./docs/CONVENTIONS.md) before writing any code.** It covers project layout, design token usage, composable API shape, previews, animation/performance rules, Kotlin style, and the per-task workflow (showcase update → build verification → `PLAN.md` checkbox → commit).
+**Read [`docs/CONVENTIONS.md`](./docs/CONVENTIONS.md) before writing any code.** It covers project layout, design token usage, composable API shape, previews, animation/performance rules, Kotlin style, and the per-task workflow (showcase update → build verification → `PLAN.md` checkbox). Do not create git commits.
 
 The essentials:
 - Take every color, font, shape, and spacing value from `AppTheme`. Never hardcode hex, `dp`, or `sp` values.

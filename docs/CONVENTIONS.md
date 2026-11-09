@@ -10,7 +10,7 @@ Rules for contributing to Nascope (people and AI agents alike). Read this before
 | :--- | :--- |
 | `shared/src/commonMain/kotlin/io/buszi/nascope/` | All shared UI and business logic. |
 | `.../ui/common/theme/` | Design system tokens (`AppTheme`, colors, typography, shapes, spacing). |
-| `.../ui/common/components/<group>/` | Reusable UI primitives grouped by kind: `containers`, `badges`, `gauges`, `inputs`, … |
+| `.../ui/common/components/<group>/` | Reusable UI primitives grouped by kind: `containers`, `badges`, `metrics`, `gauges`, `inputs`, … |
 | `.../ui/dashboard/widgets/` | Dashboard "bricks" built from the common components. |
 | `shared/src/androidMain/`, `shared/src/jvmMain/` | Platform-specific code only, via `expect`/`actual` or interfaces. |
 | `resources/src/commonMain/composeResources/` | Shared drawables, strings, fonts. Access them via `io.buszi.nascope.resources.Res`. |
@@ -105,7 +105,7 @@ fun TagChip(
 
 ## 7. Task Workflow
 
-Each task from [PLAN.md](../PLAN.md) is self-contained and committed on its own:
+Each task from [PLAN.md](../PLAN.md) is self-contained:
 
 1. Implement the deliverables following the conventions above.
 2. **Use the new components in the showcase** (`App.kt`) and remove any ad-hoc private versions they replace.
@@ -117,13 +117,10 @@ Each task from [PLAN.md](../PLAN.md) is self-contained and committed on its own:
    ```
 4. Tick the task's checkbox in `PLAN.md`.
 5. Update the README or this document if the task adds a new convention, module, or token.
-6. Commit with a short imperative message describing the outcome (e.g. `Create reusable containers components`, `Setup app theme and design system`).
+6. **Do NOT run `git commit`.** Leave all changes uncommitted in the working tree for the user to review and commit.
 
 ---
 
 ## 8. Known Legacy Deviations
 
-Clean these up when you touch the surrounding code, and don't copy them:
-
-- `App.kt` → `MetricSummaryCard` uses hardcoded `8.dp` / `4.dp` and a hand-rolled dot. Replace these with `StatusDot` and `MetricValue` (TASK-1.3).
 - `App.kt` → buttons use an inline fully-qualified `BorderStroke` and raw Material buttons. Replace these with `PrimaryButton` / `SecondaryButton` (TASK-1.4).

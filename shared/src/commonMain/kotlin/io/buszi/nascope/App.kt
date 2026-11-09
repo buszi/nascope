@@ -12,9 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -27,15 +25,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import io.buszi.nascope.ui.common.components.badges.StatusChip
+import io.buszi.nascope.ui.common.components.badges.StatusDot
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.containers.ElevatedPanel
 import io.buszi.nascope.ui.common.components.containers.TelemetryCard
+import io.buszi.nascope.ui.common.components.gauges.LinearGauge
+import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
+import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.theme.AppTheme
 
 @Composable
@@ -44,6 +44,23 @@ fun App() {
     AppTheme {
         var expandedLogs by remember { mutableStateOf(false) }
         val greeting = remember { Greeting().greet() }
+
+        val egressHistory = remember {
+            listOf(
+                120f, 135f, 140f, 128f, 150f, 180f, 240f, 320f, 410f, 550f,
+                620f, 710f, 780f, 820f, 840f, 830f, 810f, 790f, 825f, 842f,
+                815f, 780f, 740f, 705f, 690f, 720f, 750f, 800f, 830f, 845f,
+                820f, 795f, 780f, 810f, 835f, 840f, 838f, 841f, 843f, 842.6f,
+            )
+        }
+        val cpuHistory = remember {
+            listOf(
+                22f, 24f, 21f, 28f, 34f, 32f, 30f, 45f, 62f, 58f,
+                54f, 48f, 52f, 68f, 74f, 71f, 65f, 59f, 62f, 64f,
+                70f, 78f, 82f, 80f, 75f, 69f, 63f, 58f, 52f, 49f,
+                45f, 42f, 40f, 44f, 48f, 52f, 50f, 46f, 43f, 42.8f,
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -94,6 +111,7 @@ fun App() {
                     trend = "+12.4% / 5m",
                     trendColor = AppTheme.colors.operational,
                     accentColor = AppTheme.colors.telemetryB,
+                    sparklineData = egressHistory,
                 )
 
                 // Card 2: CPU Pipeline (Telemetry Series A)
@@ -105,7 +123,33 @@ fun App() {
                     trend = "-1.8% / 5m",
                     trendColor = AppTheme.colors.telemetryA,
                     accentColor = AppTheme.colors.telemetryA,
+                    sparklineData = cpuHistory,
                 )
+            }
+
+            // Resource Allocation Gauges
+            TelemetryCard(
+                title = "RESOURCE ALLOCATION & THRESHOLDS",
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm)) {
+                    LinearGauge(
+                        progress = 0.428f,
+                        label = "AGGREGATE CPU USAGE",
+                        valueText = "42.8%",
+                        normalColor = AppTheme.colors.telemetryA,
+                    )
+                    LinearGauge(
+                        progress = 0.812f,
+                        label = "RAM ALLOCATION (SWAP READY)",
+                        valueText = "13.0 / 16.0 GB (81.2%)",
+                    )
+                    LinearGauge(
+                        progress = 0.946f,
+                        label = "PRIMARY STORAGE POOL (/volume1)",
+                        valueText = "94.6% CRITICAL",
+                    )
+                }
             }
 
             // Status Badges Overview Row
@@ -207,43 +251,29 @@ private fun MetricSummaryCard(
     trendColor: Color,
     accentColor: Color,
     modifier: Modifier = Modifier,
+    sparklineData: List<Float>? = null,
 ) {
     TelemetryCard(
         modifier = modifier,
         title = title,
         headerAction = {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(accentColor),
-            )
+            StatusDot(color = accentColor)
         },
     ) {
-        Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
-        ) {
-            Text(
-                text = metric,
-                style = AppTheme.typography.metricDisplay,
-                color = AppTheme.colors.textPrimary,
-            )
-            Text(
-                text = unit,
-                style = AppTheme.typography.bodySm,
-                color = AppTheme.colors.textMuted,
-                modifier = Modifier.padding(bottom = 4.dp),
+        MetricValue(
+            value = metric,
+            unit = unit,
+            trend = trend,
+            trendColor = trendColor,
+        )
+
+        if (sparklineData != null) {
+            Spacer(modifier = Modifier.height(AppTheme.spacing.spaceSm))
+            MiniSparkline(
+                data = sparklineData,
+                lineColor = accentColor,
             )
         }
-
-        Spacer(modifier = Modifier.height(AppTheme.spacing.space2xs))
-
-        Text(
-            text = trend,
-            style = AppTheme.typography.labelCode,
-            color = trendColor,
-        )
     }
 }
 
