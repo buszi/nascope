@@ -51,7 +51,6 @@ data class AppDimensions(
     val commandPaletteWidth: Dp = 580.dp,
 
     // Breakpoints
-    val compactWidgetBreakpoint: Dp = 520.dp,
     val mobileBreakpoint: Dp = 768.dp,
     val desktopBreakpoint: Dp = 1280.dp,
 )
