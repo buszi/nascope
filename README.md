@@ -22,11 +22,13 @@ nascope/
 │   ├── src/commonMain/kotlin/
 │   │   └── io/buszi/nascope/
 │   │       ├── App.kt            # Root composable & telemetry dashboard preview
-│   │       └── ui/common/theme/  # Obsidian Telemetry Design System
+│   │       ├── ui/common/theme/  # Obsidian Telemetry Design System
+│   │       └── ui/common/components/  # Reusable UI primitives (containers, badges, …)
 │   ├── src/androidMain/          # Android-specific implementations
 │   └── src/jvmMain/              # JVM-specific implementations
 ├── androidApp/                   # Android entry point (MainActivity)
-└── desktopApp/                   # Desktop JVM entry point (main.kt)
+├── desktopApp/                   # Desktop JVM entry point (main.kt)
+└── docs/                         # Developer documentation (CONVENTIONS.md)
 ```
 
 ---
@@ -89,17 +91,11 @@ Shared core features are augmented with desktop and mobile platform capabilities
 
 ## Context & Guidelines for AI Agents
 
-When working on this repository, follow these conventions:
+**Read [`docs/CONVENTIONS.md`](./docs/CONVENTIONS.md) before writing any code.** It covers project layout, design token usage, composable API shape, previews, animation/performance rules, Kotlin style, and the per-task workflow (showcase update → build verification → `PLAN.md` checkbox → commit).
 
-- **Theme Usage**: Always consume colors, typography, shapes, and spacing from `AppTheme` (e.g., `AppTheme.colors.canvasBackground`, `AppTheme.typography.codeBase`, `AppTheme.shapes.base`). Do not hardcode ad-hoc hex values, paddings, or font sizes.
-- **Surface Elevation**: Follow the 1px border hierarchy rather than heavy drop shadows:
-  - Layer 0 (Canvas): `AppTheme.colors.canvasBackground`
-  - Layer 1 (Cards/Panels): `AppTheme.colors.subSurface` with `1.dp` border `AppTheme.colors.baseBorder`
-  - Layer 2 (Modals/Popovers): `AppTheme.colors.elevatedOverlay` with `1.dp` border `AppTheme.colors.elevatedBorder`
-- **Monospace Telemetry**: Use `AppTheme.typography.metricDisplay`, `metricMd`, or `codeBase` for all numeric metrics, memory addresses, CIDR blocks, IPs, and timestamps.
-- **Component Packaging**: Avoid placing multiple composables into a single file. Create dedicated subpackages under `ui.common.components` (e.g. `containers`, `badges`, `gauges`, `inputs`) and place each composable in its own separate file alongside its corresponding `@Preview` composable.
-- **Resource Placement**: Shared drawables, strings, and fonts belong in `:resources/src/commonMain/composeResources/` and should be referenced via `io.buszi.nascope.resources.Res`.
-- **Shared Code**: Shared business logic and UI should stay in `:shared/src/commonMain/`. Platform-specific code should be kept in `androidMain/` or `jvmMain/` via expect/actual or interfaces.
+The essentials:
+- Take every color, font, shape, and spacing value from `AppTheme`. Never hardcode hex, `dp`, or `sp` values.
+- Put one public composable per file under `ui.common.components/<group>/`, each with its own `private @Preview`.
 
 ---
 
