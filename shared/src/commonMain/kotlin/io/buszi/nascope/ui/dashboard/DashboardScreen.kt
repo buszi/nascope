@@ -41,6 +41,7 @@ import io.buszi.nascope.ui.common.components.inputs.ShortcutKey
 import io.buszi.nascope.ui.common.components.inputs.TelemetryTextField
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 
 /**
  * Root scaffold for the telemetry dashboard screen.
@@ -307,12 +308,12 @@ private fun MetricSummaryCard(
     modifier: Modifier = Modifier,
     sparklineData: List<Float>? = null,
 ) {
-    TelemetryCard(
-        modifier = modifier,
+    DashboardWidget(
         title = title,
         headerAction = {
             StatusDot(color = accentColor)
         },
+        modifier = modifier,
     ) {
         MetricValue(
             value = metric,
