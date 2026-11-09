@@ -36,6 +36,8 @@ class KotlinMultiplatformLibraryPlugin : Plugin<Project> {
                     dependencies {
                         implementation(libs.findLibrary("junit").get())
                         implementation(libs.findLibrary("kotlin-test").get())
+                        implementation(libs.findLibrary("kotlinx-coroutines-test").get())
+                        implementation(libs.findLibrary("kotlinx-coroutinesSwing").get())
                     }
                 }
             }

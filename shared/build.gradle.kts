@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.convention.kmp.library)
     alias(libs.plugins.convention.kmp.compose)
+    alias(libs.plugins.koin.compiler)
 }
 
 kotlin {
@@ -18,6 +19,12 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
 
             implementation(libs.compose.components.resources)
+
+            implementation(libs.koin.core)
+            implementation(libs.koin.annotations)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
     }
 }
+

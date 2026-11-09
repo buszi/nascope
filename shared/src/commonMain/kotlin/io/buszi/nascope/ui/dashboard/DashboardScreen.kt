@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.Greeting
+import io.buszi.nascope.di.NascopeApp
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusDot
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
@@ -42,6 +43,9 @@ import io.buszi.nascope.ui.common.components.inputs.TelemetryTextField
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
+import io.buszi.nascope.ui.dashboard.widgets.SystemOverviewWidget
+import org.koin.compose.KoinApplication
+import org.koin.plugin.module.dsl.koinConfiguration
 
 /**
  * Root scaffold for the telemetry dashboard screen.
@@ -92,6 +96,11 @@ fun DashboardScreen() {
             nodeName = "Node Cluster alpha-01",
             status = StatusLevel.Operational,
             statusText = "ONLINE",
+        )
+
+        // System Overview Brick (self-contained ViewModel)
+        SystemOverviewWidget(
+            modifier = Modifier.fillMaxWidth(),
         )
 
         // Metric Cards Grid / Row
@@ -379,7 +388,11 @@ private fun TelemetryLogRow(
 @Composable
 @Preview
 private fun DashboardScreenPreview() {
-    AppTheme {
-        DashboardScreen()
+    KoinApplication(
+        configuration = koinConfiguration<NascopeApp>(),
+    ) {
+        AppTheme {
+            DashboardScreen()
+        }
     }
 }
