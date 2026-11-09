@@ -1,28 +1,11 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-
 plugins {
-    alias(libs.plugins.kotlinJvm)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.convention.kmp.compose)
+    alias(libs.plugins.convention.desktop.application)
 }
 
 dependencies {
-    implementation(project(":shared"))
+    implementation(projects.shared)
 
     implementation(compose.desktop.currentOs)
     implementation(libs.kotlinx.coroutinesSwing)
-
-    implementation(libs.compose.uiToolingPreview)
-}
-
-compose.desktop {
-    application {
-        mainClass = "io.buszi.nascope.MainKt"
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "io.buszi.nascope"
-            packageVersion = "1.0.0"
-        }
-    }
 }
