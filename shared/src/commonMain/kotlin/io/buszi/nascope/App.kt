@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,9 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +31,10 @@ import io.buszi.nascope.ui.common.components.containers.ElevatedPanel
 import io.buszi.nascope.ui.common.components.containers.TelemetryCard
 import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
+import io.buszi.nascope.ui.common.components.inputs.Keycap
+import io.buszi.nascope.ui.common.components.buttons.PrimaryButton
+import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
+import io.buszi.nascope.ui.common.components.inputs.TelemetryTextField
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.theme.AppTheme
 
@@ -43,6 +43,7 @@ import io.buszi.nascope.ui.common.theme.AppTheme
 fun App() {
     AppTheme {
         var expandedLogs by remember { mutableStateOf(false) }
+        var filterQuery by remember { mutableStateOf("") }
         val greeting = remember { Greeting().greet() }
 
         val egressHistory = remember {
@@ -176,43 +177,36 @@ fun App() {
                 TagChip(text = "QUEUE: 0 DROPS")
             }
 
-            // Controls & Toggle
+            // Controls, Search & Actions
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Button(
-                    onClick = { expandedLogs = !expandedLogs },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppTheme.colors.buttonPrimary,
-                        contentColor = Color.White,
-                    ),
-                    shape = AppTheme.shapes.base,
-                    modifier = Modifier.height(AppTheme.dimensions.buttonHeightDense),
-                ) {
-                    Text(
-                        text = if (expandedLogs) "Collapse Telemetry" else "Inspect Telemetry",
-                        style = AppTheme.typography.bodySm,
-                    )
-                }
+                TelemetryTextField(
+                    value = filterQuery,
+                    onValueChange = { filterQuery = it },
+                    placeholder = "Filter endpoints or CIDR (e.g. 192.168.1.0/24)...",
+                    modifier = Modifier.weight(1f),
+                    trailingIcon = if (!AppTheme.platform.isMobile) {
+                        {
+                            Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs)) {
+                                Keycap(key = "⌘")
+                                Keycap(key = "K")
+                            }
+                        }
+                    } else null,
+                )
 
-                OutlinedButton(
+                PrimaryButton(
+                    text = if (expandedLogs) "Collapse Telemetry" else "Inspect Telemetry",
+                    onClick = { expandedLogs = !expandedLogs },
+                )
+
+                SecondaryButton(
+                    text = "Export CIDR",
                     onClick = { /* secondary action */ },
-                    shape = AppTheme.shapes.base,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = AppTheme.colors.textPrimary,
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        width = AppTheme.dimensions.hairlineBorder,
-                        color = AppTheme.colors.baseBorder,
-                    ),
-                    modifier = Modifier.height(AppTheme.dimensions.buttonHeightDense),
-                ) {
-                    Text(
-                        text = "Export CIDR",
-                        style = AppTheme.typography.bodySm,
-                    )
-                }
+                )
             }
 
             // Animated Log Drawer / Telemetry Details
@@ -220,11 +214,30 @@ fun App() {
                 ElevatedPanel(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(
-                        text = "LIVE TELEMETRY STREAM",
-                        style = AppTheme.typography.labelUi,
-                        color = AppTheme.colors.textSecondary,
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "LIVE TELEMETRY STREAM",
+                            style = AppTheme.typography.labelUi,
+                            color = AppTheme.colors.textSecondary,
+                        )
+                        if (!AppTheme.platform.isMobile) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "Pause:",
+                                    style = AppTheme.typography.labelCode,
+                                    color = AppTheme.colors.textMuted,
+                                )
+                                Keycap(key = "Space")
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(AppTheme.spacing.spaceSm))
                     TelemetryLogRow(timestamp = "14:44:02.112", address = "192.168.1.120:9092", latency = "1.42ms", status = "ACK")
                     TelemetryLogRow(timestamp = "14:44:03.491", address = "10.0.4.88:443", latency = "3.11ms", status = "ESTABLISHED")

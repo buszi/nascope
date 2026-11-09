@@ -118,9 +118,3 @@ Each task from [PLAN.md](../PLAN.md) is self-contained:
 4. Tick the task's checkbox in `PLAN.md`.
 5. Update the README or this document if the task adds a new convention, module, or token.
 6. **Do NOT run `git commit`.** Leave all changes uncommitted in the working tree for the user to review and commit.
-
----
-
-## 8. Known Legacy Deviations
-
-- `App.kt` → buttons use an inline fully-qualified `BorderStroke` and raw Material buttons. Replace these with `PrimaryButton` / `SecondaryButton` (TASK-1.4).

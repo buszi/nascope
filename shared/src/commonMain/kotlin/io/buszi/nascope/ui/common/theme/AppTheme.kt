@@ -7,6 +7,9 @@ import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import io.buszi.nascope.LocalPlatform
+import io.buszi.nascope.Platform
+import io.buszi.nascope.getPlatform
 
 @Composable
 fun AppTheme(
@@ -15,6 +18,7 @@ fun AppTheme(
     shapes: AppShapes = DefaultAppShapes,
     spacing: AppSpacing = DefaultAppSpacing,
     dimensions: AppDimensions = DefaultAppDimensions,
+    platform: Platform = getPlatform(),
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
@@ -23,6 +27,7 @@ fun AppTheme(
         LocalAppShapes provides shapes,
         LocalAppSpacing provides spacing,
         LocalAppDimensions provides dimensions,
+        LocalPlatform provides platform,
     ) {
         MaterialTheme(
             colorScheme = colors.materialColorScheme,
@@ -101,4 +106,12 @@ object AppTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalAppDimensions.current
+
+    /**
+     * Target runtime platform metadata (Android, Desktop, etc.).
+     */
+    val platform: Platform
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalPlatform.current
 }
