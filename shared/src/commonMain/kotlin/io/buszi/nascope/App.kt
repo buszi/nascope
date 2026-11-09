@@ -31,6 +31,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import io.buszi.nascope.ui.common.components.containers.ElevatedPanel
+import io.buszi.nascope.ui.common.components.containers.TelemetryCard
 import io.buszi.nascope.ui.common.theme.AppTheme
 
 @Composable
@@ -83,7 +85,7 @@ fun App() {
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
             ) {
                 // Card 1: Egress Metrics (Telemetry Series B)
-                TelemetryCard(
+                MetricSummaryCard(
                     modifier = Modifier.weight(1f),
                     title = "NETWORK EGRESS",
                     metric = "842.6",
@@ -94,7 +96,7 @@ fun App() {
                 )
 
                 // Card 2: CPU Pipeline (Telemetry Series A)
-                TelemetryCard(
+                MetricSummaryCard(
                     modifier = Modifier.weight(1f),
                     title = "CLUSTER CPU",
                     metric = "42.8",
@@ -188,23 +190,15 @@ fun App() {
 
             // Animated Log Drawer / Telemetry Details
             AnimatedVisibility(visible = expandedLogs) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(AppTheme.colors.subSurface, AppTheme.shapes.lg)
-                        .border(
-                            width = AppTheme.dimensions.hairlineBorder,
-                            color = AppTheme.colors.baseBorder,
-                            shape = AppTheme.shapes.lg,
-                        )
-                        .padding(AppTheme.spacing.spaceLg),
-                    verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+                ElevatedPanel(
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
                         text = "LIVE TELEMETRY STREAM",
                         style = AppTheme.typography.labelUi,
                         color = AppTheme.colors.textSecondary,
                     )
+                    Spacer(modifier = Modifier.height(AppTheme.spacing.spaceSm))
                     TelemetryLogRow(timestamp = "14:44:02.112", address = "192.168.1.120:9092", latency = "1.42ms", status = "ACK")
                     TelemetryLogRow(timestamp = "14:44:03.491", address = "10.0.4.88:443", latency = "3.11ms", status = "ESTABLISHED")
                     TelemetryLogRow(timestamp = "14:44:04.008", address = "172.16.0.5:8080", latency = "0.85ms", status = "SYNC")
@@ -222,7 +216,7 @@ fun App() {
 }
 
 @Composable
-private fun TelemetryCard(
+private fun MetricSummaryCard(
     title: String,
     metric: String,
     unit: String,
@@ -231,36 +225,18 @@ private fun TelemetryCard(
     accentColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .background(AppTheme.colors.subSurface, AppTheme.shapes.lg)
-            .border(
-                width = AppTheme.dimensions.hairlineBorder,
-                color = AppTheme.colors.baseBorder,
-                shape = AppTheme.shapes.lg,
-            )
-            .padding(AppTheme.spacing.spaceLg),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = title,
-                style = AppTheme.typography.labelUi,
-                color = AppTheme.colors.textSecondary,
-            )
+    TelemetryCard(
+        modifier = modifier,
+        title = title,
+        headerAction = {
             Box(
                 modifier = Modifier
                     .size(8.dp)
                     .clip(CircleShape)
                     .background(accentColor),
             )
-        }
-
-        Spacer(modifier = Modifier.height(AppTheme.spacing.spaceSm))
-
+        },
+    ) {
         Row(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),

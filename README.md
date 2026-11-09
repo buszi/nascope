@@ -60,6 +60,33 @@ AppTheme {
 
 ---
 
+## Application Architecture & Concepts
+
+### Glances Telemetry Backend
+Nascope connects to hosts running the [Glances](https://github.com/nicolargo/glances) monitoring service via its REST API (default port `61208`).
+- **Connection Lifecycle**: First-launch onboarding captures base URL, port, protocol, and optional authentication secret. A pre-flight handshake validates DNS resolution, HTTP status, and Glances API status before entering the live dashboard.
+- **Telemetry Collection**: Data is collected through periodic interval polling (e.g., 2-3s active foreground, throttled when minimized or backgrounded) rather than persistent WebSockets, matching Glances REST capabilities.
+- **Offline & Mock-First Strategy**: The data layer is decoupled behind a repository interface. A synthetic data generator simulates live fluctuations and subsystem alerts, enabling rapid UI development and offline testing without requiring a live NAS connected.
+
+### Adaptivity & Screen Form Factor Strategy
+Nascope is designed as a premier showcase of Compose Multiplatform adaptivity, presenting an optimal layout across all screen factors without platform-branching UI logic:
+- **Mobile (< 768dp)**: 4-column adaptive layout, 16dp margins, 12dp gutters. Sparkline cards stack into single columns; complex tables transform into swipeable cards with sticky left-most node identifiers.
+- **Tablet (768dp - 1279dp)**: 8-column layout, 24dp margins, 16dp gutters. Sidebars collapse to a 56dp icon rail; metric panels form 2x2 grids.
+- **Desktop (>= 1280dp)**: 12-column fluid grid, 32dp margins, 20dp gutters. Primary canvas features a split workbench layout: 240dp fixed utility sidebar, scalable telemetry workspace, and an optional 320dp live log/event drawer.
+
+### Composable "Bricks" Dashboard
+The dashboard is conceived as a modular surface built from independent, reusable "bricks" (widgets):
+- **Encapsulated Scope**: Each brick (System, CPU Matrix, Memory & Swap, Storage Pools, Network I/O, Sensors/Thermals, Containers, Process List) owns its rendering, loading state, visual thresholds, and error fallbacks.
+- **Fluid Grid Spans**: Bricks define minimum and preferred column spans to naturally wrap and reflow across window breakpoints.
+- **User Customization**: Users will be able to customize their telemetry cockpit by toggling visibility, reordering widgets, or selecting preset layouts (e.g., Storage Focus, Compute Focus, Minimalist).
+
+### Platform Extensions
+Shared core features are augmented with desktop and mobile platform capabilities:
+- **Desktop (JVM)**: Minimalist system tray status indicator displaying an operational health dot, hover metrics tooltip, and global shortcut overlay (Command Palette via `Cmd/Ctrl + K`).
+- **Android**: Edge-to-edge transparent system bars and optional foreground telemetry alert notifications.
+
+---
+
 ## Context & Guidelines for AI Agents
 
 When working on this repository, follow these conventions:
@@ -70,6 +97,7 @@ When working on this repository, follow these conventions:
   - Layer 1 (Cards/Panels): `AppTheme.colors.subSurface` with `1.dp` border `AppTheme.colors.baseBorder`
   - Layer 2 (Modals/Popovers): `AppTheme.colors.elevatedOverlay` with `1.dp` border `AppTheme.colors.elevatedBorder`
 - **Monospace Telemetry**: Use `AppTheme.typography.metricDisplay`, `metricMd`, or `codeBase` for all numeric metrics, memory addresses, CIDR blocks, IPs, and timestamps.
+- **Component Packaging**: Avoid placing multiple composables into a single file. Create dedicated subpackages under `ui.common.components` (e.g. `containers`, `badges`, `gauges`, `inputs`) and place each composable in its own separate file alongside its corresponding `@Preview` composable.
 - **Resource Placement**: Shared drawables, strings, and fonts belong in `:resources/src/commonMain/composeResources/` and should be referenced via `io.buszi.nascope.resources.Res`.
 - **Shared Code**: Shared business logic and UI should stay in `:shared/src/commonMain/`. Platform-specific code should be kept in `androidMain/` or `jvmMain/` via expect/actual or interfaces.
 
