@@ -14,10 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.compose_multiplatform
 import org.jetbrains.compose.resources.painterResource
-
-import nascope.shared.generated.resources.Res
-import nascope.shared.generated.resources.compose_multiplatform
 
 @Composable
 @Preview
