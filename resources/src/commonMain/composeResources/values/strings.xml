@@ -43,5 +43,22 @@
     <string name="widget_memory_swap_swap_compact">SWAP</string>
     <string name="widget_memory_swap_swap_ratio">%1$s / %2$s GB</string>
     <string name="widget_memory_swap_no_swap">NO SWAP CONFIGURED</string>
+    <string name="widget_storage_title">STORAGE &amp; FILESYSTEMS</string>
+    <string name="widget_storage_title_compact">STORAGE</string>
+    <string name="widget_storage_status_healthy">HEALTHY</string>
+    <string name="widget_storage_status_degraded">DEGRADED</string>
+    <string name="widget_storage_status_critical">CRITICAL</string>
+    <string name="widget_storage_total_capacity">%1$s TOTAL</string>
+    <string name="widget_storage_io_read">READ</string>
+    <string name="widget_storage_io_write">WRITE</string>
+    <string name="widget_storage_io_rate_format">%1$s MB/s</string>
+    <string name="widget_storage_used_of_total">%1$s / %2$s</string>
+    <string name="widget_storage_mounts_summary">%1$d MOUNTS ACTIVE</string>
+    <string name="widget_storage_mounts_summary_compact">%1$d MOUNTS</string>
+    <string name="widget_storage_page_indicator">%1$d / %2$d</string>
+    <string name="widget_storage_no_mounts">NO STORAGE MOUNTS DETECTED</string>
+    <string name="widget_storage_pools_label">POOLS &amp; MOUNT POINTS</string>
+    <string name="widget_storage_pools_label_compact">MOUNTS</string>
+    <string name="widget_storage_throughput_label">DISK I/O THROUGHPUT</string>
     <string name="widget_memory_swap_gb_format">%1$s GB</string>
 </resources>

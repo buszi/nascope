@@ -3,7 +3,7 @@ package io.buszi.nascope.ui.dashboard.widgets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,8 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusDot
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
@@ -81,44 +84,109 @@ fun DashboardWidget(
             .padding(contentPadding),
     ) {
         // Standardized Widget Header
-        Row(
+        BoxWithConstraints(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
         ) {
+            val isCompact = maxWidth < 480.dp
+            val wrapHeaderAction = (subtitle != null && isCompact) || (subtitle == null && maxWidth < 320.dp && headerAction != null)
+
             Column(
-                modifier = Modifier.weight(1f, fill = false),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
-                ) {
-                    Text(
-                        text = title,
-                        style = AppTheme.typography.labelUi,
-                        color = AppTheme.colors.textSecondary,
-                    )
-                    if (statusTag != null) {
-                        statusTag()
+                if (wrapHeaderAction) {
+                    // Line 1: Title and Status Tag with full horizontal breathing room
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+                    ) {
+                        Text(
+                            text = title,
+                            style = AppTheme.typography.labelUi,
+                            color = AppTheme.colors.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        if (statusTag != null) {
+                            statusTag()
+                        }
+                    }
+
+                    // Line 2: Subtitle (if present) on left, Header Actions on right
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (subtitle != null) {
+                            Text(
+                                text = subtitle,
+                                style = AppTheme.typography.bodySm,
+                                color = AppTheme.colors.textMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+
+                        if (headerAction != null) {
+                            Spacer(modifier = Modifier.width(AppTheme.spacing.spaceSm))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+                                content = headerAction,
+                            )
+                        }
+                    }
+                } else {
+                    // Wide layout (or single-line header with enough width)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f, fill = false),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+                        ) {
+                            Text(
+                                text = title,
+                                style = AppTheme.typography.labelUi,
+                                color = AppTheme.colors.textSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
+                            )
+                            if (statusTag != null) {
+                                statusTag()
+                            }
+                        }
+
+                        if (headerAction != null) {
+                            Spacer(modifier = Modifier.width(AppTheme.spacing.spaceSm))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+                                content = headerAction,
+                            )
+                        }
+                    }
+
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            style = AppTheme.typography.bodySm,
+                            color = AppTheme.colors.textMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
-
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = AppTheme.typography.bodySm,
-                        color = AppTheme.colors.textMuted,
-                    )
-                }
-            }
-
-            if (headerAction != null) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
-                    content = headerAction,
-                )
             }
         }
 
