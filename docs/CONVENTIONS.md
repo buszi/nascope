@@ -118,3 +118,83 @@ Each task from [PLAN.md](../PLAN.md) is self-contained:
 4. Tick the task's checkbox in `PLAN.md`.
 5. Update the README or this document if the task adds a new convention, module, or token.
 6. **Do NOT run `git commit`.** Leave all changes uncommitted in the working tree for the user to review and commit.
+
+---
+
+## 8. Unit Testing Conventions (ViewModels & State)
+
+Unit tests for ViewModels, state holders, and presentation logic live in `shared/src/jvmTest/kotlin/` (using JVM host tests for Mockk support and fast execution).
+
+### Structure & Pattern
+
+1. **Coroutine Rule**:
+   - Use `@get:Rule val coroutineRule = TestCoroutineRule()` to manage `Dispatchers.Main` for ViewModel tests. It sets `Dispatchers.Main` before each test and resets it afterwards, as well as exposing `coroutineRule.dispatcher` for tests requiring explicit dispatcher injection.
+
+2. **Test Class Setup & Dependencies**:
+   - Mock dependencies as private properties at the top of the test class: `private val dependency = mockk<Dependency>()`.
+   - Instantiate the subject under test lazily: `private val viewModel by lazy { MyViewModel(dependency = dependency) }`.
+
+3. **Flow & State Testing with Turbine**:
+   - Wrap test logic in `runTest { turbineScope { ... } }`.
+   - Test Flow / StateFlow emissions using Turbine's `testIn(this)`:
+     ```kotlin
+     val viewStateTurbine = viewModel.viewState.testIn(this)
+     ```
+   - Advance coroutines launched in `viewModelScope` using `runCurrent()`.
+   - Assert the full sequence of emitted states using `assertEquals(listOf(...), viewStateTurbine.cancelAndConsumeItems())`.
+
+4. **Mock Interaction Verification**:
+   - Verify mock calls and ordering with Mockk's `verifySequence { ... }`.
+
+5. **Test Fixtures & Constant States**:
+   - Keep test domain data fixtures, initial view states, and expected states in a `companion object` placed **at the end of the test file**:
+     ```kotlin
+     companion object {
+         private val sampleData = HostOverviewData(...)
+         private val initialViewState = ViewState()
+         private val readyViewState = ViewState(...)
+     }
+     ```
+
+### Example Test Template
+
+```kotlin
+class SampleViewModelTest {
+
+    @get:Rule
+    val coroutineRule = TestCoroutineRule()
+
+    private val repository = mockk<SampleRepository>()
+
+    private val viewModel by lazy {
+        SampleViewModel(repository = repository)
+    }
+
+    @Test
+    fun sampleViewModelEmitsExpectedStates() = runTest {
+        turbineScope {
+            every { repository.data } returns flowOf(sampleData)
+
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    initialViewState,
+                    readyViewState,
+                ),
+                viewStateTurbine.cancelAndConsumeItems(),
+            )
+            verifySequence {
+                repository.data
+            }
+        }
+    }
+
+    companion object {
+        private val sampleData = SampleData(...)
+        private val initialViewState = ViewState()
+        private val readyViewState = ViewState(data = sampleData)
+    }
+}
+```

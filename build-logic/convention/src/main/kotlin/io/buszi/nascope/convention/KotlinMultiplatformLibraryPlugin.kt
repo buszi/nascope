@@ -38,6 +38,8 @@ class KotlinMultiplatformLibraryPlugin : Plugin<Project> {
                         implementation(libs.findLibrary("kotlin-test").get())
                         implementation(libs.findLibrary("kotlinx-coroutines-test").get())
                         implementation(libs.findLibrary("kotlinx-coroutinesSwing").get())
+                        implementation(libs.findLibrary("turbine").get())
+                        implementation(libs.findLibrary("mockk").get())
                     }
                 }
             }
