@@ -16,4 +16,13 @@
     <string name="widget_system_overview_load_15m_compact">15M</string>
     <string name="host_platform_glyphs_preview">HOST PLATFORM GLYPHS</string>
     <string name="percentage_format">%1$d%%</string>
+    <string name="widget_cpu_matrix_title">CPU UTILIZATION</string>
+    <string name="widget_cpu_matrix_title_compact">CPU</string>
+    <string name="widget_cpu_matrix_status_nominal">NOMINAL</string>
+    <string name="widget_cpu_matrix_status_elevated">ELEVATED</string>
+    <string name="widget_cpu_matrix_status_critical">CRITICAL</string>
+    <string name="widget_cpu_matrix_core_matrix">PER-CORE UTILIZATION</string>
+    <string name="widget_cpu_matrix_core_matrix_compact">CORES</string>
+    <string name="widget_cpu_matrix_cores_active">%1$d CORES ACTIVE</string>
+    <string name="widget_cpu_matrix_cores_compact">%1$dC</string>
 </resources>

@@ -1,5 +1,6 @@
 package io.buszi.nascope.ui.dashboard.framework
 
+import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixBrick
 import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewBrick
 import org.koin.core.annotation.Single
 
@@ -11,7 +12,10 @@ import org.koin.core.annotation.Single
  */
 @Single
 class BrickRegistry {
-    private val bricks: List<DashboardBrick> = listOf(SystemOverviewBrick)
+    private val bricks: List<DashboardBrick> = listOf(
+        SystemOverviewBrick,
+        CpuMatrixBrick,
+    )
 
     fun getActiveBricks(): List<DashboardBrick> = bricks
 }

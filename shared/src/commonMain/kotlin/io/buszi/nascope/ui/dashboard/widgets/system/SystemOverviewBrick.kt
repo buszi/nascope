@@ -14,7 +14,7 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
  */
 data object SystemOverviewBrick : DashboardBrick {
     override val id: DashboardBrickId = DashboardBrickId.SystemOverview
-    override val span: BrickSpan = BrickSpan.Adaptive(compactSpan = 1, expandedSpan = 2)
+    override val span: BrickSpan = BrickSpan.Double
 
     @Composable
     override fun Content(modifier: Modifier) {
