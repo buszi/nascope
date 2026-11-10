@@ -10,10 +10,8 @@ import org.koin.core.annotation.Single
  * In later milestones, this will integrate with user-configured layout persistence.
  */
 @Single
-class BrickRegistry(
-    systemOverviewBrick: SystemOverviewBrick,
-) {
-    private val bricks: List<DashboardBrick> = listOf(systemOverviewBrick)
+class BrickRegistry {
+    private val bricks: List<DashboardBrick> = listOf(SystemOverviewBrick)
 
     fun getActiveBricks(): List<DashboardBrick> = bricks
 }
