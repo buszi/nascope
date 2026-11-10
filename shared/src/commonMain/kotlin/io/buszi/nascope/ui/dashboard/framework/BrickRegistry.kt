@@ -2,6 +2,7 @@ package io.buszi.nascope.ui.dashboard.framework
 
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixBrick
 import io.buszi.nascope.ui.dashboard.widgets.memory.MemorySwapBrick
+import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoBrick
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsBrick
 import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewBrick
 import org.koin.core.annotation.Single
@@ -19,6 +20,7 @@ class BrickRegistry {
         CpuMatrixBrick,
         MemorySwapBrick,
         StoragePoolsBrick,
+        NetworkIoBrick,
     )
 
     fun getActiveBricks(): List<DashboardBrick> = bricks

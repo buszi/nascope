@@ -61,4 +61,21 @@
     <string name="widget_storage_pools_label_compact">MOUNTS</string>
     <string name="widget_storage_throughput_label">DISK I/O THROUGHPUT</string>
     <string name="widget_memory_swap_gb_format">%1$s GB</string>
+    <string name="widget_network_title">NETWORK I/O</string>
+    <string name="widget_network_title_compact">NET I/O</string>
+    <string name="widget_network_status_online">ONLINE</string>
+    <string name="widget_network_status_degraded">DEGRADED</string>
+    <string name="widget_network_status_offline">OFFLINE</string>
+    <string name="widget_network_rx">RX (DOWNLOAD)</string>
+    <string name="widget_network_tx">TX (UPLOAD)</string>
+    <string name="widget_network_rx_compact">RX</string>
+    <string name="widget_network_tx_compact">TX</string>
+    <string name="widget_network_total_transfer">%1$s RX  •  %2$s TX</string>
+    <string name="widget_network_total_format">%1$s TOTAL</string>
+    <string name="widget_network_interfaces_label">INTERFACES</string>
+    <string name="widget_network_throughput_label">THROUGHPUT HISTORY</string>
+    <string name="widget_network_no_interfaces">NO NETWORK INTERFACES DETECTED</string>
+    <string name="widget_network_active_count">%1$d IFACES ACTIVE</string>
+    <string name="widget_network_active_count_compact">%1$d IFACES</string>
+    <string name="widget_network_ip_label">IP: %1$s</string>
 </resources>
