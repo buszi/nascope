@@ -9,6 +9,9 @@ import io.buszi.nascope.ui.common.util.Message
 @Immutable
 sealed interface WidgetState {
 
+    val isReady: Boolean
+        get() = false
+
     /**
      * Telemetry data is being actively retrieved or initialized.
      */
@@ -17,7 +20,9 @@ sealed interface WidgetState {
     /**
      * Telemetry is live, operational, and active.
      */
-    data object Ready : WidgetState
+    data object Ready : WidgetState {
+        override val isReady: Boolean = true
+    }
 
     /**
      * Failed to fetch or deserialize telemetry data from the host.
