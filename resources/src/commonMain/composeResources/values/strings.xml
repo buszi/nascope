@@ -1,3 +1,19 @@
 <resources>
     <string name="widget_system_overview_title">SYSTEM OVERVIEW</string>
+    <string name="widget_system_overview_status_healthy">HEALTHY</string>
+    <string name="widget_system_overview_status_elevated">ELEVATED</string>
+    <string name="widget_system_overview_status_critical">CRITICAL</string>
+    <string name="widget_system_overview_uptime">UP %1$s</string>
+    <string name="widget_system_overview_cores">%1$d CORES</string>
+    <string name="widget_system_overview_cores_compact">%1$dC</string>
+    <string name="widget_system_overview_load_averages">LOAD AVERAGES</string>
+    <string name="widget_system_overview_load_normalized">NORMALIZED // %1$d CORES</string>
+    <string name="widget_system_overview_load_1m">1 MIN</string>
+    <string name="widget_system_overview_load_5m">5 MIN</string>
+    <string name="widget_system_overview_load_15m">15 MIN</string>
+    <string name="widget_system_overview_load_1m_compact">1M</string>
+    <string name="widget_system_overview_load_5m_compact">5M</string>
+    <string name="widget_system_overview_load_15m_compact">15M</string>
+    <string name="host_platform_glyphs_preview">HOST PLATFORM GLYPHS</string>
+    <string name="percentage_format">%1$d%%</string>
 </resources>

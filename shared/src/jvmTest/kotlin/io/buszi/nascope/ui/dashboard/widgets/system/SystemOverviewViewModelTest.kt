@@ -106,6 +106,7 @@ class SystemOverviewViewModelTest {
             load5m = 0.58f,
             load15m = 0.71f,
             cpuCores = 8,
+            platform = HostPlatform.Ubuntu,
             widgetState = WidgetState.Ready,
         )
     }

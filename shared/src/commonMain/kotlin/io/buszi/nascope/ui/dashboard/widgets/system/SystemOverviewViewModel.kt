@@ -49,6 +49,7 @@ class SystemOverviewViewModel(
                     load5m = overview.load5m,
                     load15m = overview.load15m,
                     cpuCores = overview.cpuCores,
+                    platform = HostPlatform.fromIdentifier(overview.osName),
                     widgetState = WidgetState.Ready,
                 )
             }
@@ -65,6 +66,7 @@ class SystemOverviewViewModel(
         val load5m: Float = 0f,
         val load15m: Float = 0f,
         val cpuCores: Int = 0,
+        val platform: HostPlatform = HostPlatform.Generic,
         val widgetState: WidgetState = WidgetState.Loading,
     )
 
