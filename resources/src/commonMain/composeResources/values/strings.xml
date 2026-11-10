@@ -25,4 +25,23 @@
     <string name="widget_cpu_matrix_core_matrix_compact">CORES</string>
     <string name="widget_cpu_matrix_cores_active">%1$d CORES ACTIVE</string>
     <string name="widget_cpu_matrix_cores_compact">%1$dC</string>
+    <string name="widget_memory_swap_title">MEMORY &amp; SWAP</string>
+    <string name="widget_memory_swap_title_compact">MEMORY</string>
+    <string name="widget_memory_swap_status_nominal">NOMINAL</string>
+    <string name="widget_memory_swap_status_elevated">ELEVATED</string>
+    <string name="widget_memory_swap_status_critical">CRITICAL</string>
+    <string name="widget_memory_swap_total_ram">%1$s GB TOTAL RAM</string>
+    <string name="widget_memory_swap_ram">RAM ALLOCATION</string>
+    <string name="widget_memory_swap_ram_compact">RAM</string>
+    <string name="widget_memory_swap_breakdown">MEMORY BREAKDOWN</string>
+    <string name="widget_memory_swap_breakdown_compact">BREAKDOWN</string>
+    <string name="widget_memory_swap_used">USED</string>
+    <string name="widget_memory_swap_cached">CACHED</string>
+    <string name="widget_memory_swap_buffers">BUFFERS</string>
+    <string name="widget_memory_swap_free">FREE</string>
+    <string name="widget_memory_swap_swap">SWAP ALLOCATION</string>
+    <string name="widget_memory_swap_swap_compact">SWAP</string>
+    <string name="widget_memory_swap_swap_ratio">%1$s / %2$s GB</string>
+    <string name="widget_memory_swap_no_swap">NO SWAP CONFIGURED</string>
+    <string name="widget_memory_swap_gb_format">%1$s GB</string>
 </resources>

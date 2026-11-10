@@ -32,6 +32,20 @@ data class CpuMatrixData(
 )
 
 /**
+ * Encapsulates RAM and swap memory allocation telemetry for the memory brick.
+ */
+data class MemorySwapData(
+    val totalMemBytes: Long,
+    val usedMemBytes: Long,
+    val cachedMemBytes: Long,
+    val buffersMemBytes: Long,
+    val freeMemBytes: Long,
+    val totalSwapBytes: Long,
+    val usedSwapBytes: Long,
+    val freeSwapBytes: Long,
+)
+
+/**
  * Shared singleton hub managing telemetry polling, caching, and stream distribution.
  *
  * All widget ViewModels subscribe to specific telemetry slices exposed by this state holder.
@@ -70,9 +84,24 @@ class TelemetryStateHolder {
     )
     val cpuMatrix: StateFlow<CpuMatrixData> = _cpuMatrix.asStateFlow()
 
+    private val _memorySwap = MutableStateFlow(
+        MemorySwapData(
+            totalMemBytes = 34_359_738_368L,
+            usedMemBytes = 13_743_895_347L,
+            cachedMemBytes = 9_126_805_504L,
+            buffersMemBytes = 1_288_490_188L,
+            freeMemBytes = 10_200_547_329L,
+            totalSwapBytes = 17_179_869_184L,
+            usedSwapBytes = 2_576_980_377L,
+            freeSwapBytes = 14_602_888_807L,
+        ),
+    )
+    val memorySwap: StateFlow<MemorySwapData> = _memorySwap.asStateFlow()
+
     fun refresh() {
         // Triggered by manual dashboard or widget retry
         _hostOverview.value = _hostOverview.value.copy()
         _cpuMatrix.value = _cpuMatrix.value.copy()
+        _memorySwap.value = _memorySwap.value.copy()
     }
 }
