@@ -120,6 +120,43 @@ data class SensorsThermalsData(
 )
 
 /**
+ * Status lifecycle state for container orchestration.
+ */
+enum class ContainerState {
+    Running,
+    Paused,
+    Stopped,
+    Restarting,
+}
+
+/**
+ * Encapsulates telemetry for a single container instance (Docker / Podman).
+ */
+data class ContainerInfo(
+    val id: String,
+    val name: String,
+    val image: String,
+    val state: ContainerState,
+    val cpuPercent: Float,
+    val memoryUsageBytes: Long,
+    val memoryLimitBytes: Long? = null,
+    val uptime: String,
+)
+
+/**
+ * Encapsulates container engine and container list telemetry.
+ */
+data class ContainersData(
+    val containers: List<ContainerInfo> = emptyList(),
+    val engine: String = "Docker 27.0.3",
+) {
+    val runningCount: Int get() = containers.count { it.state == ContainerState.Running }
+    val pausedCount: Int get() = containers.count { it.state == ContainerState.Paused }
+    val stoppedCount: Int get() = containers.count { it.state == ContainerState.Stopped }
+    val totalCount: Int get() = containers.size
+}
+
+/**
  * Shared singleton hub managing telemetry polling, caching, and stream distribution.
  *
  * All widget ViewModels subscribe to specific telemetry slices exposed by this state holder.
@@ -325,6 +362,95 @@ class TelemetryStateHolder {
     )
     val sensorsThermals: StateFlow<SensorsThermalsData> = _sensorsThermals.asStateFlow()
 
+    private val _containers = MutableStateFlow(
+        ContainersData(
+            engine = "Docker 27.0.3",
+            containers = listOf(
+                ContainerInfo(
+                    id = "7f3b8a1c",
+                    name = "traefik",
+                    image = "traefik:v3.1",
+                    state = ContainerState.Running,
+                    cpuPercent = 1.4f,
+                    memoryUsageBytes = 48_500_000L,
+                    memoryLimitBytes = 256_000_000L,
+                    uptime = "Up 14 days",
+                ),
+                ContainerInfo(
+                    id = "e4a2d981",
+                    name = "nextcloud",
+                    image = "nextcloud:29.0-fpm",
+                    state = ContainerState.Running,
+                    cpuPercent = 3.2f,
+                    memoryUsageBytes = 285_000_000L,
+                    memoryLimitBytes = 1_024_000_000L,
+                    uptime = "Up 14 days",
+                ),
+                ContainerInfo(
+                    id = "c18f9024",
+                    name = "postgres-db",
+                    image = "postgres:16-alpine",
+                    state = ContainerState.Running,
+                    cpuPercent = 0.8f,
+                    memoryUsageBytes = 194_000_000L,
+                    memoryLimitBytes = 512_000_000L,
+                    uptime = "Up 14 days",
+                ),
+                ContainerInfo(
+                    id = "92d05f3b",
+                    name = "plex-server",
+                    image = "linuxserver/plex:latest",
+                    state = ContainerState.Running,
+                    cpuPercent = 8.5f,
+                    memoryUsageBytes = 640_000_000L,
+                    memoryLimitBytes = 2_048_000_000L,
+                    uptime = "Up 3 days",
+                ),
+                ContainerInfo(
+                    id = "4b71e86a",
+                    name = "vaultwarden",
+                    image = "vaultwarden/server:latest",
+                    state = ContainerState.Running,
+                    cpuPercent = 0.2f,
+                    memoryUsageBytes = 32_000_000L,
+                    memoryLimitBytes = 128_000_000L,
+                    uptime = "Up 14 days",
+                ),
+                ContainerInfo(
+                    id = "3c89b21f",
+                    name = "redis-cache",
+                    image = "redis:7.2-alpine",
+                    state = ContainerState.Running,
+                    cpuPercent = 0.4f,
+                    memoryUsageBytes = 18_000_000L,
+                    memoryLimitBytes = 128_000_000L,
+                    uptime = "Up 14 days",
+                ),
+                ContainerInfo(
+                    id = "d58e310a",
+                    name = "qbittorrent",
+                    image = "linuxserver/qbittorrent:latest",
+                    state = ContainerState.Paused,
+                    cpuPercent = 0.0f,
+                    memoryUsageBytes = 112_000_000L,
+                    memoryLimitBytes = 1_024_000_000L,
+                    uptime = "Paused",
+                ),
+                ContainerInfo(
+                    id = "1a84f67c",
+                    name = "borgmatic-backup",
+                    image = "b3vis/borgmatic:latest",
+                    state = ContainerState.Stopped,
+                    cpuPercent = 0.0f,
+                    memoryUsageBytes = 0L,
+                    memoryLimitBytes = 512_000_000L,
+                    uptime = "Exited (0) 6h ago",
+                ),
+            ),
+        ),
+    )
+    val containers: StateFlow<ContainersData> = _containers.asStateFlow()
+
     fun refresh() {
         // Triggered by manual dashboard or widget retry
         _hostOverview.value = _hostOverview.value.copy()
@@ -333,5 +459,6 @@ class TelemetryStateHolder {
         _storagePools.value = _storagePools.value.copy()
         _networkIo.value = _networkIo.value.copy()
         _sensorsThermals.value = _sensorsThermals.value.copy()
+        _containers.value = _containers.value.copy()
     }
 }

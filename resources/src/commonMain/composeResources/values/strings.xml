@@ -93,4 +93,25 @@
     <string name="widget_sensors_duty_format">%1$d%%</string>
     <string name="widget_sensors_temp_format">%1$s°C</string>
     <string name="widget_sensors_no_sensors">NO THERMAL SENSORS DETECTED</string>
+    <string name="widget_containers_title">CONTAINERS</string>
+    <string name="widget_containers_title_compact">CONTAINERS</string>
+    <string name="widget_containers_subtitle">%1$d RUNNING  •  %2$d TOTAL</string>
+    <string name="widget_containers_subtitle_compact">%1$d/%2$d RUNNING</string>
+    <string name="widget_containers_status_healthy">NOMINAL</string>
+    <string name="widget_containers_status_degraded">ATTENTION</string>
+    <string name="widget_containers_status_critical">CRITICAL</string>
+    <string name="widget_containers_running_label">RUNNING</string>
+    <string name="widget_containers_paused_label">PAUSED</string>
+    <string name="widget_containers_stopped_label">STOPPED</string>
+    <string name="widget_containers_running_count">%1$d RUNNING</string>
+    <string name="widget_containers_paused_count">%1$d PAUSED</string>
+    <string name="widget_containers_stopped_count">%1$d STOPPED</string>
+    <string name="widget_containers_expand_all">EXPAND ALL (%1$d)</string>
+    <string name="widget_containers_collapse">COLLAPSE</string>
+    <string name="widget_containers_header_expand">EXPAND</string>
+    <string name="widget_containers_header_collapse">COLLAPSE</string>
+    <string name="widget_containers_empty">NO CONTAINERS RUNNING</string>
+    <string name="widget_containers_engine_label">ENGINE</string>
+    <string name="widget_containers_cpu_label">CPU</string>
+    <string name="widget_containers_mem_label">MEM</string>
 </resources>
