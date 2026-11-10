@@ -91,6 +91,35 @@ data class NetworkIoData(
 )
 
 /**
+ * Encapsulates telemetry for a temperature sensor.
+ */
+data class TemperatureSensorData(
+    val label: String,
+    val currentTempC: Float,
+    val warningThresholdC: Float = 70.0f,
+    val criticalThresholdC: Float = 85.0f,
+)
+
+/**
+ * Encapsulates cooling fan speed telemetry and duty cycle.
+ */
+data class FanSensorData(
+    val label: String,
+    val rpm: Int,
+    val maxRpm: Int = 2200,
+    val dutyCyclePercent: Float = if (maxRpm > 0) (rpm.toFloat() / maxRpm).coerceIn(0f, 1f) else 0f,
+)
+
+/**
+ * Encapsulates system thermal sensors and active cooling telemetry.
+ */
+data class SensorsThermalsData(
+    val cpuTemperature: TemperatureSensorData? = null,
+    val driveTemperatures: List<TemperatureSensorData> = emptyList(),
+    val fans: List<FanSensorData> = emptyList(),
+)
+
+/**
  * Shared singleton hub managing telemetry polling, caching, and stream distribution.
  *
  * All widget ViewModels subscribe to specific telemetry slices exposed by this state holder.
@@ -247,6 +276,55 @@ class TelemetryStateHolder {
     )
     val networkIo: StateFlow<NetworkIoData> = _networkIo.asStateFlow()
 
+    private val _sensorsThermals = MutableStateFlow(
+        SensorsThermalsData(
+            cpuTemperature = TemperatureSensorData(
+                label = "CPU Package",
+                currentTempC = 58.0f,
+                warningThresholdC = 75.0f,
+                criticalThresholdC = 85.0f,
+            ),
+            driveTemperatures = listOf(
+                TemperatureSensorData(
+                    label = "nvme0n1 (NVMe)",
+                    currentTempC = 41.0f,
+                    warningThresholdC = 65.0f,
+                    criticalThresholdC = 75.0f,
+                ),
+                TemperatureSensorData(
+                    label = "sda (WD Red 8TB)",
+                    currentTempC = 34.0f,
+                    warningThresholdC = 50.0f,
+                    criticalThresholdC = 60.0f,
+                ),
+                TemperatureSensorData(
+                    label = "sdb (WD Red 8TB)",
+                    currentTempC = 36.0f,
+                    warningThresholdC = 50.0f,
+                    criticalThresholdC = 60.0f,
+                ),
+            ),
+            fans = listOf(
+                FanSensorData(
+                    label = "CPU Fan",
+                    rpm = 1380,
+                    maxRpm = 2200,
+                ),
+                FanSensorData(
+                    label = "Chassis 1",
+                    rpm = 920,
+                    maxRpm = 1800,
+                ),
+                FanSensorData(
+                    label = "Chassis 2",
+                    rpm = 890,
+                    maxRpm = 1800,
+                ),
+            ),
+        ),
+    )
+    val sensorsThermals: StateFlow<SensorsThermalsData> = _sensorsThermals.asStateFlow()
+
     fun refresh() {
         // Triggered by manual dashboard or widget retry
         _hostOverview.value = _hostOverview.value.copy()
@@ -254,5 +332,6 @@ class TelemetryStateHolder {
         _memorySwap.value = _memorySwap.value.copy()
         _storagePools.value = _storagePools.value.copy()
         _networkIo.value = _networkIo.value.copy()
+        _sensorsThermals.value = _sensorsThermals.value.copy()
     }
 }

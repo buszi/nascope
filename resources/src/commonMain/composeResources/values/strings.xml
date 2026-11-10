@@ -78,4 +78,19 @@
     <string name="widget_network_active_count">%1$d IFACES ACTIVE</string>
     <string name="widget_network_active_count_compact">%1$d IFACES</string>
     <string name="widget_network_ip_label">IP: %1$s</string>
+    <string name="widget_sensors_title">SENSORS &amp; THERMALS</string>
+    <string name="widget_sensors_title_compact">SENSORS</string>
+    <string name="widget_sensors_status_nominal">NOMINAL</string>
+    <string name="widget_sensors_status_elevated">ELEVATED</string>
+    <string name="widget_sensors_status_critical">CRITICAL</string>
+    <string name="widget_sensors_cooling_active">%1$d FANS ACTIVE</string>
+    <string name="widget_sensors_cooling_active_compact">%1$d FANS</string>
+    <string name="widget_sensors_no_fans">PASSIVE COOLING</string>
+    <string name="widget_sensors_subtitle">%1$s CPU  •  %2$d DRIVES</string>
+    <string name="widget_sensors_temperatures_label">TEMPERATURE SENSORS</string>
+    <string name="widget_sensors_cooling_label">COOLING &amp; FAN CONTROL</string>
+    <string name="widget_sensors_rpm_format">%1$d RPM</string>
+    <string name="widget_sensors_duty_format">%1$d%%</string>
+    <string name="widget_sensors_temp_format">%1$s°C</string>
+    <string name="widget_sensors_no_sensors">NO THERMAL SENSORS DETECTED</string>
 </resources>
