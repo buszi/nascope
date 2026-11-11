@@ -3,10 +3,10 @@ package io.buszi.nascope.ui.dashboard.widgets.process
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.ProcessInfo
 import io.buszi.nascope.data.telemetry.ProcessListData
 import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.ProcessUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewAction.OnRetry
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewAction.SelectSortBy
@@ -58,14 +58,15 @@ class ProcessListViewModel(
     }
 
     private fun deriveViewState(data: ProcessListData, sortBy: ProcessSortBy): ViewState {
+        val processes = data.processes.map(ProcessUi::from)
         val sortedProcesses = when (sortBy) {
-            ProcessSortBy.Cpu -> data.processes.sortedByDescending { it.cpuPercent }
-            ProcessSortBy.Memory -> data.processes.sortedByDescending { it.memoryPercent }
+            ProcessSortBy.Cpu -> processes.sortedByDescending { it.cpuPercent }
+            ProcessSortBy.Memory -> processes.sortedByDescending { it.memoryPercent }
         }
 
         val overallStatus = when {
-            data.processes.any { it.cpuPercent >= 80f || it.memoryPercent >= 80f } -> StatusLevel.Critical
-            data.processes.any { it.cpuPercent >= 50f || it.memoryPercent >= 50f } -> StatusLevel.Degraded
+            processes.any { it.cpuPercent >= 80f || it.memoryPercent >= 80f } -> StatusLevel.Critical
+            processes.any { it.cpuPercent >= 50f || it.memoryPercent >= 50f } -> StatusLevel.Degraded
             else -> StatusLevel.Operational
         }
 
@@ -108,7 +109,7 @@ class ProcessListViewModel(
 
     @Stable
     data class ViewState(
-        val processes: List<ProcessInfo> = emptyList(),
+        val processes: List<ProcessUi> = emptyList(),
         val totalProcessCount: Int = 0,
         val runningProcessCount: Int = 0,
         val sortBy: ProcessSortBy = ProcessSortBy.Cpu,

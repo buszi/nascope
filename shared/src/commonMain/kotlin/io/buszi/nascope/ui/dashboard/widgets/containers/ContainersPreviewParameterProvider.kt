@@ -1,9 +1,9 @@
 package io.buszi.nascope.ui.dashboard.widgets.containers
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import io.buszi.nascope.data.telemetry.ContainerInfo
-import io.buszi.nascope.data.telemetry.ContainerState
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.ContainerStateUi
+import io.buszi.nascope.ui.common.model.ContainerUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersViewModel.ViewState
 
@@ -38,7 +38,7 @@ class ContainersPreviewParameterProvider : PreviewParameterProvider<ViewState> {
         // 3. Degraded / Attention State
         ViewState(
             engine = "Podman 5.1.0",
-            containers = sampleContainers.take(3).map { it.copy(state = ContainerState.Paused) },
+            containers = sampleContainers.take(3).map { it.copy(state = ContainerStateUi.Paused) },
             runningCount = 0,
             pausedCount = 3,
             stoppedCount = 0,
@@ -69,81 +69,81 @@ class ContainersPreviewParameterProvider : PreviewParameterProvider<ViewState> {
 
     private companion object {
         val sampleContainers = listOf(
-            ContainerInfo(
+            ContainerUi(
                 id = "7f3b8a1c",
                 name = "traefik",
                 image = "traefik:v3.1",
-                state = ContainerState.Running,
+                state = ContainerStateUi.Running,
                 cpuPercent = 1.4f,
                 memoryUsageBytes = 48_500_000L,
                 memoryLimitBytes = 256_000_000L,
                 uptime = "Up 14 days",
             ),
-            ContainerInfo(
+            ContainerUi(
                 id = "e4a2d981",
                 name = "nextcloud",
                 image = "nextcloud:29.0-fpm",
-                state = ContainerState.Running,
+                state = ContainerStateUi.Running,
                 cpuPercent = 3.2f,
                 memoryUsageBytes = 285_000_000L,
                 memoryLimitBytes = 1_024_000_000L,
                 uptime = "Up 14 days",
             ),
-            ContainerInfo(
+            ContainerUi(
                 id = "c18f9024",
                 name = "postgres-db",
                 image = "postgres:16-alpine",
-                state = ContainerState.Running,
+                state = ContainerStateUi.Running,
                 cpuPercent = 0.8f,
                 memoryUsageBytes = 194_000_000L,
                 memoryLimitBytes = 512_000_000L,
                 uptime = "Up 14 days",
             ),
-            ContainerInfo(
+            ContainerUi(
                 id = "92d05f3b",
                 name = "plex-server",
                 image = "linuxserver/plex:latest",
-                state = ContainerState.Running,
+                state = ContainerStateUi.Running,
                 cpuPercent = 8.5f,
                 memoryUsageBytes = 640_000_000L,
                 memoryLimitBytes = 2_048_000_000L,
                 uptime = "Up 3 days",
             ),
-            ContainerInfo(
+            ContainerUi(
                 id = "4b71e86a",
                 name = "vaultwarden",
                 image = "vaultwarden/server:latest",
-                state = ContainerState.Running,
+                state = ContainerStateUi.Running,
                 cpuPercent = 0.2f,
                 memoryUsageBytes = 32_000_000L,
                 memoryLimitBytes = 128_000_000L,
                 uptime = "Up 14 days",
             ),
-            ContainerInfo(
+            ContainerUi(
                 id = "3c89b21f",
                 name = "redis-cache",
                 image = "redis:7.2-alpine",
-                state = ContainerState.Running,
+                state = ContainerStateUi.Running,
                 cpuPercent = 0.4f,
                 memoryUsageBytes = 18_000_000L,
                 memoryLimitBytes = 128_000_000L,
                 uptime = "Up 14 days",
             ),
-            ContainerInfo(
+            ContainerUi(
                 id = "d58e310a",
                 name = "qbittorrent",
                 image = "linuxserver/qbittorrent:latest",
-                state = ContainerState.Paused,
+                state = ContainerStateUi.Paused,
                 cpuPercent = 0.0f,
                 memoryUsageBytes = 112_000_000L,
                 memoryLimitBytes = 1_024_000_000L,
                 uptime = "Paused",
             ),
-            ContainerInfo(
+            ContainerUi(
                 id = "1a84f67c",
                 name = "borgmatic-backup",
                 image = "b3vis/borgmatic:latest",
-                state = ContainerState.Stopped,
+                state = ContainerStateUi.Stopped,
                 cpuPercent = 0.0f,
                 memoryUsageBytes = 0L,
                 memoryLimitBytes = 512_000_000L,

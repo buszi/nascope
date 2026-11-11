@@ -1,8 +1,8 @@
 package io.buszi.nascope.ui.dashboard.widgets.network
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import io.buszi.nascope.data.telemetry.NetworkInterfaceData
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.NetworkInterfaceUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewState
 
@@ -12,7 +12,7 @@ class NetworkIoPreviewParameterProvider : PreviewParameterProvider<ViewState> {
         ViewState(
             overallStatus = StatusLevel.Operational,
             interfaces = listOf(
-                NetworkInterfaceData(
+                NetworkInterfaceUi(
                     name = "eth0",
                     isUp = true,
                     ipAddress = "192.168.1.120/24",
@@ -23,7 +23,7 @@ class NetworkIoPreviewParameterProvider : PreviewParameterProvider<ViewState> {
                     rxHistory = listOf(8.2f, 10.5f, 12.1f, 15.4f, 14.8f, 18.2f, 21.0f, 19.5f, 16.3f, 14.85f),
                     txHistory = listOf(1.8f, 2.1f, 2.5f, 3.8f, 3.2f, 4.1f, 4.5f, 3.9f, 3.0f, 3.21f),
                 ),
-                NetworkInterfaceData(
+                NetworkInterfaceUi(
                     name = "eth1",
                     isUp = true,
                     ipAddress = "10.0.0.5/24",
@@ -34,7 +34,7 @@ class NetworkIoPreviewParameterProvider : PreviewParameterProvider<ViewState> {
                     rxHistory = listOf(0.3f, 0.4f, 0.5f, 0.6f, 0.52f, 0.48f, 0.55f, 0.51f, 0.52f, 0.52f),
                     txHistory = listOf(0.05f, 0.08f, 0.09f, 0.085f, 0.07f, 0.08f, 0.09f, 0.085f, 0.08f, 0.085f),
                 ),
-                NetworkInterfaceData(
+                NetworkInterfaceUi(
                     name = "wlan0",
                     isUp = false,
                     ipAddress = "Disconnected",
@@ -46,7 +46,7 @@ class NetworkIoPreviewParameterProvider : PreviewParameterProvider<ViewState> {
                     txHistory = List(10) { 0f },
                 ),
             ),
-            selectedInterface = NetworkInterfaceData(
+            selectedInterface = NetworkInterfaceUi(
                 name = "eth0",
                 isUp = true,
                 ipAddress = "192.168.1.120/24",
@@ -67,7 +67,7 @@ class NetworkIoPreviewParameterProvider : PreviewParameterProvider<ViewState> {
         ViewState(
             overallStatus = StatusLevel.Critical,
             interfaces = listOf(
-                NetworkInterfaceData(
+                NetworkInterfaceUi(
                     name = "eth0",
                     isUp = false,
                     ipAddress = "Link Down",

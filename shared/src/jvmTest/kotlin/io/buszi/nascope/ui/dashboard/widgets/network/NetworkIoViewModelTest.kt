@@ -7,6 +7,7 @@ import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.NetworkInterfaceUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewAction.OnRetry
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewAction.OnSelectInterface
@@ -16,13 +17,13 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verifySequence
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NetworkIoViewModelTest {
@@ -76,7 +77,7 @@ class NetworkIoViewModelTest {
                 listOf(
                     initialViewState,
                     readyViewState,
-                    readyViewState.copy(selectedInterface = eth1Interface),
+                    readyViewState.copy(selectedInterface = NetworkInterfaceUi.from(eth1Interface)),
                 ),
                 viewStateTurbine.cancelAndConsumeItems(),
             )
@@ -166,8 +167,8 @@ class NetworkIoViewModelTest {
 
         val readyViewState = ViewState(
             overallStatus = StatusLevel.Operational,
-            interfaces = listOf(eth0Interface, eth1Interface),
-            selectedInterface = eth0Interface,
+            interfaces = listOf(eth0Interface, eth1Interface).map(NetworkInterfaceUi::from),
+            selectedInterface = NetworkInterfaceUi.from(eth0Interface),
             aggregateRxBytesPerSec = 14_850_000L + 520_000L,
             aggregateTxBytesPerSec = 3_210_000L + 85_000L,
             activeInterfacesCount = 2,

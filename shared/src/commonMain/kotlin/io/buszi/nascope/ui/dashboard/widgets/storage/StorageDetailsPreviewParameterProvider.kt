@@ -1,7 +1,7 @@
 package io.buszi.nascope.ui.dashboard.widgets.storage
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import io.buszi.nascope.data.telemetry.StorageMountData
+import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewState
 
@@ -27,7 +27,7 @@ class StorageDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
 
     private companion object {
         val previewMounts = listOf(
-            StorageMountData(
+            StorageMountUi(
                 mountPoint = "/",
                 deviceName = "/dev/nvme0n1p2",
                 fsType = "ext4",
@@ -37,7 +37,7 @@ class StorageDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
                 mountOptions = "rw,noatime,discard",
                 inodeUsagePercent = 12.4f,
             ),
-            StorageMountData(
+            StorageMountUi(
                 mountPoint = "/volume1",
                 deviceName = "/dev/mapper/vg0-data",
                 fsType = "btrfs",
@@ -47,7 +47,7 @@ class StorageDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
                 mountOptions = "rw,relatime,compress=zstd:3",
                 inodeUsagePercent = 3.1f,
             ),
-            StorageMountData(
+            StorageMountUi(
                 mountPoint = "/zpool/media",
                 deviceName = "tank/media",
                 fsType = "zfs",

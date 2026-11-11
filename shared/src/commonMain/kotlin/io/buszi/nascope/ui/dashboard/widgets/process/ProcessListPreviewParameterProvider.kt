@@ -1,8 +1,8 @@
 package io.buszi.nascope.ui.dashboard.widgets.process
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import io.buszi.nascope.data.telemetry.ProcessInfo
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.ProcessUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewState
 
@@ -48,7 +48,7 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
 
     private companion object {
         val sampleProcesses = listOf(
-            ProcessInfo(
+            ProcessUi(
                 pid = 1042,
                 name = "qemu-system-x86",
                 user = "libvirt",
@@ -57,7 +57,7 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
                 memoryRssBytes = 4_870_000_000L,
                 status = "R",
             ),
-            ProcessInfo(
+            ProcessUi(
                 pid = 2391,
                 name = "plex-media-srv",
                 user = "plex",
@@ -66,7 +66,7 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
                 memoryRssBytes = 2_920_000_000L,
                 status = "S",
             ),
-            ProcessInfo(
+            ProcessUi(
                 pid = 1820,
                 name = "dockerd",
                 user = "root",
@@ -75,7 +75,7 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
                 memoryRssBytes = 1_060_000_000L,
                 status = "S",
             ),
-            ProcessInfo(
+            ProcessUi(
                 pid = 3410,
                 name = "postgres",
                 user = "postgres",
@@ -84,7 +84,7 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
                 memoryRssBytes = 1_990_000_000L,
                 status = "S",
             ),
-            ProcessInfo(
+            ProcessUi(
                 pid = 4125,
                 name = "traefik",
                 user = "traefik",
@@ -93,7 +93,7 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
                 memoryRssBytes = 412_000_000L,
                 status = "S",
             ),
-            ProcessInfo(
+            ProcessUi(
                 pid = 5122,
                 name = "node",
                 user = "app",
@@ -102,7 +102,7 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
                 memoryRssBytes = 1_300_000_000L,
                 status = "S",
             ),
-            ProcessInfo(
+            ProcessUi(
                 pid = 890,
                 name = "systemd-journal",
                 user = "root",
@@ -111,7 +111,7 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
                 memoryRssBytes = 515_000_000L,
                 status = "S",
             ),
-            ProcessInfo(
+            ProcessUi(
                 pid = 6210,
                 name = "redis-server",
                 user = "redis",

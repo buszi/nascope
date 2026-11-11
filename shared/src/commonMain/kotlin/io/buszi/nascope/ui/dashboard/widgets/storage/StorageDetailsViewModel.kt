@@ -3,9 +3,10 @@ package io.buszi.nascope.ui.dashboard.widgets.storage
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.StorageMountData
 import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.StorageMountUi
+import io.buszi.nascope.ui.common.model.overallStatus
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnSelectSort
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnToggleMount
@@ -48,7 +49,7 @@ class StorageDetailsViewModel(
         telemetryStateHolder.storagePools.onEach { storageData ->
             mutableViewState.update { current ->
                 current.copy(
-                    mounts = storageData.mounts,
+                    mounts = storageData.mounts.map(StorageMountUi::from),
                     readRateBytesPerSec = storageData.readRateBytesPerSec,
                     writeRateBytesPerSec = storageData.writeRateBytesPerSec,
                     readHistory = storageData.readHistory,
@@ -69,7 +70,7 @@ class StorageDetailsViewModel(
 
     @Stable
     data class ViewState(
-        val mounts: List<StorageMountData> = emptyList(),
+        val mounts: List<StorageMountUi> = emptyList(),
         val readRateBytesPerSec: Long = 0L,
         val writeRateBytesPerSec: Long = 0L,
         val readHistory: List<Float> = emptyList(),
@@ -78,7 +79,7 @@ class StorageDetailsViewModel(
         val expandedMountPoint: String? = null,
         val widgetState: WidgetState = WidgetState.Loading,
     ) {
-        val sortedMounts: List<StorageMountData>
+        val sortedMounts: List<StorageMountUi>
             get() = when (sortOrder) {
                 SortOrder.Usage -> mounts.sortedByDescending { it.usageRatio }
                 SortOrder.Name -> mounts.sortedBy { it.mountPoint }

@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Text
@@ -34,8 +34,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.buszi.nascope.data.telemetry.ProcessInfo
 import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.widget_overflow_more
 import io.buszi.nascope.resources.widget_processes_card_process_format
 import io.buszi.nascope.resources.widget_processes_col_name
 import io.buszi.nascope.resources.widget_processes_col_pid
@@ -49,7 +49,6 @@ import io.buszi.nascope.resources.widget_processes_status_healthy
 import io.buszi.nascope.resources.widget_processes_subtitle
 import io.buszi.nascope.resources.widget_processes_subtitle_compact
 import io.buszi.nascope.resources.widget_processes_title
-import io.buszi.nascope.resources.widget_overflow_more
 import io.buszi.nascope.resources.widget_processes_title_compact
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
@@ -59,18 +58,19 @@ import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
 import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.model.ProcessUi
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.previewRowSplit
-import io.buszi.nascope.ui.dashboard.widgets.rowsThatFit
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewAction.SelectSortBy
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewAction.ToggleSortBy
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewState
+import io.buszi.nascope.ui.dashboard.widgets.rowsThatFit
+import kotlin.math.abs
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.math.abs
 
 @Composable
 fun ProcessListWidget(
@@ -428,7 +428,7 @@ private fun ProcessTableView(
 
 @Composable
 private fun ProcessTableRow(
-    process: ProcessInfo,
+    process: ProcessUi,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -630,7 +630,7 @@ private fun SortChip(
 
 @Composable
 private fun ProcessSwipeCard(
-    process: ProcessInfo,
+    process: ProcessUi,
     modifier: Modifier = Modifier,
 ) {
     Box(

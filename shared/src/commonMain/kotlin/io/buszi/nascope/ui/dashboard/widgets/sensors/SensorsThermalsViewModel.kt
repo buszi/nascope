@@ -3,11 +3,11 @@ package io.buszi.nascope.ui.dashboard.widgets.sensors
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.FanSensorData
 import io.buszi.nascope.data.telemetry.SensorsThermalsData
 import io.buszi.nascope.data.telemetry.TelemetryStateHolder
-import io.buszi.nascope.data.telemetry.TemperatureSensorData
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.FanSensorUi
+import io.buszi.nascope.ui.common.model.TemperatureSensorUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsThermalsViewModel.ViewAction.OnRetry
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,21 +47,24 @@ class SensorsThermalsViewModel(
     }
 
     private fun deriveViewState(data: SensorsThermalsData): ViewState {
-        val allTemps = listOfNotNull(data.cpuTemperature) + data.driveTemperatures
+        val cpuTemperature = data.cpuTemperature?.let(TemperatureSensorUi::from)
+        val driveTemperatures = data.driveTemperatures.map(TemperatureSensorUi::from)
+        val fans = data.fans.map(FanSensorUi::from)
+        val allTemps = listOfNotNull(cpuTemperature) + driveTemperatures
         val overallStatus = when {
-            allTemps.any { it.currentTempC >= it.criticalThresholdC } -> StatusLevel.Critical
-            allTemps.any { it.currentTempC >= it.warningThresholdC } -> StatusLevel.Degraded
+            allTemps.any { it.status == StatusLevel.Critical } -> StatusLevel.Critical
+            allTemps.any { it.status == StatusLevel.Degraded } -> StatusLevel.Degraded
             else -> StatusLevel.Operational
         }
 
-        val activeFans = data.fans.count { it.rpm > 0 }
+        val activeFans = fans.count { it.rpm > 0 }
         val maxTemp = allTemps.maxOfOrNull { it.currentTempC } ?: 0f
 
         return ViewState(
             overallStatus = overallStatus,
-            cpuTemperature = data.cpuTemperature,
-            driveTemperatures = data.driveTemperatures,
-            fans = data.fans,
+            cpuTemperature = cpuTemperature,
+            driveTemperatures = driveTemperatures,
+            fans = fans,
             activeFansCount = activeFans,
             maxTemperatureC = maxTemp,
             widgetState = WidgetState.Ready,
@@ -76,9 +79,9 @@ class SensorsThermalsViewModel(
     @Stable
     data class ViewState(
         val overallStatus: StatusLevel = StatusLevel.Operational,
-        val cpuTemperature: TemperatureSensorData? = null,
-        val driveTemperatures: List<TemperatureSensorData> = emptyList(),
-        val fans: List<FanSensorData> = emptyList(),
+        val cpuTemperature: TemperatureSensorUi? = null,
+        val driveTemperatures: List<TemperatureSensorUi> = emptyList(),
+        val fans: List<FanSensorUi> = emptyList(),
         val activeFansCount: Int = 0,
         val maxTemperatureC: Float = 0f,
         val widgetState: WidgetState = WidgetState.Ready,

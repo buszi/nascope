@@ -26,7 +26,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.buszi.nascope.data.telemetry.StorageMountData
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.percentage_format
 import io.buszi.nascope.resources.widget_storage_io_rate_format
@@ -53,6 +52,7 @@ import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.common.modifier.optionalModifier
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
@@ -414,7 +414,7 @@ private fun MountPointsListSection(
 
 @Composable
 private fun MountPointCard(
-    mount: StorageMountData,
+    mount: StorageMountUi,
     isWide: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -510,8 +510,8 @@ private fun MountPointCard(
         LinearGauge(
             progress = ratio,
             barHeight = AppTheme.spacing.space2xs,
-            warningThreshold = StorageWarningThreshold,
-            criticalThreshold = StorageCriticalThreshold,
+            warningThreshold = StorageMountUi.WarningThreshold,
+            criticalThreshold = StorageMountUi.CriticalThreshold,
             normalColor = AppTheme.colors.telemetryA,
             warningColor = AppTheme.colors.degraded,
             criticalColor = AppTheme.colors.critical,

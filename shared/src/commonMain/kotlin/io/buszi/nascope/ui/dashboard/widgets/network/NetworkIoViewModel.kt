@@ -3,10 +3,10 @@ package io.buszi.nascope.ui.dashboard.widgets.network
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.NetworkInterfaceData
 import io.buszi.nascope.data.telemetry.NetworkIoData
 import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.NetworkInterfaceUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewAction.OnRetry
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewAction.OnSelectInterface
@@ -48,7 +48,7 @@ class NetworkIoViewModel(
     }
 
     private fun deriveViewState(data: NetworkIoData, currentSelectedName: String?): ViewState {
-        val interfaces = data.interfaces
+        val interfaces = data.interfaces.map(NetworkInterfaceUi::from)
         if (interfaces.isEmpty()) {
             return ViewState(
                 overallStatus = StatusLevel.Critical,
@@ -106,8 +106,8 @@ class NetworkIoViewModel(
     @Stable
     data class ViewState(
         val overallStatus: StatusLevel = StatusLevel.Operational,
-        val interfaces: List<NetworkInterfaceData> = emptyList(),
-        val selectedInterface: NetworkInterfaceData? = null,
+        val interfaces: List<NetworkInterfaceUi> = emptyList(),
+        val selectedInterface: NetworkInterfaceUi? = null,
         val aggregateRxBytesPerSec: Long = 0L,
         val aggregateTxBytesPerSec: Long = 0L,
         val activeInterfacesCount: Int = 0,

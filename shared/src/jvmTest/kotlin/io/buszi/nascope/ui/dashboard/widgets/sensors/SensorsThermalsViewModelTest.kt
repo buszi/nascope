@@ -8,6 +8,8 @@ import io.buszi.nascope.data.telemetry.TemperatureSensorData
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.FanSensorUi
+import io.buszi.nascope.ui.common.model.TemperatureSensorUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsThermalsViewModel.ViewAction.OnRetry
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsThermalsViewModel.ViewState
@@ -16,13 +18,13 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verifySequence
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SensorsThermalsViewModelTest {
@@ -153,9 +155,9 @@ class SensorsThermalsViewModelTest {
 
         val readyViewState = ViewState(
             overallStatus = StatusLevel.Operational,
-            cpuTemperature = testCpuSensor,
-            driveTemperatures = listOf(testDriveSensor),
-            fans = listOf(testFan),
+            cpuTemperature = TemperatureSensorUi.from(testCpuSensor),
+            driveTemperatures = listOf(testDriveSensor).map(TemperatureSensorUi::from),
+            fans = listOf(testFan).map(FanSensorUi::from),
             activeFansCount = 1,
             maxTemperatureC = 58.0f,
             widgetState = WidgetState.Ready,

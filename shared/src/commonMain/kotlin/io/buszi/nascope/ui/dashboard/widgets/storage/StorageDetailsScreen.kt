@@ -22,7 +22,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.buszi.nascope.data.telemetry.StorageMountData
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.details_storage_distribution
 import io.buszi.nascope.resources.details_storage_field_device
@@ -57,6 +56,7 @@ import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
 import io.buszi.nascope.ui.common.components.inputs.SelectableChip
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.SortOrder
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction
@@ -168,8 +168,8 @@ private fun OverviewSection(
         LinearGauge(
             progress = viewState.totalUsageRatio,
             modifier = Modifier.padding(vertical = AppTheme.spacing.spaceSm),
-            warningThreshold = StorageWarningThreshold,
-            criticalThreshold = StorageCriticalThreshold,
+            warningThreshold = StorageMountUi.WarningThreshold,
+            criticalThreshold = StorageMountUi.CriticalThreshold,
             normalColor = AppTheme.colors.telemetryA,
         )
         Text(
@@ -373,7 +373,7 @@ private fun SortOrder.label(): String = when (this) {
 
 @Composable
 private fun MountDetailsCard(
-    mount: StorageMountData,
+    mount: StorageMountUi,
     expanded: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
@@ -431,8 +431,8 @@ private fun MountDetailsCard(
         LinearGauge(
             progress = ratio,
             barHeight = AppTheme.spacing.space2xs,
-            warningThreshold = StorageWarningThreshold,
-            criticalThreshold = StorageCriticalThreshold,
+            warningThreshold = StorageMountUi.WarningThreshold,
+            criticalThreshold = StorageMountUi.CriticalThreshold,
             normalColor = AppTheme.colors.telemetryA,
         )
 

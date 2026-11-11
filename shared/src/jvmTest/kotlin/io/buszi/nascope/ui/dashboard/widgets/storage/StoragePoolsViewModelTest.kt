@@ -7,6 +7,7 @@ import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewAction.OnNextPage
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewAction.OnPrevPage
@@ -17,13 +18,13 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verifySequence
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StoragePoolsViewModelTest {
@@ -123,8 +124,8 @@ class StoragePoolsViewModelTest {
     @Test
     fun storagePoolsViewModelComputesAggregatesAndStatus() = runTest {
         val mounts = listOf(
-            StorageMountData("/", "/dev/nvme0n1", "ext4", 1_000_000_000L, 500_000_000L, 500_000_000L, true),
-            StorageMountData("/data", "/dev/sda1", "btrfs", 2_000_000_000L, 1_800_000_000L, 200_000_000L, true), // 90%
+            StorageMountUi("/", "/dev/nvme0n1", "ext4", 1_000_000_000L, 500_000_000L, 500_000_000L, true),
+            StorageMountUi("/data", "/dev/sda1", "btrfs", 2_000_000_000L, 1_800_000_000L, 200_000_000L, true), // 90%
         )
         val state = ViewState(mounts = mounts)
         assertEquals(3_000_000_000L, state.totalCapacityBytes)
@@ -179,7 +180,7 @@ class StoragePoolsViewModelTest {
         private val initialViewState = ViewState()
 
         private val readyViewState = ViewState(
-            mounts = storageData.mounts,
+            mounts = storageData.mounts.map(StorageMountUi::from),
             readRateBytesPerSec = 42_500_000L,
             writeRateBytesPerSec = 128_300_000L,
             currentPage = 0,

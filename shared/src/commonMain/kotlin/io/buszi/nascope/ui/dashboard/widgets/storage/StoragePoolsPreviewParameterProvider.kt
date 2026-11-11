@@ -1,7 +1,7 @@
 package io.buszi.nascope.ui.dashboard.widgets.storage
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import io.buszi.nascope.data.telemetry.StorageMountData
+import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewState
 
@@ -10,7 +10,7 @@ class StoragePoolsPreviewParameterProvider : PreviewParameterProvider<ViewState>
         // 1. Healthy / Nominal
         ViewState(
             mounts = listOf(
-                StorageMountData(
+                StorageMountUi(
                     mountPoint = "/",
                     deviceName = "/dev/nvme0n1p2",
                     fsType = "ext4",
@@ -19,7 +19,7 @@ class StoragePoolsPreviewParameterProvider : PreviewParameterProvider<ViewState>
                     freeBytes = 358_400_000_000L,
                     isHealthy = true,
                 ),
-                StorageMountData(
+                StorageMountUi(
                     mountPoint = "/volume1",
                     deviceName = "/dev/mapper/vg0-data",
                     fsType = "btrfs",
@@ -28,7 +28,7 @@ class StoragePoolsPreviewParameterProvider : PreviewParameterProvider<ViewState>
                     freeBytes = 1_330_000_000_000L,
                     isHealthy = true,
                 ),
-                StorageMountData(
+                StorageMountUi(
                     mountPoint = "/mnt/backup",
                     deviceName = "/dev/sdc1",
                     fsType = "ext4",
@@ -46,7 +46,7 @@ class StoragePoolsPreviewParameterProvider : PreviewParameterProvider<ViewState>
         // 2. Degraded / Warning (ZFS pool degraded)
         ViewState(
             mounts = listOf(
-                StorageMountData(
+                StorageMountUi(
                     mountPoint = "/",
                     deviceName = "/dev/nvme0n1p2",
                     fsType = "ext4",
@@ -55,7 +55,7 @@ class StoragePoolsPreviewParameterProvider : PreviewParameterProvider<ViewState>
                     freeBytes = 358_400_000_000L,
                     isHealthy = true,
                 ),
-                StorageMountData(
+                StorageMountUi(
                     mountPoint = "/volume1",
                     deviceName = "/dev/mapper/vg0-data",
                     fsType = "btrfs",
@@ -64,7 +64,7 @@ class StoragePoolsPreviewParameterProvider : PreviewParameterProvider<ViewState>
                     freeBytes = 646_000_000_000L,
                     isHealthy = true,
                 ),
-                StorageMountData(
+                StorageMountUi(
                     mountPoint = "/zpool/media",
                     deviceName = "tank/media",
                     fsType = "zfs",
@@ -82,7 +82,7 @@ class StoragePoolsPreviewParameterProvider : PreviewParameterProvider<ViewState>
         // 3. Critical (Mount nearly full >= 90%)
         ViewState(
             mounts = listOf(
-                StorageMountData(
+                StorageMountUi(
                     mountPoint = "/",
                     deviceName = "/dev/nvme0n1p2",
                     fsType = "ext4",
@@ -100,12 +100,12 @@ class StoragePoolsPreviewParameterProvider : PreviewParameterProvider<ViewState>
         // 4. Many Mounts (Pagination test)
         ViewState(
             mounts = listOf(
-                StorageMountData("/", "/dev/nvme0n1p2", "ext4", 512_000_000_000L, 150_000_000_000L, 362_000_000_000L, true),
-                StorageMountData("/boot/efi", "/dev/nvme0n1p1", "vfat", 512_000_000L, 64_000_000L, 448_000_000L, true),
-                StorageMountData("/volume1", "/dev/sda1", "btrfs", 4_000_000_000_000L, 2_100_000_000_000L, 1_900_000_000_000L, true),
-                StorageMountData("/volume2", "/dev/sdb1", "btrfs", 4_000_000_000_000L, 3_400_000_000_000L, 600_000_000_000L, true),
-                StorageMountData("/zpool/data", "tank/data", "zfs", 12_000_000_000_000L, 8_400_000_000_000L, 3_600_000_000_000L, true),
-                StorageMountData("/mnt/nfs", "nas.local:/export", "nfs4", 20_000_000_000_000L, 14_000_000_000_000L, 6_000_000_000_000L, true),
+                StorageMountUi("/", "/dev/nvme0n1p2", "ext4", 512_000_000_000L, 150_000_000_000L, 362_000_000_000L, true),
+                StorageMountUi("/boot/efi", "/dev/nvme0n1p1", "vfat", 512_000_000L, 64_000_000L, 448_000_000L, true),
+                StorageMountUi("/volume1", "/dev/sda1", "btrfs", 4_000_000_000_000L, 2_100_000_000_000L, 1_900_000_000_000L, true),
+                StorageMountUi("/volume2", "/dev/sdb1", "btrfs", 4_000_000_000_000L, 3_400_000_000_000L, 600_000_000_000L, true),
+                StorageMountUi("/zpool/data", "tank/data", "zfs", 12_000_000_000_000L, 8_400_000_000_000L, 3_600_000_000_000L, true),
+                StorageMountUi("/mnt/nfs", "nas.local:/export", "nfs4", 20_000_000_000_000L, 14_000_000_000_000L, 6_000_000_000_000L, true),
             ),
             readRateBytesPerSec = 85_000_000L,
             writeRateBytesPerSec = 210_000_000L,

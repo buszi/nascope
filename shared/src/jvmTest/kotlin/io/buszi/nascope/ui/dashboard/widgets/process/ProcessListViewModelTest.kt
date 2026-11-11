@@ -7,6 +7,7 @@ import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.ProcessUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewAction.OnRetry
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListViewModel.ViewAction.SelectSortBy
@@ -17,13 +18,13 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verifySequence
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import kotlin.test.Test
-import kotlin.test.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProcessListViewModelTest {
@@ -181,7 +182,7 @@ class ProcessListViewModelTest {
         val initialViewState = ViewState()
 
         val readyViewStateCpu = ViewState(
-            processes = listOf(testProcess1, testProcess2),
+            processes = listOf(testProcess1, testProcess2).map(ProcessUi::from),
             totalProcessCount = 184,
             runningProcessCount = 3,
             sortBy = ProcessSortBy.Cpu,

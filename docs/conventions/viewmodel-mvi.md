@@ -12,6 +12,14 @@ Nascope uses Model-View-Intent (MVI) unidirectional data flow built with Android
 
 ---
 
+## 1a. UI Models (no data models in ViewState)
+
+- Data-layer models (`io.buszi.nascope.data.*`) must **never** appear in a `ViewState`, `ViewAction`, composable signature or preview. They are destined for a separate module.
+- ViewModels map data models to UI models at the boundary using a `from(data)` factory in the UI model's companion object, e.g. `storageData.mounts.map(StorageMountUi::from)`. UI models live in `ui/common/model` so they can be reused across widgets and details screens.
+- Derived values and status rules (usage ratio, `StatusLevel`, gauge progress, thresholds) are members of the UI model, not free helper functions over data models.
+
+---
+
 ## 2. MVI Component Structure
 
 Each ViewModel defines three distinct components:

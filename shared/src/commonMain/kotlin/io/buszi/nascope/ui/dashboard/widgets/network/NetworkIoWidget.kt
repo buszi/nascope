@@ -24,7 +24,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.buszi.nascope.data.telemetry.NetworkInterfaceData
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.widget_network_active_count
 import io.buszi.nascope.resources.widget_network_active_count_compact
@@ -49,6 +48,7 @@ import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.model.NetworkInterfaceUi
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewAction
@@ -142,8 +142,8 @@ fun NetworkIoWidget(
 
 @Composable
 private fun NetworkWidgetContent(
-    selectedInterface: NetworkInterfaceData,
-    interfaces: List<NetworkInterfaceData>,
+    selectedInterface: NetworkInterfaceUi,
+    interfaces: List<NetworkInterfaceUi>,
     isWide: Boolean,
     showHistory: Boolean,
     onSelectInterface: (String) -> Unit,
@@ -377,7 +377,7 @@ private fun ThroughputSparklineSection(
 
 @Composable
 private fun InterfacesSelectorSection(
-    interfaces: List<NetworkInterfaceData>,
+    interfaces: List<NetworkInterfaceUi>,
     selectedInterfaceName: String,
     onSelectInterface: (String) -> Unit,
 ) {
@@ -410,7 +410,7 @@ private fun InterfacesSelectorSection(
 
 @Composable
 private fun InterfaceCard(
-    iface: NetworkInterfaceData,
+    iface: NetworkInterfaceUi,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,

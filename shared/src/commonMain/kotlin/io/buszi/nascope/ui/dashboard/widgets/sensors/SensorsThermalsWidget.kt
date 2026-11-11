@@ -23,8 +23,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.buszi.nascope.data.telemetry.FanSensorData
-import io.buszi.nascope.data.telemetry.TemperatureSensorData
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.widget_sensors_cooling_active
 import io.buszi.nascope.resources.widget_sensors_cooling_active_compact
@@ -50,14 +48,16 @@ import io.buszi.nascope.ui.common.components.badges.haloColor
 import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.model.FanSensorUi
+import io.buszi.nascope.ui.common.model.TemperatureSensorUi
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsThermalsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsThermalsViewModel.ViewState
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.viewmodel.koinViewModel
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun SensorsThermalsWidget(
@@ -174,21 +174,16 @@ private fun SensorsContent(
 
 @Composable
 private fun CpuTemperatureCard(
-    cpu: TemperatureSensorData,
+    cpu: TemperatureSensorUi,
     isWide: Boolean,
 ) {
-    val tempStatus = when {
-        cpu.currentTempC >= cpu.criticalThresholdC -> StatusLevel.Critical
-        cpu.currentTempC >= cpu.warningThresholdC -> StatusLevel.Degraded
-        else -> StatusLevel.Operational
-    }
+    val tempStatus = cpu.status
 
     // Gauge range: 30°C to 100°C
-    val minTemp = 30f
-    val maxTemp = 100f
-    val progress = ((cpu.currentTempC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
-    val warningThreshold = ((cpu.warningThresholdC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
-    val criticalThreshold = ((cpu.criticalThresholdC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
+    val gaugeRange = 30f..100f
+    val progress = cpu.progressIn(gaugeRange)
+    val warningThreshold = cpu.warningProgressIn(gaugeRange)
+    val criticalThreshold = cpu.criticalProgressIn(gaugeRange)
 
     Box(
         modifier = Modifier
@@ -263,7 +258,7 @@ private fun CpuTemperatureCard(
 
 @Composable
 private fun DriveTemperaturesSection(
-    drives: List<TemperatureSensorData>,
+    drives: List<TemperatureSensorUi>,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -291,21 +286,16 @@ private fun DriveTemperaturesSection(
 
 @Composable
 private fun DriveTempCard(
-    drive: TemperatureSensorData,
+    drive: TemperatureSensorUi,
     modifier: Modifier = Modifier,
 ) {
-    val tempStatus = when {
-        drive.currentTempC >= drive.criticalThresholdC -> StatusLevel.Critical
-        drive.currentTempC >= drive.warningThresholdC -> StatusLevel.Degraded
-        else -> StatusLevel.Operational
-    }
+    val tempStatus = drive.status
 
     // Gauge range: 20°C to 70°C
-    val minTemp = 20f
-    val maxTemp = 70f
-    val progress = ((drive.currentTempC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
-    val warnThreshold = ((drive.warningThresholdC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
-    val critThreshold = ((drive.criticalThresholdC - minTemp) / (maxTemp - minTemp)).coerceIn(0f, 1f)
+    val gaugeRange = 20f..70f
+    val progress = drive.progressIn(gaugeRange)
+    val warnThreshold = drive.warningProgressIn(gaugeRange)
+    val critThreshold = drive.criticalProgressIn(gaugeRange)
 
     Box(
         modifier = modifier
@@ -359,7 +349,7 @@ private fun DriveTempCard(
 
 @Composable
 private fun CoolingFansSection(
-    fans: List<FanSensorData>,
+    fans: List<FanSensorUi>,
     isWide: Boolean,
 ) {
     Column(
@@ -388,7 +378,7 @@ private fun CoolingFansSection(
 
 @Composable
 private fun FanCard(
-    fan: FanSensorData,
+    fan: FanSensorUi,
     modifier: Modifier = Modifier,
 ) {
     val dutyPercent = (fan.dutyCyclePercent * 100).roundToInt()

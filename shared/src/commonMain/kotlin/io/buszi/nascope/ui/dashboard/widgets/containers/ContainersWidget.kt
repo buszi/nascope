@@ -28,8 +28,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.buszi.nascope.data.telemetry.ContainerInfo
-import io.buszi.nascope.data.telemetry.ContainerState
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.widget_containers_collapse
 import io.buszi.nascope.resources.widget_containers_cpu_label
@@ -54,6 +52,8 @@ import io.buszi.nascope.ui.common.components.buttons.ButtonSize
 import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.model.ContainerStateUi
+import io.buszi.nascope.ui.common.model.ContainerUi
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersViewModel.ViewAction
@@ -61,9 +61,9 @@ import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersViewModel.View
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersViewModel.ViewState
 import io.buszi.nascope.ui.dashboard.widgets.previewRowSplit
 import io.buszi.nascope.ui.dashboard.widgets.rowsThatFit
+import kotlin.math.abs
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.math.abs
 
 @Composable
 fun ContainersWidget(
@@ -217,14 +217,14 @@ private fun ContainersPreviewList(
 
 @Composable
 private fun ContainerPreviewRow(
-    container: ContainerInfo,
+    container: ContainerUi,
     modifier: Modifier = Modifier,
 ) {
     val statusColor = when (container.state) {
-        ContainerState.Running -> AppTheme.colors.operational
-        ContainerState.Paused -> AppTheme.colors.degraded
-        ContainerState.Stopped -> AppTheme.colors.textMuted
-        ContainerState.Restarting -> AppTheme.colors.critical
+        ContainerStateUi.Running -> AppTheme.colors.operational
+        ContainerStateUi.Paused -> AppTheme.colors.degraded
+        ContainerStateUi.Stopped -> AppTheme.colors.textMuted
+        ContainerStateUi.Restarting -> AppTheme.colors.critical
     }
 
     Row(
@@ -396,15 +396,15 @@ private fun ContainerListSection(
 
 @Composable
 private fun ContainerRowCard(
-    container: ContainerInfo,
+    container: ContainerUi,
     isWide: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val (statusColor, statusLabel) = when (container.state) {
-        ContainerState.Running -> Pair(AppTheme.colors.operational, "RUNNING")
-        ContainerState.Paused -> Pair(AppTheme.colors.degraded, "PAUSED")
-        ContainerState.Stopped -> Pair(AppTheme.colors.textMuted, "STOPPED")
-        ContainerState.Restarting -> Pair(AppTheme.colors.critical, "RESTARTING")
+        ContainerStateUi.Running -> Pair(AppTheme.colors.operational, "RUNNING")
+        ContainerStateUi.Paused -> Pair(AppTheme.colors.degraded, "PAUSED")
+        ContainerStateUi.Stopped -> Pair(AppTheme.colors.textMuted, "STOPPED")
+        ContainerStateUi.Restarting -> Pair(AppTheme.colors.critical, "RESTARTING")
     }
 
     Box(

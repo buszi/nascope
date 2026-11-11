@@ -3,11 +3,11 @@ package io.buszi.nascope.ui.dashboard.widgets.containers
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.ContainerInfo
-import io.buszi.nascope.data.telemetry.ContainerState
 import io.buszi.nascope.data.telemetry.ContainersData
 import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.ContainerStateUi
+import io.buszi.nascope.ui.common.model.ContainerUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersViewModel.ViewAction.OnRetry
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersViewModel.ViewAction.ToggleExpand
@@ -49,15 +49,16 @@ class ContainersViewModel(
     }
 
     private fun deriveViewState(data: ContainersData, isExpanded: Boolean): ViewState {
+        val containers = data.containers.map(ContainerUi::from)
         val overallStatus = when {
-            data.containers.any { it.state == ContainerState.Restarting } -> StatusLevel.Critical
-            data.containers.any { it.state == ContainerState.Stopped || it.state == ContainerState.Paused } -> StatusLevel.Degraded
+            containers.any { it.state == ContainerStateUi.Restarting } -> StatusLevel.Critical
+            containers.any { it.state == ContainerStateUi.Stopped || it.state == ContainerStateUi.Paused } -> StatusLevel.Degraded
             else -> StatusLevel.Operational
         }
 
         return ViewState(
             engine = data.engine,
-            containers = data.containers,
+            containers = containers,
             runningCount = data.runningCount,
             pausedCount = data.pausedCount,
             stoppedCount = data.stoppedCount,
@@ -87,7 +88,7 @@ class ContainersViewModel(
     @Stable
     data class ViewState(
         val engine: String = "Docker",
-        val containers: List<ContainerInfo> = emptyList(),
+        val containers: List<ContainerUi> = emptyList(),
         val runningCount: Int = 0,
         val pausedCount: Int = 0,
         val stoppedCount: Int = 0,

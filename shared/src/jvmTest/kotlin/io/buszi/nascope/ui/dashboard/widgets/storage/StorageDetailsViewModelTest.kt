@@ -7,6 +7,7 @@ import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.SortOrder
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnSelectSort
@@ -15,14 +16,14 @@ import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.Vie
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verifySequence
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StorageDetailsViewModelTest {
@@ -144,7 +145,7 @@ class StorageDetailsViewModelTest {
 
         private val initialViewState = ViewState()
         private val readyViewState = ViewState(
-            mounts = storageData.mounts,
+            mounts = storageData.mounts.map(StorageMountUi::from),
             readRateBytesPerSec = 10_000_000L,
             writeRateBytesPerSec = 20_000_000L,
             readHistory = listOf(1f, 2f),
