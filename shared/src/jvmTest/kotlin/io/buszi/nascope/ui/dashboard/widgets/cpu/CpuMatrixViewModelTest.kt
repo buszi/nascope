@@ -1,6 +1,7 @@
 package io.buszi.nascope.ui.dashboard.widgets.cpu
 
 import app.cash.turbine.turbineScope
+import io.buszi.nascope.data.telemetry.CpuCoreData
 import io.buszi.nascope.data.telemetry.CpuMatrixData
 import io.buszi.nascope.data.telemetry.TelemetryStateHolder
 import io.buszi.nascope.test.TestCoroutineRule
@@ -90,7 +91,12 @@ class CpuMatrixViewModelTest {
             usageTrend = "+2.4% / 5m",
             frequencyGhz = 3.80f,
             temperatureC = 58.0f,
-            coreUsages = listOf(34.2f, 48.1f, 12.0f, 88.5f),
+            cores = listOf(
+                CpuCoreData(34.2f),
+                CpuCoreData(48.1f),
+                CpuCoreData(12.0f),
+                CpuCoreData(88.5f),
+            ),
         )
 
         private val initialViewState = ViewState()

@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -169,6 +170,40 @@ fun DetailsKeyValueRow(
             text = value,
             style = AppTheme.typography.codeBase,
             color = AppTheme.colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * Compact label-over-value readout for a single metric inside a [DetailsSection].
+ *
+ * @param label Uppercase caption.
+ * @param value Formatted value.
+ * @param valueColor Color of [value]; defaults to primary text.
+ */
+@Composable
+fun DetailsStat(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    valueColor: Color = AppTheme.colors.textPrimary,
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
+    ) {
+        Text(
+            text = label,
+            style = AppTheme.typography.labelCode,
+            color = AppTheme.colors.textMuted,
+            maxLines = 1,
+        )
+        Text(
+            text = value,
+            style = AppTheme.typography.codeBase,
+            color = valueColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

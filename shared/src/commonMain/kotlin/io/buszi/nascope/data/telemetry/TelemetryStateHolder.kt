@@ -20,6 +20,15 @@ data class HostOverviewData(
 )
 
 /**
+ * Encapsulates utilization, clock and thermal telemetry for a single CPU core.
+ */
+data class CpuCoreData(
+    val usagePercent: Float,
+    val frequencyGhz: Float = 0f,
+    val temperatureC: Float = 0f,
+)
+
+/**
  * Encapsulates detailed CPU utilization telemetry for the CPU matrix brick.
  */
 data class CpuMatrixData(
@@ -28,7 +37,8 @@ data class CpuMatrixData(
     val usageTrend: String,
     val frequencyGhz: Float,
     val temperatureC: Float,
-    val coreUsages: List<Float>,
+    val cores: List<CpuCoreData>,
+    val usageHistory: List<Float> = emptyList(),
 )
 
 /**
@@ -211,11 +221,29 @@ class TelemetryStateHolder {
             usageTrend = "+2.4% / 5m",
             frequencyGhz = 3.80f,
             temperatureC = 58.0f,
-            coreUsages = listOf(
-                34.2f, 48.1f, 12.0f, 88.5f,
-                24.0f, 62.3f, 41.0f, 19.8f,
-                55.4f, 31.2f, 76.8f, 92.1f,
-                15.6f, 43.9f, 28.7f, 64.5f,
+            cores = listOf(
+                CpuCoreData(34.2f, 3.82f, 55f),
+                CpuCoreData(48.1f, 3.91f, 57f),
+                CpuCoreData(12.0f, 2.20f, 49f),
+                CpuCoreData(88.5f, 4.55f, 66f),
+                CpuCoreData(24.0f, 2.85f, 52f),
+                CpuCoreData(62.3f, 4.10f, 61f),
+                CpuCoreData(41.0f, 3.76f, 56f),
+                CpuCoreData(19.8f, 2.40f, 50f),
+                CpuCoreData(55.4f, 4.02f, 59f),
+                CpuCoreData(31.2f, 3.30f, 54f),
+                CpuCoreData(76.8f, 4.38f, 64f),
+                CpuCoreData(92.1f, 4.60f, 72f),
+                CpuCoreData(15.6f, 2.30f, 48f),
+                CpuCoreData(43.9f, 3.80f, 57f),
+                CpuCoreData(28.7f, 3.05f, 53f),
+                CpuCoreData(64.5f, 4.15f, 62f),
+            ),
+            usageHistory = listOf(
+                31.5f, 34.2f, 38.8f, 36.1f, 41.7f, 45.3f, 43.0f, 39.4f, 37.8f, 42.6f,
+                48.9f, 52.4f, 47.1f, 44.5f, 40.2f, 38.6f, 41.9f, 46.3f, 50.7f, 49.2f,
+                45.8f, 43.1f, 40.5f, 39.0f, 42.4f, 44.9f, 47.6f, 45.1f, 41.3f, 40.8f,
+                43.7f, 46.2f, 44.0f, 41.5f, 39.9f, 42.0f, 44.6f, 43.3f, 42.1f, 42.8f,
             ),
         ),
     )

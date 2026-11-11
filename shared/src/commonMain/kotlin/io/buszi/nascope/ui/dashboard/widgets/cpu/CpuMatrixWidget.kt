@@ -3,8 +3,8 @@ package io.buszi.nascope.ui.dashboard.widgets.cpu
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.percentage_format
-import io.buszi.nascope.resources.widget_overflow_more
 import io.buszi.nascope.resources.widget_cpu_matrix_core_matrix
 import io.buszi.nascope.resources.widget_cpu_matrix_core_matrix_compact
 import io.buszi.nascope.resources.widget_cpu_matrix_cores_active
@@ -34,6 +33,7 @@ import io.buszi.nascope.resources.widget_cpu_matrix_status_elevated
 import io.buszi.nascope.resources.widget_cpu_matrix_status_nominal
 import io.buszi.nascope.resources.widget_cpu_matrix_title
 import io.buszi.nascope.resources.widget_cpu_matrix_title_compact
+import io.buszi.nascope.resources.widget_overflow_more
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusDot
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
@@ -42,6 +42,7 @@ import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.components.metrics.TrendBadge
+import io.buszi.nascope.ui.common.model.CpuCoreUi
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixViewModel.ViewAction
@@ -70,11 +71,7 @@ fun CpuMatrixWidget(
     modifier: Modifier = Modifier,
     onViewAction: (ViewAction) -> Unit = {},
 ) {
-    val overallStatus = when {
-        viewState.aggregateUsage >= 90f || viewState.temperatureC >= 85f -> StatusLevel.Critical
-        viewState.aggregateUsage >= 75f || viewState.temperatureC >= 75f -> StatusLevel.Degraded
-        else -> StatusLevel.Operational
-    }
+    val overallStatus = CpuCoreUi.overallStatus(viewState.aggregateUsage, viewState.temperatureC)
     val statusLabel = when (overallStatus) {
         StatusLevel.Critical -> stringResource(Res.string.widget_cpu_matrix_status_critical)
         StatusLevel.Degraded -> stringResource(Res.string.widget_cpu_matrix_status_elevated)
@@ -116,11 +113,7 @@ fun CpuMatrixWidget(
                         TagChip(text = formatFrequency(viewState.frequencyGhz))
                     }
                     if (viewState.temperatureC > 0f) {
-                        val tempStatus = when {
-                            viewState.temperatureC >= 85f -> StatusLevel.Critical
-                            viewState.temperatureC >= 75f -> StatusLevel.Degraded
-                            else -> StatusLevel.Operational
-                        }
+                        val tempStatus = CpuCoreUi.temperatureStatus(viewState.temperatureC)
                         StatusChip(
                             text = formatTemperature(viewState.temperatureC),
                             status = tempStatus,
@@ -295,11 +288,7 @@ private fun AggregateUsageWide(
 ) {
     val ratio = (usage / 100f).coerceIn(0f, 1f)
     val percentage = (ratio * 100).toInt()
-    val status = when {
-        ratio >= 0.90f -> StatusLevel.Critical
-        ratio >= 0.75f -> StatusLevel.Degraded
-        else -> StatusLevel.Operational
-    }
+    val status = CpuCoreUi.usageStatus(usage)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -357,11 +346,7 @@ private fun AggregateUsageCompact(
     modifier: Modifier = Modifier,
 ) {
     val ratio = (usage / 100f).coerceIn(0f, 1f)
-    val status = when {
-        ratio >= 0.90f -> StatusLevel.Critical
-        ratio >= 0.75f -> StatusLevel.Degraded
-        else -> StatusLevel.Operational
-    }
+    val status = CpuCoreUi.usageStatus(usage)
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -529,11 +514,7 @@ private fun CoreCell(
 ) {
     val ratio = (usage / 100f).coerceIn(0f, 1f)
     val percentage = (ratio * 100).toInt()
-    val status = when {
-        ratio >= 0.90f -> StatusLevel.Critical
-        ratio >= 0.75f -> StatusLevel.Degraded
-        else -> StatusLevel.Operational
-    }
+    val status = CpuCoreUi.usageStatus(usage)
 
     Row(
         modifier = modifier
@@ -582,11 +563,11 @@ private fun CoreCell(
     }
 }
 
-private fun formatCoreIndex(index: Int): String {
+internal fun formatCoreIndex(index: Int): String {
     return index.toString().padStart(2, '0')
 }
 
-private fun formatFrequency(ghz: Float): String {
+internal fun formatFrequency(ghz: Float): String {
     val rounded = (ghz * 100).toInt()
     val whole = rounded / 100
     val fraction = abs(rounded % 100)
@@ -594,11 +575,11 @@ private fun formatFrequency(ghz: Float): String {
     return "$whole.$fracStr GHz"
 }
 
-private fun formatTemperature(tempC: Float): String {
+internal fun formatTemperature(tempC: Float): String {
     return "${tempC.toInt()}°C"
 }
 
-private fun formatPercentValue(value: Float): String {
+internal fun formatPercentValue(value: Float): String {
     val rounded = (value * 10).toInt()
     val whole = rounded / 10
     val fraction = abs(rounded % 10)

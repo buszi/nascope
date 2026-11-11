@@ -39,14 +39,14 @@ class CpuMatrixViewModel(
 
     private fun observeTelemetry() {
         telemetryStateHolder.cpuMatrix.onEach { cpuData ->
-            mutableViewState.update {
-                it.copy(
+            mutableViewState.update { state ->
+                state.copy(
                     modelName = cpuData.modelName,
                     aggregateUsage = cpuData.aggregateUsage,
                     usageTrend = cpuData.usageTrend,
                     frequencyGhz = cpuData.frequencyGhz,
                     temperatureC = cpuData.temperatureC,
-                    coreUsages = cpuData.coreUsages,
+                    coreUsages = cpuData.cores.map { it.usagePercent },
                     widgetState = WidgetState.Ready,
                 )
             }
