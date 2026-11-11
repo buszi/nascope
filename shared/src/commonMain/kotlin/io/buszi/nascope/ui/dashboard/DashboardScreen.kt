@@ -48,7 +48,9 @@ fun DashboardScreen(
             .fillMaxSize()
             .background(AppTheme.colors.canvasBackground),
     ) {
-        val columnCount = when (maxWidth.toWindowWidthClass()) {
+        val widthClass = maxWidth.toWindowWidthClass()
+        val fixedHeights = widthClass != WindowWidthClass.Compact
+        val columnCount = when (widthClass) {
             WindowWidthClass.Compact -> 2
             WindowWidthClass.Medium -> 3
             WindowWidthClass.Expanded -> 4
@@ -78,7 +80,17 @@ fun DashboardScreen(
                 key = { it.id.name },
                 span = { brick -> brick.span.calculateSpan(this) },
             ) { brick ->
-                brick.Content(modifier = Modifier.fillMaxWidth())
+                val brickModifier = if (fixedHeights) {
+                    Modifier.fillMaxWidth().height(
+                        brick.height.resolve(
+                            unit = AppTheme.dimensions.brickHeightUnit,
+                            gutter = AppTheme.spacing.spaceMd,
+                        ),
+                    )
+                } else {
+                    Modifier.fillMaxWidth()
+                }
+                brick.Content(modifier = brickModifier)
             }
         }
     }

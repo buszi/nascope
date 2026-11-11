@@ -106,6 +106,7 @@
     <string name="widget_containers_running_count">%1$d RUNNING</string>
     <string name="widget_containers_paused_count">%1$d PAUSED</string>
     <string name="widget_containers_stopped_count">%1$d STOPPED</string>
+    <string name="widget_overflow_more">+%1$d MORE</string>
     <string name="widget_containers_expand_all">EXPAND ALL (%1$d)</string>
     <string name="widget_containers_collapse">COLLAPSE</string>
     <string name="widget_containers_header_expand">EXPAND</string>

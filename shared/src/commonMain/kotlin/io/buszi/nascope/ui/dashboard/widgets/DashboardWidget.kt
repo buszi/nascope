@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,13 +78,18 @@ fun DashboardWidget(
     loadingContent: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = modifier
-            .clip(shape)
-            .background(backgroundColor, shape)
-            .border(borderWidth, borderColor, shape)
-            .padding(contentPadding),
-    ) {
+    BoxWithConstraints(modifier = modifier) {
+        // Bounded height means the grid enforces a fixed brick slot: fill it and clip the content.
+        val hasBoundedHeight = constraints.hasBoundedHeight
+
+        Column(
+            modifier = Modifier
+                .then(if (hasBoundedHeight) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
+                .clip(shape)
+                .background(backgroundColor, shape)
+                .border(borderWidth, borderColor, shape)
+                .padding(contentPadding),
+        ) {
         // Standardized Widget Header
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth(),
@@ -193,29 +200,37 @@ fun DashboardWidget(
         Spacer(modifier = Modifier.height(AppTheme.spacing.spaceSm))
 
         // State-driven Content Rendering
-        when (state) {
-            is WidgetState.Ready -> {
-                content()
-            }
-            is WidgetState.Loading -> {
-                if (loadingContent != null) {
-                    loadingContent()
-                } else {
-                    DefaultWidgetSkeleton()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (hasBoundedHeight) Modifier.weight(1f) else Modifier)
+                .clipToBounds(),
+        ) {
+            when (state) {
+                is WidgetState.Ready -> {
+                    content()
+                }
+                is WidgetState.Loading -> {
+                    if (loadingContent != null) {
+                        loadingContent()
+                    } else {
+                        DefaultWidgetSkeleton()
+                    }
+                }
+                is WidgetState.Error -> {
+                    WidgetErrorState(
+                        message = state.message,
+                        onRetry = state.onRetry,
+                    )
+                }
+                is WidgetState.Offline -> {
+                    WidgetOfflineState(
+                        reason = state.reason,
+                        onReconnect = state.onReconnect,
+                    )
                 }
             }
-            is WidgetState.Error -> {
-                WidgetErrorState(
-                    message = state.message,
-                    onRetry = state.onRetry,
-                )
-            }
-            is WidgetState.Offline -> {
-                WidgetOfflineState(
-                    reason = state.reason,
-                    onReconnect = state.onReconnect,
-                )
-            }
+        }
         }
     }
 }

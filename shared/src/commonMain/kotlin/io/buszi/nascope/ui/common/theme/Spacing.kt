@@ -50,6 +50,9 @@ data class AppDimensions(
     val liveLogDrawerWidth: Dp = 320.dp,
     val commandPaletteWidth: Dp = 580.dp,
 
+    // Dashboard modular brick height unit (1U)
+    val brickHeightUnit: Dp = 250.dp,
+
     // Breakpoints
     val mobileBreakpoint: Dp = 768.dp,
     val desktopBreakpoint: Dp = 1280.dp,

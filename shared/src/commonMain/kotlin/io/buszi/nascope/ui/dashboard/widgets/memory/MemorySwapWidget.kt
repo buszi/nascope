@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -138,7 +139,7 @@ fun MemorySwapWidget(
             subtitle = if (viewState.widgetState.isReady && viewState.totalMemBytes > 0L) {
                 stringResource(Res.string.widget_memory_swap_total_ram, formatGb(viewState.totalMemBytes))
             } else null,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             state = viewState.widgetState,
             statusTag = if (viewState.widgetState.isReady) {
                 {

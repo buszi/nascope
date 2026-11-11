@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -85,6 +86,7 @@ fun NetworkIoWidget(
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val containerWidth = maxWidth
         val isWide = containerWidth >= 330.dp
+        val isFixedHeight = constraints.hasBoundedHeight
 
         val aggregateRxFormatted = BitrateFormatter.formatBitrate(viewState.aggregateRxBytesPerSec)
         val aggregateTxFormatted = BitrateFormatter.formatBitrate(viewState.aggregateTxBytesPerSec)
@@ -108,6 +110,7 @@ fun NetworkIoWidget(
                 stringResource(Res.string.widget_network_title_compact)
             },
             subtitle = subtitleText,
+            modifier = Modifier.fillMaxSize(),
             state = viewState.widgetState,
             statusTag = {
                 StatusChip(
@@ -129,6 +132,7 @@ fun NetworkIoWidget(
                     selectedInterface = currentInterface,
                     interfaces = viewState.interfaces,
                     isWide = isWide,
+                    showHistory = !isFixedHeight,
                     onSelectInterface = { onViewAction(OnSelectInterface(it)) },
                 )
             }
@@ -141,6 +145,7 @@ private fun NetworkWidgetContent(
     selectedInterface: NetworkInterfaceData,
     interfaces: List<NetworkInterfaceData>,
     isWide: Boolean,
+    showHistory: Boolean,
     onSelectInterface: (String) -> Unit,
 ) {
     Column(
@@ -157,10 +162,12 @@ private fun NetworkWidgetContent(
         )
 
         // Section 2: Throughput History Sparkline
-        ThroughputSparklineSection(
-            rxHistory = selectedInterface.rxHistory,
-            txHistory = selectedInterface.txHistory,
-        )
+        if (showHistory) {
+            ThroughputSparklineSection(
+                rxHistory = selectedInterface.rxHistory,
+                txHistory = selectedInterface.txHistory,
+            )
+        }
 
         // Section 3: Interface Selector
         InterfacesSelectorSection(

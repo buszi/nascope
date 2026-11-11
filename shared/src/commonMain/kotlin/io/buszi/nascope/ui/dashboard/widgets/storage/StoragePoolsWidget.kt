@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -101,7 +102,7 @@ fun StoragePoolsWidget(
             subtitle = if (viewState.widgetState.isReady && viewState.mounts.isNotEmpty()) {
                 stringResource(Res.string.widget_storage_total_capacity, formatCapacity(viewState.totalCapacityBytes))
             } else null,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             state = viewState.widgetState,
             statusTag = if (viewState.widgetState.isReady) {
                 {

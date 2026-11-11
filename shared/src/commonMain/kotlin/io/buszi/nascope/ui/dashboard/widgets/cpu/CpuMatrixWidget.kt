@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.percentage_format
+import io.buszi.nascope.resources.widget_overflow_more
 import io.buszi.nascope.resources.widget_cpu_matrix_core_matrix
 import io.buszi.nascope.resources.widget_cpu_matrix_core_matrix_compact
 import io.buszi.nascope.resources.widget_cpu_matrix_cores_active
@@ -81,6 +84,7 @@ fun CpuMatrixWidget(
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val containerWidth = maxWidth
         val isWide = containerWidth >= 330.dp
+        val isFixedHeight = constraints.hasBoundedHeight
 
         DashboardWidget(
             title = if (isWide) {
@@ -89,7 +93,7 @@ fun CpuMatrixWidget(
                 stringResource(Res.string.widget_cpu_matrix_title_compact)
             },
             subtitle = if (viewState.widgetState.isReady && viewState.modelName.isNotBlank()) viewState.modelName else null,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             state = viewState.widgetState,
             statusTag = if (viewState.widgetState.isReady) {
                 {
@@ -128,7 +132,9 @@ fun CpuMatrixWidget(
             } else null,
         ) {
             if (viewState.widgetState.isReady) {
-                if (isWide) {
+                if (isFixedHeight) {
+                    FixedHeightCpuContent(viewState = viewState)
+                } else if (isWide) {
                     WideCpuMatrixContent(viewState = viewState, maxWidth = containerWidth)
                 } else {
                     CompactCpuMatrixContent(viewState = viewState, maxWidth = containerWidth)
@@ -137,6 +143,90 @@ fun CpuMatrixWidget(
         }
     }
 }
+
+/**
+ * Glanceable 1U layout: single-line aggregate usage followed by a 4-column core grid.
+ * Shows at most [FIXED_HEIGHT_MAX_CORES] cells; extra cores are summarised as "+N MORE".
+ */
+@Composable
+private fun FixedHeightCpuContent(
+    viewState: ViewState,
+    modifier: Modifier = Modifier,
+) {
+    val ratio = (viewState.aggregateUsage / 100f).coerceIn(0f, 1f)
+    val cores = viewState.coreUsages
+    val overflow = (cores.size - FIXED_HEIGHT_MAX_CORES).coerceAtLeast(0)
+    val shownCores = if (overflow > 0) cores.take(FIXED_HEIGHT_MAX_CORES - 1) else cores
+    val hiddenCount = cores.size - shownCores.size
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MetricValue(
+                value = formatPercentValue(viewState.aggregateUsage),
+                unit = "%",
+                size = MetricSize.Medium,
+                inlineTrend = false,
+            )
+            LinearGauge(
+                progress = ratio,
+                barHeight = AppTheme.spacing.spaceXs,
+                modifier = Modifier.weight(1f),
+                normalColor = AppTheme.colors.operational,
+                warningColor = AppTheme.colors.degraded,
+                criticalColor = AppTheme.colors.critical,
+            )
+        }
+
+        val columns = 4
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
+        ) {
+            val items: List<Pair<Int, Float>?> = shownCores.mapIndexed { index, usage -> index to usage } +
+                if (hiddenCount > 0) listOf(null) else emptyList()
+            items.chunked(columns).forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
+                ) {
+                    rowItems.forEach { item ->
+                        if (item != null) {
+                            CoreCell(
+                                coreIndex = item.first,
+                                usage = item.second,
+                                modifier = Modifier.weight(1f),
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier.weight(1f),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.widget_overflow_more, hiddenCount),
+                                    style = AppTheme.typography.labelCode,
+                                    color = AppTheme.colors.textMuted,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                    repeat(columns - rowItems.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+private const val FIXED_HEIGHT_MAX_CORES = 16
 
 @Composable
 private fun WideCpuMatrixContent(
