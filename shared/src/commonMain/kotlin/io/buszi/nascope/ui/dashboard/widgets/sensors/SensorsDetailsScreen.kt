@@ -51,7 +51,9 @@ import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
 import io.buszi.nascope.ui.common.model.FanSensorUi
 import io.buszi.nascope.ui.common.model.TemperatureSensorUi
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsDetailsViewModel.ViewState
 import io.buszi.nascope.ui.details.components.DetailsLoadingPlaceholder
 import io.buszi.nascope.ui.details.components.DetailsScaffold
@@ -87,6 +89,7 @@ fun SensorsDetailsScreen(
     DetailsScaffold(
         title = stringResource(Res.string.details_sensors_title),
         onClose = onClose,
+        testTag = TestTags.details(DashboardBrickId.SensorsThermals),
         modifier = modifier,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(

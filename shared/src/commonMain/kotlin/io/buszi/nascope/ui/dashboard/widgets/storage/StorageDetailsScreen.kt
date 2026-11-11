@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -57,7 +58,9 @@ import io.buszi.nascope.ui.common.components.inputs.SelectableChip
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.model.StorageMountUi
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.SortOrder
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewState
@@ -94,6 +97,7 @@ fun StorageDetailsScreen(
     DetailsScaffold(
         title = stringResource(Res.string.details_storage_title),
         onClose = onClose,
+        testTag = TestTags.details(DashboardBrickId.StoragePools),
         modifier = modifier,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(
@@ -346,6 +350,7 @@ private fun MountsSection(
                     text = order.label(),
                     selected = viewState.sortOrder == order,
                     onClick = { onViewAction(ViewAction.OnSelectSort(order)) },
+                    modifier = Modifier.testTag(TestTags.storageSort(order.name)),
                 )
             }
         }
@@ -392,6 +397,7 @@ private fun MountDetailsCard(
                 color = if (expanded) AppTheme.colors.focusHighlight else AppTheme.colors.baseBorder,
                 shape = shape,
             )
+            .testTag(TestTags.storageMount(mount.mountPoint))
             .clickable(onClick = onToggle)
             .padding(AppTheme.spacing.spaceSm),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),

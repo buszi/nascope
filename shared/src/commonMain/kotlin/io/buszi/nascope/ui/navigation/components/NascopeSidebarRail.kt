@@ -20,11 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.ui.common.components.badges.StatusDot
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.navigation.TopLevelDestination
 import org.jetbrains.compose.resources.stringResource
@@ -143,7 +146,11 @@ private fun RailNavigationItem(
                 color = borderColor,
                 shape = AppTheme.shapes.md,
             )
-            .semantics { contentDescription = label }
+            .testTag(TestTags.navigation(destination.name))
+            .semantics {
+                contentDescription = label
+                this.selected = selected
+            }
             .clickable(
                 role = Role.Tab,
                 onClick = onClick,

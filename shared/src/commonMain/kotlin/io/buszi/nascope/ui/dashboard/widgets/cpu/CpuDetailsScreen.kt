@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -53,7 +55,9 @@ import io.buszi.nascope.ui.common.components.inputs.SelectableChip
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.model.CpuCoreUi
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuDetailsViewModel.SortOrder
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuDetailsViewModel.ViewState
@@ -90,6 +94,7 @@ fun CpuDetailsScreen(
     DetailsScaffold(
         title = stringResource(Res.string.details_cpu_title),
         onClose = onClose,
+        testTag = TestTags.details(DashboardBrickId.CpuMatrix),
         modifier = modifier,
         subtitle = viewState.modelName.takeIf { viewState.widgetState.isReady && it.isNotBlank() },
         statusTag = if (viewState.widgetState.isReady) {
@@ -300,6 +305,7 @@ private fun CoresSection(
                     text = order.label(),
                     selected = viewState.sortOrder == order,
                     onClick = { onViewAction(ViewAction.OnSelectSort(order)) },
+                    modifier = Modifier.testTag(TestTags.cpuSort(order.name)),
                 )
             }
         }
@@ -330,6 +336,8 @@ private fun CoreRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .testTag(TestTags.cpuCore(core.index))
+            .semantics(mergeDescendants = true) {}
             .background(AppTheme.colors.inputBackground, AppTheme.shapes.sm)
             .border(
                 width = AppTheme.dimensions.hairlineBorder,

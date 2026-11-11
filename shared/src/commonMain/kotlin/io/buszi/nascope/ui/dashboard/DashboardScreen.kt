@@ -22,11 +22,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.modifier.optionalModifier
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
@@ -80,7 +84,9 @@ fun DashboardScreen(
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(columnCount),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .testTag(TestTags.DashboardGrid),
             contentPadding = PaddingValues(AppTheme.spacing.margin),
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
@@ -122,8 +128,10 @@ fun DashboardScreen(
                     brick.Content(
                         modifier = baseModifier
                             .clip(AppTheme.shapes.lg)
+                            .testTag(TestTags.brick(brick.id))
                             .optionalModifier(hasDetails) {
-                                clickable { onOpenDetails(brick.id) }
+                                semantics { selected = interaction == BrickInteraction.Open }
+                                    .clickable { onOpenDetails(brick.id) }
                             },
                     )
                 }

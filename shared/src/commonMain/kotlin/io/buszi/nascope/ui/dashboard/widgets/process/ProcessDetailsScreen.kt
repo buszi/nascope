@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,7 +61,9 @@ import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.inputs.SelectableChip
 import io.buszi.nascope.ui.common.components.inputs.TelemetryTextField
 import io.buszi.nascope.ui.common.model.ProcessUi
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.SortField
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewState
@@ -102,6 +105,7 @@ fun ProcessDetailsScreen(
     DetailsScaffold(
         title = stringResource(Res.string.details_processes_title),
         onClose = onClose,
+        testTag = TestTags.details(DashboardBrickId.ProcessList),
         modifier = modifier,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(
@@ -212,7 +216,9 @@ private fun ProcessTableSection(
             TelemetryTextField(
                 value = viewState.query,
                 onValueChange = { onViewAction(ViewAction.OnQueryChange(it)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(TestTags.ProcessSearch),
                 placeholder = stringResource(Res.string.details_processes_search_placeholder),
                 trailingIcon = if (viewState.query.isNotEmpty()) {
                     {
@@ -222,6 +228,7 @@ private fun ProcessTableSection(
                             color = AppTheme.colors.textSecondary,
                             modifier = Modifier
                                 .clip(AppTheme.shapes.sm)
+                                .testTag(TestTags.ProcessSearchClear)
                                 .clickable(
                                     onClickLabel = stringResource(Res.string.details_processes_clear_search),
                                     role = Role.Button,
@@ -246,6 +253,7 @@ private fun ProcessTableSection(
                     ),
                     selected = viewState.stateFilter == null,
                     onClick = { onViewAction(ViewAction.OnSelectStateFilter(null)) },
+                    modifier = Modifier.testTag(TestTags.processFilter(null)),
                 )
                 viewState.availableStates.forEach { state ->
                     SelectableChip(
@@ -256,6 +264,7 @@ private fun ProcessTableSection(
                         ),
                         selected = viewState.stateFilter == state,
                         onClick = { onViewAction(ViewAction.OnSelectStateFilter(state)) },
+                        modifier = Modifier.testTag(TestTags.processFilter(state.name)),
                     )
                 }
             }
@@ -358,6 +367,7 @@ private fun HeaderCell(
         softWrap = false,
         modifier = modifier
             .clip(AppTheme.shapes.sm)
+            .testTag(TestTags.processSort(field.name))
             .clickable(role = Role.Button) { onViewAction(ViewAction.OnSelectSort(field)) }
             .padding(vertical = AppTheme.spacing.spaceXs),
     )
@@ -383,6 +393,7 @@ private fun ProcessRow(
                 color = if (expanded) AppTheme.colors.focusHighlight else AppTheme.colors.baseBorder,
                 shape = shape,
             )
+            .testTag(TestTags.processRow(process.pid))
             .clickable(onClick = onToggle)
             .padding(
                 horizontal = AppTheme.spacing.spaceSm,

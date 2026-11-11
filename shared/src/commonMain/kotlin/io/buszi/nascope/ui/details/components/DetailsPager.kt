@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.resources.Res
@@ -20,6 +21,7 @@ import io.buszi.nascope.resources.details_pager_indicator
 import io.buszi.nascope.resources.details_pager_next
 import io.buszi.nascope.resources.details_pager_previous
 import io.buszi.nascope.ui.common.modifier.optionalModifier
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
 
@@ -44,6 +46,7 @@ fun DetailsPager(
     ) {
         PagerButton(
             symbol = "‹",
+            testTag = TestTags.DetailsPagerPrevious,
             contentDescription = stringResource(Res.string.details_pager_previous),
             enabled = page > 0,
             onClick = onPrevious,
@@ -52,9 +55,11 @@ fun DetailsPager(
             text = stringResource(Res.string.details_pager_indicator, page + 1, pageCount),
             style = AppTheme.typography.labelCode,
             color = AppTheme.colors.textSecondary,
+            modifier = Modifier.testTag(TestTags.DetailsPagerIndicator),
         )
         PagerButton(
             symbol = "›",
+            testTag = TestTags.DetailsPagerNext,
             contentDescription = stringResource(Res.string.details_pager_next),
             enabled = page < pageCount - 1,
             onClick = onNext,
@@ -65,12 +70,14 @@ fun DetailsPager(
 @Composable
 private fun PagerButton(
     symbol: String,
+    testTag: String,
     contentDescription: String,
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
     Box(
         modifier = Modifier
+            .testTag(testTag)
             .size(AppTheme.dimensions.buttonHeightDense - AppTheme.spacing.spaceXs)
             .background(
                 color = if (enabled) AppTheme.colors.inputBackground else AppTheme.colors.canvasBackground,

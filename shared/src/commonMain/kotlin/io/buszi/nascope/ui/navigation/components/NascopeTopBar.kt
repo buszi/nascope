@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +34,7 @@ import io.buszi.nascope.resources.nav_status_online
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.components.badges.TagChip
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
@@ -150,6 +152,7 @@ private fun TopBarBackButton(
                 color = borderColor,
                 shape = AppTheme.shapes.base,
             )
+            .testTag(TestTags.TopBarBack)
             .clickable(
                 role = Role.Button,
                 onClick = onClick,

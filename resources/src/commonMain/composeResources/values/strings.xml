@@ -15,7 +15,7 @@
     <string name="widget_system_overview_load_5m_compact">5M</string>
     <string name="widget_system_overview_load_15m_compact">15M</string>
     <string name="host_platform_glyphs_preview">HOST PLATFORM GLYPHS</string>
-    <string name="percentage_format">%1$d%%</string>
+    <string name="percentage_format">%1$d%</string>
     <string name="widget_cpu_matrix_title">CPU UTILIZATION</string>
     <string name="widget_cpu_matrix_title_compact">CPU</string>
     <string name="widget_cpu_matrix_status_nominal">NOMINAL</string>
@@ -90,7 +90,7 @@
     <string name="widget_sensors_temperatures_label">TEMPERATURE SENSORS</string>
     <string name="widget_sensors_cooling_label">COOLING &amp; FAN CONTROL</string>
     <string name="widget_sensors_rpm_format">%1$d RPM</string>
-    <string name="widget_sensors_duty_format">%1$d%%</string>
+    <string name="widget_sensors_duty_format">%1$d%</string>
     <string name="widget_sensors_temp_format">%1$s°C</string>
     <string name="widget_sensors_no_sensors">NO THERMAL SENSORS DETECTED</string>
     <string name="widget_containers_title">CONTAINERS</string>
@@ -178,10 +178,10 @@
     <string name="details_cpu_stat_package_temp">PACKAGE TEMP</string>
     <string name="details_cpu_stat_hottest_core">HOTTEST CORE</string>
     <string name="details_cpu_stat_busiest_core">BUSIEST CORE</string>
-    <string name="details_cpu_busiest_core_format">CORE %1$s // %2$d%%</string>
+    <string name="details_cpu_busiest_core_format">CORE %1$s // %2$d%</string>
     <string name="details_cpu_history">USAGE HISTORY</string>
-    <string name="details_cpu_history_average">AVG %1$s%%</string>
-    <string name="details_cpu_history_peak">PEAK %1$s%%</string>
+    <string name="details_cpu_history_average">AVG %1$s%</string>
+    <string name="details_cpu_history_peak">PEAK %1$s%</string>
     <string name="details_cpu_load">LOAD AVERAGE</string>
     <string name="details_cpu_load_1m">1 MIN</string>
     <string name="details_cpu_load_5m">5 MIN</string>

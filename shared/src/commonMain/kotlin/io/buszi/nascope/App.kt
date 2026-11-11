@@ -1,8 +1,10 @@
 package io.buszi.nascope
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.di.NascopeApp
+import io.buszi.nascope.ui.common.testing.testTagsAsResourceId
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.navigation.NascopeAppScaffold
 import org.koin.compose.KoinApplication
@@ -20,7 +22,7 @@ fun App() {
         configuration = koinConfiguration<NascopeApp>(),
     ) {
         AppTheme {
-            NascopeAppScaffold()
+            NascopeAppScaffold(modifier = Modifier.testTagsAsResourceId())
         }
     }
 }

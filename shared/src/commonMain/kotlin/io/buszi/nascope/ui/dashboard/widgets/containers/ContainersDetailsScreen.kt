@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -53,7 +54,9 @@ import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.inputs.SelectableChip
 import io.buszi.nascope.ui.common.model.ContainerStateUi
 import io.buszi.nascope.ui.common.model.ContainerUi
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersDetailsViewModel.ViewState
 import io.buszi.nascope.ui.details.components.DetailsKeyValueRow
@@ -90,6 +93,7 @@ fun ContainersDetailsScreen(
     DetailsScaffold(
         title = stringResource(Res.string.details_containers_title),
         onClose = onClose,
+        testTag = TestTags.details(DashboardBrickId.Containers),
         modifier = modifier,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(
@@ -214,6 +218,7 @@ private fun ContainersSection(
                 ),
                 selected = viewState.stateFilter == null,
                 onClick = { onViewAction(ViewAction.OnSelectFilter(null)) },
+                modifier = Modifier.testTag(TestTags.containersFilter(null)),
             )
             ContainerStateUi.entries.forEach { state ->
                 SelectableChip(
@@ -224,6 +229,7 @@ private fun ContainersSection(
                     ),
                     selected = viewState.stateFilter == state,
                     onClick = { onViewAction(ViewAction.OnSelectFilter(state)) },
+                    modifier = Modifier.testTag(TestTags.containersFilter(state.name)),
                 )
             }
         }
@@ -270,6 +276,7 @@ private fun ContainerDetailsCard(
                 color = if (expanded) AppTheme.colors.focusHighlight else AppTheme.colors.baseBorder,
                 shape = shape,
             )
+            .testTag(TestTags.container(container.id))
             .clickable(onClick = onToggle)
             .padding(AppTheme.spacing.spaceSm),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),

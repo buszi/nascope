@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -31,6 +32,7 @@ import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.screen_details_close
 import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.containers.TelemetryCard
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.dashboard.widgets.WidgetSkeleton
@@ -48,6 +50,7 @@ import org.jetbrains.compose.resources.stringResource
  *
  * @param title Uppercase label identifying the inspected subsystem.
  * @param onClose Closes the details.
+ * @param testTag Test tag of the details root, see [TestTags.details].
  * @param modifier Root layout modifier supplied by the hosting pane / screen.
  * @param subtitle Optional one-line summary rendered below [title].
  * @param statusTag Optional status badge rendered next to the close action.
@@ -57,12 +60,13 @@ import org.jetbrains.compose.resources.stringResource
 fun DetailsScaffold(
     title: String,
     onClose: () -> Unit,
+    testTag: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     statusTag: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().testTag(testTag)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -83,6 +87,7 @@ fun DetailsScaffold(
                     color = AppTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag(TestTags.DetailsTitle),
                 )
                 if (subtitle != null) {
                     Text(
@@ -113,6 +118,7 @@ fun DetailsScaffold(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .testTag(TestTags.DetailsScroll)
                 .verticalScroll(rememberScrollState())
                 .padding(AppTheme.spacing.margin),
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
@@ -243,6 +249,7 @@ private fun CloseButton(
                 color = AppTheme.colors.baseBorder,
                 shape = AppTheme.shapes.base,
             )
+            .testTag(TestTags.DetailsClose)
             .clickable(
                 onClickLabel = stringResource(Res.string.screen_details_close),
                 role = Role.Button,
@@ -266,6 +273,7 @@ private fun DetailsScaffoldPreview() {
             title = "SAMPLE // DETAILS",
             subtitle = "Preview subtitle",
             onClose = {},
+            testTag = "details_preview",
             statusTag = { TagChip(text = "TAG") },
         ) {
             DetailsSection(title = "SECTION") {

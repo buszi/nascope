@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -59,7 +60,9 @@ import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.model.NetworkInterfaceUi
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewState
 import io.buszi.nascope.ui.details.components.DetailsKeyValueRow
@@ -96,6 +99,7 @@ fun NetworkDetailsScreen(
     DetailsScaffold(
         title = stringResource(Res.string.details_network_title),
         onClose = onClose,
+        testTag = TestTags.details(DashboardBrickId.NetworkIo),
         modifier = modifier,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(
@@ -262,6 +266,7 @@ private fun InterfaceDetailsCard(
                 color = if (expanded) AppTheme.colors.focusHighlight else AppTheme.colors.baseBorder,
                 shape = shape,
             )
+            .testTag(TestTags.networkInterface(iface.name))
             .clickable(onClick = onToggle)
             .padding(AppTheme.spacing.spaceSm),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
