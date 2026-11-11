@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Secrets are encrypted with a Keystore key that does not survive a restore or device transfer. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="datastore/secrets.preferences_pb"/>
+        <exclude domain="file" path="datastore/secrets.preferences_pb.tmp"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="datastore/secrets.preferences_pb"/>
+        <exclude domain="file" path="datastore/secrets.preferences_pb.tmp"/>
+    </device-transfer>
+</data-extraction-rules>

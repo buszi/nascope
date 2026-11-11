@@ -11,10 +11,11 @@ See [`module-architecture.md`](./module-architecture.md) for responsibilities an
 | Module | Contents |
 | :--- | :--- |
 | `domain-model/` | Shared domain models (`io.buszi.nascope.domain.model`), e.g. `domain/model/connection/`. Data only, no dependencies. |
+| `storage/` | Local persistence (`io.buszi.nascope.storage`): public `ServerProfileStore`, `AppPreferencesStore`, `SecretStore`; internal DataStore, Keystore (`androidMain`) and keyring (`jvmMain`) implementations. |
 | `resources/` | Compose resources (strings, drawables, fonts). |
 | `shared/` | UI, ViewModels, navigation, design system, Koin application root. |
 
-Planned (Phase 4): `network/`, `storage/` and `domain/`, added by their own tasks.
+Planned (Phase 4): `network/` and `domain/`, added by their own tasks.
 
 ---
 

@@ -6,6 +6,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import android.content.Context
+import org.koin.dsl.module
 
 class MainActivity : ComponentActivity() {
 
@@ -17,7 +19,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            App()
+            App(
+                platformConfiguration = {
+                    modules(module { single<Context> { applicationContext } })
+                },
+            )
         }
     }
 }

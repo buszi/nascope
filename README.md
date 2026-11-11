@@ -18,6 +18,8 @@ nascope/
 │       └── plugins.desktop.application  # Desktop JVM application conventions
 ├── domain-model/                 # Shared domain models (plain Kotlin, no dependencies)
 │   └── src/commonMain/kotlin/io/buszi/nascope/domain/model/
+├── storage/                      # Profile & preference stores (DataStore), secret store (Keystore / OS keyring)
+│   └── src/{commonMain,androidMain,jvmMain}/kotlin/io/buszi/nascope/storage/
 ├── resources/                    # Common Compose Multiplatform assets & resources
 │   └── src/commonMain/composeResources/
 ├── shared/                       # Core shared business logic & UI components

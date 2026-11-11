@@ -8,18 +8,22 @@ import io.buszi.nascope.ui.common.testing.testTagsAsResourceId
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.navigation.NascopeAppScaffold
 import org.koin.compose.KoinApplication
+import org.koin.dsl.KoinAppDeclaration
 import org.koin.plugin.module.dsl.koinConfiguration
 
 /**
  * Main application entry point composable.
  *
  * Applies Koin dependency injection, [AppTheme], and hosts the adaptive Navigation 3 application scaffold.
+ *
+ * @param platformConfiguration extra Koin configuration supplied by the platform entry point,
+ * e.g. the Android application `Context`.
  */
 @Composable
 @Preview
-fun App() {
+fun App(platformConfiguration: KoinAppDeclaration = {}) {
     KoinApplication(
-        configuration = koinConfiguration<NascopeApp>(),
+        configuration = koinConfiguration<NascopeApp>(platformConfiguration),
     ) {
         AppTheme {
             NascopeAppScaffold(modifier = Modifier.testTagsAsResourceId())

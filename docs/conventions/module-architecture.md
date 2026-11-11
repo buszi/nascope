@@ -112,7 +112,9 @@ Start with the nested form. Move a model to `:domain-model` only when a second c
 
 - `:network`, `:storage` and `:domain` each declare one Koin module class (`@Module @Configuration @ComponentScan("<module package>")`) and apply the Koin compiler plugin.
 - The root `@KoinApplication` lives in `:shared`.
-- Platform objects (e.g. the Android `Context`) are registered by the platform entry point through the Koin configuration parameter of `App()`; modules receive them by constructor injection.
+- **Cross-module discovery works without `includes`**: the Koin compiler plugin emits discovery hints for each `@Configuration` module, and `koinConfiguration<NascopeApp>()` resolved `:storage` definitions (verified in TASK-4.2). Do not wire modules with `@Module(includes = ...)`.
+- Platform-specific definitions are annotated classes in `androidMain` / `jvmMain` (e.g. `AndroidStorageDirectory`, `JvmStorageDirectory`) implementing an `internal` common interface; the common module class consumes that interface. Where the choice depends on availability (secret store), use an `internal expect fun` returning `null` when unavailable and fall back in common code.
+- Platform objects (e.g. the Android `Context`) are registered by the platform entry point through the `platformConfiguration` parameter of `App()` (a `KoinAppDeclaration`, default empty); modules receive them by constructor injection. `MainActivity` registers `single<Context> { applicationContext }`; `desktopApp` passes nothing.
 
 ---
 
