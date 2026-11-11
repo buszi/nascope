@@ -6,12 +6,17 @@ Nascope's dashboard is built on a modular "brick" architecture rendered inside a
 
 ## 1. LazyVerticalGrid Foundation
 
-The dashboard is structured around a single `LazyVerticalGrid` that dynamically adapts its horizontal column count to the window size:
+The dashboard is structured around a single `LazyVerticalGrid`, owned by the `AdaptiveDashboardGrid` composable, that adapts its columns, margins and gutters to the width class of the space it is laid out in. The values live in `DashboardGridMetrics.forWidthClass` and come from `AppSpacing` tokens:
 
-- **Compact** (`< 768.dp`): **2 columns** (mobile form factor).
-- **Medium** (`768.dp .. 1280.dp`): **3 columns** (tablet / medium desktop).
-- **Expanded** (`>= 1280.dp`): **4 columns** (desktop / widescreen dashboard canvas).
-- **Ultra-wide** (`> 1600.dp`): 4 grid columns, with remaining horizontal canvas space reserved for a right-side brick detail panel (implemented in the Navigation3 phase).
+| Class | Width | Columns | Gutter | Margin | Brick heights |
+|---|---|---|---|---|---|
+| **Compact** | `< 768dp` | 2 | 12dp (`spaceMd`) | 16dp (`margin`) | natural (wrap content) |
+| **Medium** | `768dp .. 1279dp` | 3 | 16dp (`gutter`) | 24dp (`marginTablet`) | modular 1U steps |
+| **Expanded** | `>= 1280dp` | 4 | 20dp (`gutterDesktop`) | 32dp (`marginDesktop`) | modular 1U steps |
+
+- The class is derived from the grid's own width (plus the navigation rail), not the window, so opening the details inspector beside the dashboard reflows it to the narrower layout.
+- The brick height unit resolves with the grid's gutter (`BrickHeight.resolve(unit, gutter)`), so a 2U brick always lines up with two stacked 1U bricks.
+- Bricks claim cells via `DashboardBrick.span`; add new layouts by changing the metrics, never by hardcoding dp values in screens.
 
 Breakpoints must be evaluated using `WindowWidthClass.fromWidth(maxWidth)` rather than hardcoding numeric breakpoint dp values in screen composables.
 
@@ -21,7 +26,7 @@ Breakpoints must be evaluated using `WindowWidthClass.fromWidth(maxWidth)` rathe
 
 `DashboardScreen` is solely an orchestrator and layout container:
 - It **never** previews, directly references, or renders the internal layout of any brick.
-- It observes `DashboardViewModel.viewState.bricks` and renders each active brick through its public contract:
+- It observes `DashboardViewModel.viewState.bricks` and hands them to `AdaptiveDashboardGrid`, which renders each active brick through its public contract:
   ```kotlin
   items(
       items = viewState.bricks,
