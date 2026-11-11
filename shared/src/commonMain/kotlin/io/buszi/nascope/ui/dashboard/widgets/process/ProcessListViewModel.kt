@@ -64,11 +64,7 @@ class ProcessListViewModel(
             ProcessSortBy.Memory -> processes.sortedByDescending { it.memoryPercent }
         }
 
-        val overallStatus = when {
-            processes.any { it.cpuPercent >= 80f || it.memoryPercent >= 80f } -> StatusLevel.Critical
-            processes.any { it.cpuPercent >= 50f || it.memoryPercent >= 50f } -> StatusLevel.Degraded
-            else -> StatusLevel.Operational
-        }
+        val overallStatus = processes.maxOfOrNull { it.loadStatus } ?: StatusLevel.Operational
 
         return ViewState(
             processes = sortedProcesses,

@@ -212,4 +212,34 @@
     <string name="details_containers_field_uptime">UPTIME</string>
     <string name="details_containers_field_memory_limit">MEM LIMIT</string>
     <string name="details_containers_unlimited">UNLIMITED</string>
+
+    <!-- Process details -->
+    <string name="details_processes_title">PROCESSES // DETAILS</string>
+    <string name="details_processes_subtitle">%1$d TRACKED // %2$d TOTAL</string>
+    <string name="details_processes_overview">OVERVIEW</string>
+    <string name="details_processes_stat_total">TOTAL</string>
+    <string name="details_processes_stat_running">RUNNING</string>
+    <string name="details_processes_stat_cpu_sum">CPU SUM</string>
+    <string name="details_processes_stat_mem_sum">MEM SUM</string>
+    <string name="details_processes_table">PROCESS TABLE</string>
+    <string name="details_processes_results">%1$d RESULTS</string>
+    <string name="details_processes_search_placeholder">Search name, user or PID</string>
+    <string name="details_processes_clear_search">Clear search</string>
+    <string name="details_processes_filter_all">ALL</string>
+    <string name="details_processes_filter_format">%1$s %2$d</string>
+    <string name="details_processes_no_match">NO PROCESSES MATCH</string>
+    <string name="details_processes_field_user">USER</string>
+    <string name="details_processes_field_state">STATE</string>
+    <string name="details_processes_field_rss">RSS</string>
+    <string name="details_processes_state_running">RUNNING</string>
+    <string name="details_processes_state_sleeping">SLEEPING</string>
+    <string name="details_processes_state_disk_sleep">DISK WAIT</string>
+    <string name="details_processes_state_stopped">STOPPED</string>
+    <string name="details_processes_state_zombie">ZOMBIE</string>
+    <string name="details_processes_state_unknown">UNKNOWN</string>
+
+    <!-- Details pager -->
+    <string name="details_pager_previous">Previous page</string>
+    <string name="details_pager_next">Next page</string>
+    <string name="details_pager_indicator">%1$d / %2$d</string>
 </resources>

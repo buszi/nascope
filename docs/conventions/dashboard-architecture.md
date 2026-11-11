@@ -104,6 +104,6 @@ override val details: BrickDetails = BrickDetails { onClose, modifier ->
 
 ### Details screen building blocks (`ui/details/components`)
 - `DetailsScaffold`: shared frame (header with title/subtitle/status tag/close action, scrollable body). The close action is hidden on Compact, where the top bar provides back navigation.
-- `DetailsSection`: titled `TelemetryCard` grouping one aspect of the details; `DetailsKeyValueRow` for property readouts; `DetailsStat` for label-over-value metric readouts; `DetailsLoadingPlaceholder` for the loading state.
+- `DetailsSection`: titled `TelemetryCard` grouping one aspect of the details; `DetailsKeyValueRow` for property readouts; `DetailsStat` for label-over-value metric readouts; `DetailsPager` for paginated lists; `DetailsLoadingPlaceholder` for the loading state.
 - `SelectableChip` (`ui/common/components/inputs`): single-choice toggle for sort orders and filters.
 - A details ViewModel follows the same MVI rules as widget ViewModels and owns its own UI state (sort, filter, expanded rows); data comes from `TelemetryStateHolder`.
