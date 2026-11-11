@@ -23,10 +23,38 @@ class TemperatureSensorUiTest {
         assertEquals(55f / 70f, sensor(65f).criticalProgressIn(range))
     }
 
-    private fun sensor(currentTempC: Float) = TemperatureSensorUi(
+    @Test
+    fun historyStatsAreDerivedFromHistory() {
+        val sensor = sensor(60f, history = listOf(50f, 60f, 70f))
+
+        assertEquals(50f, sensor.minHistoryC)
+        assertEquals(70f, sensor.maxHistoryC)
+        assertEquals(60f, sensor.averageHistoryC)
+    }
+
+    @Test
+    fun historyStatsFallBackToCurrentTemperatureWithoutHistory() {
+        val sensor = sensor(61f)
+
+        assertEquals(61f, sensor.minHistoryC)
+        assertEquals(61f, sensor.maxHistoryC)
+        assertEquals(61f, sensor.averageHistoryC)
+    }
+
+    @Test
+    fun headroomIsDistanceToThresholds() {
+        val sensor = sensor(60f)
+
+        assertEquals(10f, sensor.headroomToWarningC)
+        assertEquals(25f, sensor.headroomToCriticalC)
+        assertEquals(-5f, sensor(75f).headroomToWarningC)
+    }
+
+    private fun sensor(currentTempC: Float, history: List<Float> = emptyList()) = TemperatureSensorUi(
         label = "CPU",
         currentTempC = currentTempC,
         warningThresholdC = 70f,
         criticalThresholdC = 85f,
+        history = history,
     )
 }

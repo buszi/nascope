@@ -14,7 +14,28 @@ data class TemperatureSensorUi(
     val currentTempC: Float,
     val warningThresholdC: Float,
     val criticalThresholdC: Float,
+    val history: List<Float> = emptyList(),
 ) {
+    /** Lowest temperature in [history], or the current one without history. */
+    val minHistoryC: Float
+        get() = history.minOrNull() ?: currentTempC
+
+    /** Highest temperature in [history], or the current one without history. */
+    val maxHistoryC: Float
+        get() = history.maxOrNull() ?: currentTempC
+
+    /** Mean temperature of [history], or the current one without history. */
+    val averageHistoryC: Float
+        get() = if (history.isEmpty()) currentTempC else history.average().toFloat()
+
+    /** Degrees left until [warningThresholdC]; negative once exceeded. */
+    val headroomToWarningC: Float
+        get() = warningThresholdC - currentTempC
+
+    /** Degrees left until [criticalThresholdC]; negative once exceeded. */
+    val headroomToCriticalC: Float
+        get() = criticalThresholdC - currentTempC
+
     /** Status derived from the current temperature and the alert thresholds. */
     val status: StatusLevel
         get() = when {
@@ -41,6 +62,7 @@ data class TemperatureSensorUi(
             currentTempC = data.currentTempC,
             warningThresholdC = data.warningThresholdC,
             criticalThresholdC = data.criticalThresholdC,
+            history = data.history,
         )
     }
 }
@@ -54,13 +76,19 @@ data class FanSensorUi(
     val rpm: Int,
     val maxRpm: Int = 2200,
     val dutyCyclePercent: Float = if (maxRpm > 0) (rpm.toFloat() / maxRpm).coerceIn(0f, 1f) else 0f,
+    val rpmHistory: List<Float> = emptyList(),
 ) {
+    /** A fan that reports no rotation. */
+    val isStalled: Boolean
+        get() = rpm <= 0
+
     companion object {
         fun from(data: FanSensorData) = FanSensorUi(
             label = data.label,
             rpm = data.rpm,
             maxRpm = data.maxRpm,
             dutyCyclePercent = data.dutyCyclePercent,
+            rpmHistory = data.rpmHistory,
         )
     }
 }

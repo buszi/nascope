@@ -62,11 +62,7 @@ class NetworkIoViewModel(
         }
 
         val activeCount = interfaces.count { it.isUp }
-        val overallStatus = when {
-            activeCount == 0 -> StatusLevel.Critical
-            activeCount < interfaces.size -> StatusLevel.Operational // Primary interfaces online, backup/wifi down is normal
-            else -> StatusLevel.Operational
-        }
+        val overallStatus = NetworkInterfaceUi.overallStatus(interfaces)
 
         val targetName = currentSelectedName ?: data.selectedInterfaceName
         val selected = interfaces.firstOrNull { it.name == targetName }

@@ -94,6 +94,11 @@ data class NetworkInterfaceData(
     val totalTxBytes: Long,
     val rxHistory: List<Float> = emptyList(),
     val txHistory: List<Float> = emptyList(),
+    val macAddress: String = "",
+    val mtu: Int = 0,
+    val linkSpeedMbps: Int = 0,
+    val rxErrors: Long = 0L,
+    val txErrors: Long = 0L,
 )
 
 /**
@@ -112,6 +117,7 @@ data class TemperatureSensorData(
     val currentTempC: Float,
     val warningThresholdC: Float = 70.0f,
     val criticalThresholdC: Float = 85.0f,
+    val history: List<Float> = emptyList(),
 )
 
 /**
@@ -122,6 +128,7 @@ data class FanSensorData(
     val rpm: Int,
     val maxRpm: Int = 2200,
     val dutyCyclePercent: Float = if (maxRpm > 0) (rpm.toFloat() / maxRpm).coerceIn(0f, 1f) else 0f,
+    val rpmHistory: List<Float> = emptyList(),
 )
 
 /**
@@ -349,6 +356,11 @@ class TelemetryStateHolder {
                         3.0f, 2.8f, 3.1f, 3.5f, 3.21f, 2.9f, 3.4f, 3.8f,
                         4.0f, 3.5f, 3.1f, 3.21f, 3.3f, 3.0f, 3.21f, 3.21f,
                     ),
+                    macAddress = "a8:5e:45:3c:91:d2",
+                    mtu = 1500,
+                    linkSpeedMbps = 1000,
+                    rxErrors = 0L,
+                    txErrors = 0L,
                 ),
                 NetworkInterfaceData(
                     name = "eth1",
@@ -368,6 +380,11 @@ class TelemetryStateHolder {
                         0.08f, 0.09f, 0.085f, 0.07f, 0.08f, 0.09f, 0.085f, 0.08f,
                         0.085f, 0.09f, 0.08f, 0.085f, 0.085f, 0.08f, 0.085f, 0.085f,
                     ),
+                    macAddress = "a8:5e:45:3c:91:d3",
+                    mtu = 9000,
+                    linkSpeedMbps = 100,
+                    rxErrors = 12L,
+                    txErrors = 3L,
                 ),
                 NetworkInterfaceData(
                     name = "wlan0",
@@ -379,6 +396,11 @@ class TelemetryStateHolder {
                     totalTxBytes = 450_000_000L,
                     rxHistory = List(24) { 0f },
                     txHistory = List(24) { 0f },
+                    macAddress = "f4:6d:3f:0a:be:17",
+                    mtu = 1500,
+                    linkSpeedMbps = 0,
+                    rxErrors = 0L,
+                    txErrors = 0L,
                 ),
             ),
             selectedInterfaceName = "eth0",
@@ -393,6 +415,11 @@ class TelemetryStateHolder {
                 currentTempC = 58.0f,
                 warningThresholdC = 75.0f,
                 criticalThresholdC = 85.0f,
+                    history = listOf(
+                        58.0f, 60.7f, 61.4f, 59.5f, 56.5f, 54.6f, 55.3f, 58.1f,
+                        60.8f, 61.4f, 59.4f, 56.4f, 54.6f, 55.3f, 58.1f, 60.8f,
+                        61.4f, 59.4f, 56.3f, 54.6f, 55.4f, 58.2f, 60.8f, 61.4f,
+                    ),
             ),
             driveTemperatures = listOf(
                 TemperatureSensorData(
@@ -400,18 +427,33 @@ class TelemetryStateHolder {
                     currentTempC = 41.0f,
                     warningThresholdC = 65.0f,
                     criticalThresholdC = 75.0f,
+                    history = listOf(
+                        41.0f, 42.6f, 42.9f, 41.9f, 40.1f, 39.0f, 39.5f, 41.0f,
+                        42.6f, 42.9f, 41.8f, 40.1f, 39.0f, 39.5f, 41.1f, 42.6f,
+                        42.9f, 41.8f, 40.1f, 39.0f, 39.5f, 41.1f, 42.6f, 42.9f,
+                    ),
                 ),
                 TemperatureSensorData(
                     label = "sda (WD Red 8TB)",
                     currentTempC = 34.0f,
                     warningThresholdC = 50.0f,
                     criticalThresholdC = 60.0f,
+                    history = listOf(
+                        34.0f, 34.8f, 35.0f, 34.4f, 33.6f, 33.0f, 33.2f, 34.0f,
+                        34.8f, 35.0f, 34.4f, 33.5f, 33.0f, 33.2f, 34.0f, 34.8f,
+                        35.0f, 34.4f, 33.5f, 33.0f, 33.2f, 34.1f, 34.8f, 35.0f,
+                    ),
                 ),
                 TemperatureSensorData(
                     label = "sdb (WD Red 8TB)",
                     currentTempC = 36.0f,
                     warningThresholdC = 50.0f,
                     criticalThresholdC = 60.0f,
+                    history = listOf(
+                        36.0f, 36.9f, 37.2f, 36.5f, 35.5f, 34.8f, 35.1f, 36.0f,
+                        37.0f, 37.2f, 36.5f, 35.5f, 34.8f, 35.1f, 36.0f, 37.0f,
+                        37.2f, 36.5f, 35.4f, 34.8f, 35.1f, 36.1f, 37.0f, 37.2f,
+                    ),
                 ),
             ),
             fans = listOf(
@@ -419,16 +461,31 @@ class TelemetryStateHolder {
                     label = "CPU Fan",
                     rpm = 1380,
                     maxRpm = 2200,
+                    rpmHistory = listOf(
+                        1380.0f, 1450.5f, 1467.6f, 1418.5f, 1340.2f, 1292.0f, 1310.5f, 1381.5f,
+                        1451.4f, 1467.3f, 1417.1f, 1338.8f, 1291.7f, 1311.4f, 1383.0f, 1452.3f,
+                        1466.9f, 1415.7f, 1337.5f, 1291.4f, 1312.4f, 1384.5f, 1453.2f, 1466.5f,
+                    ),
                 ),
                 FanSensorData(
                     label = "Chassis 1",
                     rpm = 920,
                     maxRpm = 1800,
+                    rpmHistory = listOf(
+                        920.0f, 951.3f, 959.0f, 937.1f, 902.3f, 880.9f, 889.1f, 920.7f,
+                        951.7f, 958.8f, 936.5f, 901.7f, 880.8f, 889.5f, 921.3f, 952.2f,
+                        958.6f, 935.9f, 901.1f, 880.6f, 890.0f, 922.0f, 952.5f, 958.4f,
+                    ),
                 ),
                 FanSensorData(
                     label = "Chassis 2",
                     rpm = 890,
                     maxRpm = 1800,
+                    rpmHistory = listOf(
+                        890.0f, 917.4f, 924.1f, 905.0f, 874.5f, 855.8f, 863.0f, 890.6f,
+                        917.8f, 923.9f, 904.4f, 874.0f, 855.7f, 863.3f, 891.2f, 918.1f,
+                        923.8f, 903.9f, 873.5f, 855.6f, 863.7f, 891.8f, 918.5f, 923.6f,
+                    ),
                 ),
             ),
         ),

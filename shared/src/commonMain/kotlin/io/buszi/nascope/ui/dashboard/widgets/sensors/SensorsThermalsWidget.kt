@@ -451,7 +451,7 @@ private fun EmptySensorsPlaceholder() {
     }
 }
 
-private fun formatDecimal(value: Float): String {
+internal fun formatDecimal(value: Float): String {
     val rounded = (value * 10).roundToInt()
     val whole = rounded / 10
     val fraction = abs(rounded % 10)

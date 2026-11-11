@@ -3,6 +3,7 @@ package io.buszi.nascope.ui.dashboard.widgets.network
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import io.buszi.nascope.ui.dashboard.framework.BrickSpan
+import io.buszi.nascope.ui.dashboard.framework.BrickDetails
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrick
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 
@@ -16,6 +17,10 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 data object NetworkIoBrick : DashboardBrick {
     override val id: DashboardBrickId = DashboardBrickId.NetworkIo
     override val span: BrickSpan = BrickSpan.Double
+
+    override val details: BrickDetails = BrickDetails { onClose, modifier ->
+        NetworkDetailsScreen(onClose = onClose, modifier = modifier)
+    }
 
     @Composable
     override fun Content(modifier: Modifier) {
