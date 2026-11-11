@@ -241,7 +241,10 @@ private fun ProcessTableSection(
                 },
             )
 
+            // Extra space below the search field: its minimum touch target (48dp around a 32dp field) and the
+            // chips' own targets would otherwise overlap, and the field wins taps on the top of the first chip row.
             FlowRow(
+                modifier = Modifier.padding(top = AppTheme.spacing.spaceSm),
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
             ) {

@@ -15,8 +15,14 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -68,6 +74,15 @@ fun NascopeAppScaffold(
         DashboardScreen(selectedBrickId = selectedBrickId, onOpenDetails = onOpenDetails)
     },
 ) {
+    // Keyboard shortcuts (Escape) only reach this scaffold while it is in the focus path. A text field that
+    // leaves the composition while focused (e.g. closing the process details after searching) clears focus
+    // entirely, so take it back whenever nothing in the scaffold holds focus.
+    val focusRequester = remember { FocusRequester() }
+    var hasFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(hasFocus, navigator.currentRoute) {
+        if (!hasFocus) runCatching { focusRequester.requestFocus() }
+    }
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
@@ -80,6 +95,8 @@ fun NascopeAppScaffold(
                     false
                 }
             }
+            .focusRequester(focusRequester)
+            .onFocusChanged { hasFocus = it.hasFocus }
             .focusable(),
     ) {
         val windowWidthClass = maxWidth.toWindowWidthClass()
