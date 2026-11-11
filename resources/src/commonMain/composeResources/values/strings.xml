@@ -103,6 +103,7 @@
     <string name="widget_containers_running_label">RUNNING</string>
     <string name="widget_containers_paused_label">PAUSED</string>
     <string name="widget_containers_stopped_label">STOPPED</string>
+    <string name="widget_containers_restarting_label">RESTARTING</string>
     <string name="widget_containers_running_count">%1$d RUNNING</string>
     <string name="widget_containers_paused_count">%1$d PAUSED</string>
     <string name="widget_containers_stopped_count">%1$d STOPPED</string>
@@ -194,4 +195,21 @@
     <string name="details_cpu_sort_usage">LOAD</string>
     <string name="details_cpu_sort_frequency">CLOCK</string>
     <string name="details_cpu_sort_temperature">TEMP</string>
+
+    <!-- Containers details -->
+    <string name="details_containers_title">CONTAINERS // DETAILS</string>
+    <string name="details_containers_subtitle">%1$s // %2$d CONTAINERS</string>
+    <string name="details_containers_overview">OVERVIEW</string>
+    <string name="details_containers_stat_cpu_total">CPU TOTAL</string>
+    <string name="details_containers_stat_mem_total">MEM TOTAL</string>
+    <string name="details_containers_list">CONTAINERS</string>
+    <string name="details_containers_filter_all">ALL</string>
+    <string name="details_containers_filter_format">%1$s %2$d</string>
+    <string name="details_containers_no_match">NO CONTAINERS MATCH FILTER</string>
+    <string name="details_containers_logs">RECENT LOGS</string>
+    <string name="details_containers_no_logs">NO LOG OUTPUT</string>
+    <string name="details_containers_field_image">IMAGE</string>
+    <string name="details_containers_field_uptime">UPTIME</string>
+    <string name="details_containers_field_memory_limit">MEM LIMIT</string>
+    <string name="details_containers_unlimited">UNLIMITED</string>
 </resources>

@@ -3,6 +3,7 @@ package io.buszi.nascope.ui.common.model
 import androidx.compose.runtime.Immutable
 import io.buszi.nascope.data.telemetry.ContainerInfo
 import io.buszi.nascope.data.telemetry.ContainerState
+import io.buszi.nascope.ui.common.components.badges.StatusLevel
 
 /**
  * UI representation of a container lifecycle state.
@@ -14,6 +15,14 @@ enum class ContainerStateUi {
     Stopped,
     Restarting,
     ;
+
+    /** Health implied by the state: running is nominal, paused or stopped need attention, restarting is critical. */
+    val status: StatusLevel
+        get() = when (this) {
+            Running -> StatusLevel.Operational
+            Paused, Stopped -> StatusLevel.Degraded
+            Restarting -> StatusLevel.Critical
+        }
 
     companion object {
         fun from(data: ContainerState): ContainerStateUi = when (data) {
@@ -38,7 +47,14 @@ data class ContainerUi(
     val memoryUsageBytes: Long,
     val memoryLimitBytes: Long? = null,
     val uptime: String,
+    val recentLogs: List<String> = emptyList(),
 ) {
+    /** Memory usage relative to the configured limit in `[0.0, 1.0]`, or `null` when unlimited. */
+    val memoryRatio: Float?
+        get() = memoryLimitBytes
+            ?.takeIf { it > 0L }
+            ?.let { (memoryUsageBytes.toFloat() / it).coerceIn(0f, 1f) }
+
     companion object {
         fun from(data: ContainerInfo) = ContainerUi(
             id = data.id,
@@ -49,6 +65,7 @@ data class ContainerUi(
             memoryUsageBytes = data.memoryUsageBytes,
             memoryLimitBytes = data.memoryLimitBytes,
             uptime = data.uptime,
+            recentLogs = data.recentLogs,
         )
     }
 }

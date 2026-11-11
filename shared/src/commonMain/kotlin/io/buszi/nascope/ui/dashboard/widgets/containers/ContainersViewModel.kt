@@ -50,11 +50,7 @@ class ContainersViewModel(
 
     private fun deriveViewState(data: ContainersData, isExpanded: Boolean): ViewState {
         val containers = data.containers.map(ContainerUi::from)
-        val overallStatus = when {
-            containers.any { it.state == ContainerStateUi.Restarting } -> StatusLevel.Critical
-            containers.any { it.state == ContainerStateUi.Stopped || it.state == ContainerStateUi.Paused } -> StatusLevel.Degraded
-            else -> StatusLevel.Operational
-        }
+        val overallStatus = containers.maxOfOrNull { it.state.status } ?: StatusLevel.Operational
 
         return ViewState(
             engine = data.engine,

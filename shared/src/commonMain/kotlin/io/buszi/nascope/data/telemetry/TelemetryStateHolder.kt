@@ -155,6 +155,7 @@ data class ContainerInfo(
     val memoryUsageBytes: Long,
     val memoryLimitBytes: Long? = null,
     val uptime: String,
+    val recentLogs: List<String> = emptyList(),
 )
 
 /**
@@ -447,6 +448,12 @@ class TelemetryStateHolder {
                     memoryUsageBytes = 48_500_000L,
                     memoryLimitBytes = 256_000_000L,
                     uptime = "Up 14 days",
+                    recentLogs = listOf(
+                        "10:41:58 INFO  router nextcloud@docker healthy",
+                        "10:42:03 INFO  GET /dashboard/api/overview 200 4ms",
+                        "10:42:11 INFO  certificate renewed for cloud.example.com",
+                        "10:42:19 INFO  GET /dashboard/api/http/routers 200 6ms",
+                    ),
                 ),
                 ContainerInfo(
                     id = "e4a2d981",
@@ -457,6 +464,12 @@ class TelemetryStateHolder {
                     memoryUsageBytes = 285_000_000L,
                     memoryLimitBytes = 1_024_000_000L,
                     uptime = "Up 14 days",
+                    recentLogs = listOf(
+                        "10:41:52 [notice] ready to handle connections",
+                        "10:42:01 GET /remote.php/dav/files/alpha/ 207 38ms",
+                        "10:42:07 GET /index.php/apps/files/api/v1/stats 200 21ms",
+                        "10:42:16 POST /index.php/login/v2/poll 200 12ms",
+                    ),
                 ),
                 ContainerInfo(
                     id = "c18f9024",
@@ -467,6 +480,12 @@ class TelemetryStateHolder {
                     memoryUsageBytes = 194_000_000L,
                     memoryLimitBytes = 512_000_000L,
                     uptime = "Up 14 days",
+                    recentLogs = listOf(
+                        "10:40:12 LOG:  checkpoint starting: time",
+                        "10:40:12 LOG:  checkpoint complete: wrote 142 buffers (0.9%)",
+                        "10:41:40 LOG:  connection received: host=172.18.0.4",
+                        "10:42:02 LOG:  connection authorized: user=nextcloud database=nc",
+                    ),
                 ),
                 ContainerInfo(
                     id = "92d05f3b",
@@ -477,6 +496,12 @@ class TelemetryStateHolder {
                     memoryUsageBytes = 640_000_000L,
                     memoryLimitBytes = 2_048_000_000L,
                     uptime = "Up 3 days",
+                    recentLogs = listOf(
+                        "10:41:30 INFO  Library scan completed in 4.2s",
+                        "10:41:58 INFO  Transcode session started: 1080p -> 720p",
+                        "10:42:09 INFO  Client 192.168.1.54 requested /library/sections",
+                        "10:42:18 INFO  Transcode session 1 progress 62%",
+                    ),
                 ),
                 ContainerInfo(
                     id = "4b71e86a",
@@ -487,6 +512,11 @@ class TelemetryStateHolder {
                     memoryUsageBytes = 32_000_000L,
                     memoryLimitBytes = 128_000_000L,
                     uptime = "Up 14 days",
+                    recentLogs = listOf(
+                        "10:30:00 [INFO] Rocket has launched from http://0.0.0.0:80",
+                        "10:38:14 [INFO] POST /identity/accounts/prelogin 200",
+                        "10:41:05 [INFO] GET /api/sync 200 (cache hit)",
+                    ),
                 ),
                 ContainerInfo(
                     id = "3c89b21f",
@@ -497,6 +527,11 @@ class TelemetryStateHolder {
                     memoryUsageBytes = 18_000_000L,
                     memoryLimitBytes = 128_000_000L,
                     uptime = "Up 14 days",
+                    recentLogs = listOf(
+                        "10:00:01 * Background saving started by pid 21",
+                        "10:00:01 * DB saved on disk",
+                        "10:41:10 * 100 changes in 300 seconds. Saving...",
+                    ),
                 ),
                 ContainerInfo(
                     id = "d58e310a",
@@ -507,6 +542,11 @@ class TelemetryStateHolder {
                     memoryUsageBytes = 112_000_000L,
                     memoryLimitBytes = 1_024_000_000L,
                     uptime = "Paused",
+                    recentLogs = listOf(
+                        "09:12:44 INFO  Torrent ubuntu-24.04.iso paused",
+                        "09:12:44 INFO  Paused all active transfers (3)",
+                        "09:12:45 INFO  Container paused by user",
+                    ),
                 ),
                 ContainerInfo(
                     id = "1a84f67c",
@@ -517,6 +557,11 @@ class TelemetryStateHolder {
                     memoryUsageBytes = 0L,
                     memoryLimitBytes = 512_000_000L,
                     uptime = "Exited (0) 6h ago",
+                    recentLogs = listOf(
+                        "04:00:01 borgmatic: Creating archive at /mnt/backup::alpha-2026-11-11",
+                        "04:06:47 borgmatic: Pruning archives",
+                        "04:06:52 borgmatic: Finished backup successfully (exit 0)",
+                    ),
                 ),
             ),
         ),

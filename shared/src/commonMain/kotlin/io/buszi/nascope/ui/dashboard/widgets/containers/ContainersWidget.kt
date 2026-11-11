@@ -220,12 +220,7 @@ private fun ContainerPreviewRow(
     container: ContainerUi,
     modifier: Modifier = Modifier,
 ) {
-    val statusColor = when (container.state) {
-        ContainerStateUi.Running -> AppTheme.colors.operational
-        ContainerStateUi.Paused -> AppTheme.colors.degraded
-        ContainerStateUi.Stopped -> AppTheme.colors.textMuted
-        ContainerStateUi.Restarting -> AppTheme.colors.critical
-    }
+    val statusColor = container.state.accentColor()
 
     Row(
         modifier = modifier
@@ -400,12 +395,8 @@ private fun ContainerRowCard(
     isWide: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val (statusColor, statusLabel) = when (container.state) {
-        ContainerStateUi.Running -> Pair(AppTheme.colors.operational, "RUNNING")
-        ContainerStateUi.Paused -> Pair(AppTheme.colors.degraded, "PAUSED")
-        ContainerStateUi.Stopped -> Pair(AppTheme.colors.textMuted, "STOPPED")
-        ContainerStateUi.Restarting -> Pair(AppTheme.colors.critical, "RESTARTING")
-    }
+    val statusColor = container.state.accentColor()
+    val statusLabel = container.state.label()
 
     Box(
         modifier = modifier
