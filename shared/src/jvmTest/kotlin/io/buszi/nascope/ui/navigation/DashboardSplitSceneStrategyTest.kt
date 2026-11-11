@@ -29,33 +29,50 @@ class DashboardSplitSceneStrategyTest {
     ) {}
 
     @Test
-    fun returnsSplitSceneOnExpandedWidthWhenDashboardAndDetailsAreStacked() {
-        val strategy = DashboardSplitSceneStrategy<NavKey>(WindowWidthClass.Expanded)
+    fun returnsSplitSceneOnExpandedAndMediumWidthsWhenDashboardAndDetailsAreStacked() {
         val entries = listOf(dashboardEntry, detailsEntry)
 
-        val scene = with(strategy) { scope.calculateScene(entries) }
+        for (widthClass in listOf(WindowWidthClass.Expanded, WindowWidthClass.Medium)) {
+            val strategy = DashboardSplitSceneStrategy<NavKey>(widthClass)
+            val scene = with(strategy) { scope.calculateScene(entries) }
 
-        val splitScene = assertIs<DashboardSplitScene<NavKey>>(scene)
-        assertEquals(listOf(dashboardEntry, detailsEntry), splitScene.entries)
-        assertEquals(listOf(dashboardEntry), splitScene.previousEntries)
+            val splitScene = assertIs<DashboardSplitScene<NavKey>>(scene)
+            assertEquals(dashboardEntry.contentKey, splitScene.key)
+            assertEquals(listOf(dashboardEntry, detailsEntry), splitScene.entries)
+            assertEquals(listOf(dashboardEntry), splitScene.previousEntries)
+        }
     }
 
     @Test
-    fun returnsNullOnCompactAndMediumWidthsForSinglePaneFallback() {
-        val entries = listOf(dashboardEntry, detailsEntry)
+    fun returnsSplitSceneWithSameKeyWhenDashboardIsAloneOnNonCompactWidths() {
+        val strategy = DashboardSplitSceneStrategy<NavKey>(WindowWidthClass.Expanded)
 
+        val dashboardOnlyScene = assertIs<DashboardSplitScene<NavKey>>(
+            with(strategy) { scope.calculateScene(listOf(dashboardEntry)) },
+        )
+        val withDetailsScene = assertIs<DashboardSplitScene<NavKey>>(
+            with(strategy) { scope.calculateScene(listOf(dashboardEntry, detailsEntry)) },
+        )
+
+        assertEquals(dashboardOnlyScene.key, withDetailsScene.key)
+        assertEquals(listOf(dashboardEntry), dashboardOnlyScene.entries)
+        assertEquals(emptyList(), dashboardOnlyScene.previousEntries)
+        assertNull(dashboardOnlyScene.detailEntry)
+    }
+
+    @Test
+    fun returnsNullOnCompactWidthForSinglePaneFallback() {
+        val entries = listOf(dashboardEntry, detailsEntry)
         val compactStrategy = DashboardSplitSceneStrategy<NavKey>(WindowWidthClass.Compact)
-        val mediumStrategy = DashboardSplitSceneStrategy<NavKey>(WindowWidthClass.Medium)
 
+        assertNull(with(compactStrategy) { scope.calculateScene(listOf(dashboardEntry)) })
         assertNull(with(compactStrategy) { scope.calculateScene(entries) })
-        assertNull(with(mediumStrategy) { scope.calculateScene(entries) })
     }
 
     @Test
-    fun returnsNullWhenTopEntryIsNotDetailPane() {
+    fun returnsNullWhenTopEntryIsNotDashboardOrDetailPane() {
         val strategy = DashboardSplitSceneStrategy<NavKey>(WindowWidthClass.Expanded)
 
-        assertNull(with(strategy) { scope.calculateScene(listOf(dashboardEntry)) })
         assertNull(with(strategy) { scope.calculateScene(listOf(dashboardEntry, nodesEntry)) })
     }
 }

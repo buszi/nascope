@@ -47,7 +47,7 @@ import io.buszi.nascope.ui.settings.SettingsScreen
  * the navigation backstack and screen state across window resizes and orientation changes:
  * - [WindowWidthClass.Expanded] (`>= 1280dp`) & [WindowWidthClass.Medium] (`768dp - 1279dp`):
  *   56dp compact icon sidebar rail + top control bar to maximize telemetry canvas space,
- *   plus multi-pane dashboard/inspector split scene on [WindowWidthClass.Expanded] via [DashboardSplitSceneStrategy].
+ *   plus multi-pane dashboard/inspector split scene via [DashboardSplitSceneStrategy].
  * - [WindowWidthClass.Compact] (`< 768dp`): Bottom navigation bar + top app bar with back navigation.
  *
  * @param modifier Root layout modifier applied to the scaffold container.

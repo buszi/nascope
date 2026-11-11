@@ -1,5 +1,8 @@
 package io.buszi.nascope.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -10,21 +13,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.metadata
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
+import androidx.navigation3.ui.NavDisplay
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 
 /**
  * Navigation 3 [SceneStrategy] enabling multi-pane dashboard + detail inspector layouts
- * on expanded form factors ([WindowWidthClass.Expanded]).
+ * on tablet and desktop form factors ([WindowWidthClass.Medium] and [WindowWidthClass.Expanded]).
  *
- * When the active window width is [WindowWidthClass.Expanded] and the top two entries on the
- * backstack are a [mainPane] entry ([NavRoute.Dashboard]) followed by a [detailPane] entry
- * ([NavRoute.Details]), both entries are rendered side-by-side within a single [DashboardSplitScene].
- * On [WindowWidthClass.Compact] and [WindowWidthClass.Medium], returns `null` so Navigation 3
- * falls back to single-pane full-screen rendering.
+ * Uses a stable [DashboardSplitScene.key] derived from the [mainPane] entry ([NavRoute.Dashboard])
+ * whether or not a [detailPane] entry ([NavRoute.Details]) is stacked on top, preventing
+ * [NavDisplay] from treating side-panel open/close/switch actions as full-scene transitions
+ * that would re-animate or flash the dashboard bricks.
+ *
+ * On [WindowWidthClass.Compact], returns `null` so Navigation 3 falls back to single-pane
+ * full-screen rendering.
  */
 @Immutable
 class DashboardSplitSceneStrategy<T : Any>(
@@ -34,22 +41,35 @@ class DashboardSplitSceneStrategy<T : Any>(
     override fun SceneStrategyScope<T>.calculateScene(
         entries: List<NavEntry<T>>,
     ): Scene<T>? {
-        if (windowWidthClass != WindowWidthClass.Expanded) return null
-        if (entries.size < 2) return null
+        if (windowWidthClass == WindowWidthClass.Compact) return null
+        if (entries.isEmpty()) return null
 
-        val mainEntry = entries[entries.lastIndex - 1]
-        val detailEntry = entries.last()
+        val lastEntry = entries.last()
+        if (lastEntry.metadata[MainPaneMetadataKey] == true) {
+            return DashboardSplitScene(
+                key = lastEntry.contentKey,
+                previousEntries = entries.dropLast(1),
+                mainEntry = lastEntry,
+                detailEntry = null,
+            )
+        }
 
-        val isMainPane = mainEntry.metadata[MainPaneMetadataKey] == true
-        val isDetailPane = detailEntry.metadata[DetailPaneMetadataKey] == true
-        if (!isMainPane || !isDetailPane) return null
+        if (entries.size >= 2) {
+            val mainEntry = entries[entries.lastIndex - 1]
+            val detailEntry = lastEntry
+            val isMainPane = mainEntry.metadata[MainPaneMetadataKey] == true
+            val isDetailPane = detailEntry.metadata[DetailPaneMetadataKey] == true
+            if (isMainPane && isDetailPane) {
+                return DashboardSplitScene(
+                    key = mainEntry.contentKey,
+                    previousEntries = entries.dropLast(1),
+                    mainEntry = mainEntry,
+                    detailEntry = detailEntry,
+                )
+            }
+        }
 
-        return DashboardSplitScene(
-            key = Pair(mainEntry.contentKey, detailEntry.contentKey),
-            previousEntries = entries.dropLast(1),
-            mainEntry = mainEntry,
-            detailEntry = detailEntry,
-        )
+        return null
     }
 
     companion object {
@@ -65,7 +85,7 @@ class DashboardSplitSceneStrategy<T : Any>(
 }
 
 /**
- * Two-pane Navigation 3 [Scene] rendering the primary telemetry dashboard alongside
+ * Adaptive Navigation 3 [Scene] rendering the primary telemetry dashboard and, when present,
  * a right-docked detail inspector pane separated by a hairline border.
  */
 @Immutable
@@ -73,10 +93,13 @@ data class DashboardSplitScene<T : Any>(
     override val key: Any,
     override val previousEntries: List<NavEntry<T>>,
     val mainEntry: NavEntry<T>,
-    val detailEntry: NavEntry<T>,
+    val detailEntry: NavEntry<T>?,
 ) : Scene<T> {
 
-    override val entries: List<NavEntry<T>> = listOf(mainEntry, detailEntry)
+    override val entries: List<NavEntry<T>> = listOfNotNull(mainEntry, detailEntry)
+
+    override val metadata: Map<String, Any> =
+        (entries.lastOrNull()?.metadata ?: emptyMap()) + SplitSceneNoTransitionMetadata
 
     override val content: @Composable () -> Unit = {
         Row(
@@ -92,21 +115,29 @@ data class DashboardSplitScene<T : Any>(
                 mainEntry.Content()
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(AppTheme.dimensions.hairlineBorder)
-                    .background(AppTheme.colors.baseBorder),
-            )
+            if (detailEntry != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(AppTheme.dimensions.hairlineBorder)
+                        .background(AppTheme.colors.baseBorder),
+                )
 
-            Box(
-                modifier = Modifier
-                    .width(AppTheme.dimensions.detailInspectorWidth)
-                    .fillMaxHeight()
-                    .background(AppTheme.colors.subSurface),
-            ) {
-                detailEntry.Content()
+                Box(
+                    modifier = Modifier
+                        .width(AppTheme.dimensions.detailInspectorWidth)
+                        .fillMaxHeight()
+                        .background(AppTheme.colors.subSurface),
+                ) {
+                    detailEntry.Content()
+                }
             }
         }
     }
+}
+
+private val SplitSceneNoTransitionMetadata: Map<String, Any> = metadata {
+    put(NavDisplay.TransitionKey) { EnterTransition.None togetherWith ExitTransition.None }
+    put(NavDisplay.PopTransitionKey) { EnterTransition.None togetherWith ExitTransition.None }
+    put(NavDisplay.PredictivePopTransitionKey) { EnterTransition.None togetherWith ExitTransition.None }
 }

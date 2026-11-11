@@ -40,14 +40,10 @@ enum class WindowWidthClass {
     }
 }
 
-typealias WindowSizeClass = WindowWidthClass
-
 /**
  * Ambient window-level [WindowWidthClass] updated dynamically on window resize and orientation change.
  */
 val LocalWindowWidthClass = compositionLocalOf { WindowWidthClass.Compact }
-
-val LocalWindowSizeClass = LocalWindowWidthClass
 
 /**
  * Resolves the [WindowWidthClass] for this [Dp] width using ambient [AppTheme.dimensions].
