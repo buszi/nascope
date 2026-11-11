@@ -70,15 +70,19 @@ class NascopeNavigator(
     }
 
     /**
-     * Opens or updates the detail route for [brickId].
+     * Opens, updates, or toggles the detail route for [brickId].
      *
-     * If a [NavRoute.Details] entry is already at the top of the stack, replaces it in-place
-     * so switching inspected bricks in multi-pane mode does not stack redundant detail screens.
+     * If the details for [brickId] are already open, tapping the same brick toggles
+     * the panel closed and returns to full dashboard view. If a different brick was
+     * open, replaces the top entry with the new brick details.
      */
     fun navigateToDetails(brickId: DashboardBrickId) {
         val target = NavRoute.Details(brickId)
         val current = currentRoute
-        if (current == target) return
+        if (current == target) {
+            navigateBack()
+            return
+        }
 
         if (current is NavRoute.Details && backStack.isNotEmpty()) {
             backStack[backStack.lastIndex] = target

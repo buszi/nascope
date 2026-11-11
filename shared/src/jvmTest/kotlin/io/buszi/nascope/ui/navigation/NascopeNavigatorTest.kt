@@ -79,4 +79,19 @@ class NascopeNavigatorTest {
         assertNull(navigator.selectedBrickId)
         assertFalse(navigator.canNavigateBack)
     }
+
+    @Test
+    fun secondTapOnSameBrickTogglesDetailsClosed() {
+        val navigator = createNavigator()
+
+        navigator.navigateToDetails(DashboardBrickId.CpuMatrix)
+        assertEquals(NavRoute.Details(DashboardBrickId.CpuMatrix), navigator.currentRoute)
+        assertTrue(navigator.canNavigateBack)
+
+        navigator.navigateToDetails(DashboardBrickId.CpuMatrix)
+        assertEquals(NavRoute.Dashboard, navigator.currentRoute)
+        assertNull(navigator.selectedBrickId)
+        assertFalse(navigator.canNavigateBack)
+        assertEquals(listOf<NavKey>(NavRoute.Dashboard), navigator.backStack.toList())
+    }
 }

@@ -36,6 +36,7 @@ enum class NavigationGlyphType {
     Nodes,
     Settings,
     Back,
+    Close,
 }
 
 /**
@@ -80,6 +81,7 @@ fun NavigationGlyph(
             NavigationGlyphType.Nodes -> drawNodesGlyph(tint = tint, strokeWidth = strokeWidth, hairline = hairline)
             NavigationGlyphType.Settings -> drawSettingsGlyph(tint = tint, strokeWidth = strokeWidth)
             NavigationGlyphType.Back -> drawBackGlyph(tint = tint, strokeWidth = strokeWidth)
+            NavigationGlyphType.Close -> drawCloseGlyph(tint = tint, strokeWidth = strokeWidth)
         }
     }
 }
@@ -200,6 +202,24 @@ private fun DrawScope.drawBackGlyph(tint: Color, strokeWidth: Float) {
         color = tint,
         start = Offset(size.width * 0.28f, size.height * 0.50f),
         end = Offset(size.width * 0.78f, size.height * 0.50f),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round,
+    )
+}
+
+private fun DrawScope.drawCloseGlyph(tint: Color, strokeWidth: Float) {
+    val inset = size.minDimension * 0.24f
+    drawLine(
+        color = tint,
+        start = Offset(inset, inset),
+        end = Offset(size.width - inset, size.height - inset),
+        strokeWidth = strokeWidth,
+        cap = StrokeCap.Round,
+    )
+    drawLine(
+        color = tint,
+        start = Offset(size.width - inset, inset),
+        end = Offset(inset, size.height - inset),
         strokeWidth = strokeWidth,
         cap = StrokeCap.Round,
     )
