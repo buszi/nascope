@@ -157,6 +157,28 @@ data class ContainersData(
 }
 
 /**
+ * Encapsulates resource consumption and identity for a single host process.
+ */
+data class ProcessInfo(
+    val pid: Int,
+    val name: String,
+    val user: String,
+    val cpuPercent: Float,
+    val memoryPercent: Float,
+    val memoryRssBytes: Long = 0L,
+    val status: String = "R",
+)
+
+/**
+ * Encapsulates host process table and summary counts telemetry.
+ */
+data class ProcessListData(
+    val processes: List<ProcessInfo> = emptyList(),
+    val totalProcessCount: Int = 184,
+    val runningProcessCount: Int = 3,
+)
+
+/**
  * Shared singleton hub managing telemetry polling, caching, and stream distribution.
  *
  * All widget ViewModels subscribe to specific telemetry slices exposed by this state holder.
@@ -451,6 +473,88 @@ class TelemetryStateHolder {
     )
     val containers: StateFlow<ContainersData> = _containers.asStateFlow()
 
+    private val _processList = MutableStateFlow(
+        ProcessListData(
+            totalProcessCount = 184,
+            runningProcessCount = 3,
+            processes = listOf(
+                ProcessInfo(
+                    pid = 1042,
+                    name = "qemu-system-x86",
+                    user = "libvirt",
+                    cpuPercent = 28.4f,
+                    memoryPercent = 14.2f,
+                    memoryRssBytes = 4_870_000_000L,
+                    status = "R",
+                ),
+                ProcessInfo(
+                    pid = 2391,
+                    name = "plex-media-srv",
+                    user = "plex",
+                    cpuPercent = 16.8f,
+                    memoryPercent = 8.5f,
+                    memoryRssBytes = 2_920_000_000L,
+                    status = "S",
+                ),
+                ProcessInfo(
+                    pid = 1820,
+                    name = "dockerd",
+                    user = "root",
+                    cpuPercent = 6.2f,
+                    memoryPercent = 3.1f,
+                    memoryRssBytes = 1_060_000_000L,
+                    status = "S",
+                ),
+                ProcessInfo(
+                    pid = 3410,
+                    name = "postgres",
+                    user = "postgres",
+                    cpuPercent = 4.5f,
+                    memoryPercent = 5.8f,
+                    memoryRssBytes = 1_990_000_000L,
+                    status = "S",
+                ),
+                ProcessInfo(
+                    pid = 4125,
+                    name = "traefik",
+                    user = "traefik",
+                    cpuPercent = 2.1f,
+                    memoryPercent = 1.2f,
+                    memoryRssBytes = 412_000_000L,
+                    status = "S",
+                ),
+                ProcessInfo(
+                    pid = 5122,
+                    name = "node",
+                    user = "app",
+                    cpuPercent = 1.9f,
+                    memoryPercent = 3.8f,
+                    memoryRssBytes = 1_300_000_000L,
+                    status = "S",
+                ),
+                ProcessInfo(
+                    pid = 890,
+                    name = "systemd-journal",
+                    user = "root",
+                    cpuPercent = 0.8f,
+                    memoryPercent = 1.5f,
+                    memoryRssBytes = 515_000_000L,
+                    status = "S",
+                ),
+                ProcessInfo(
+                    pid = 6210,
+                    name = "redis-server",
+                    user = "redis",
+                    cpuPercent = 0.5f,
+                    memoryPercent = 2.4f,
+                    memoryRssBytes = 824_000_000L,
+                    status = "S",
+                ),
+            ),
+        ),
+    )
+    val processList: StateFlow<ProcessListData> = _processList.asStateFlow()
+
     fun refresh() {
         // Triggered by manual dashboard or widget retry
         _hostOverview.value = _hostOverview.value.copy()
@@ -460,5 +564,6 @@ class TelemetryStateHolder {
         _networkIo.value = _networkIo.value.copy()
         _sensorsThermals.value = _sensorsThermals.value.copy()
         _containers.value = _containers.value.copy()
+        _processList.value = _processList.value.copy()
     }
 }

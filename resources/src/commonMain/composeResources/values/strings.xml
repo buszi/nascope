@@ -114,4 +114,20 @@
     <string name="widget_containers_engine_label">ENGINE</string>
     <string name="widget_containers_cpu_label">CPU</string>
     <string name="widget_containers_mem_label">MEM</string>
+    <string name="widget_processes_title">TOP PROCESSES</string>
+    <string name="widget_processes_title_compact">PROCESSES</string>
+    <string name="widget_processes_subtitle">%1$d RUNNING  •  %2$d TOTAL</string>
+    <string name="widget_processes_subtitle_compact">%1$d/%2$d RUNNING</string>
+    <string name="widget_processes_sort_cpu">SORT: CPU</string>
+    <string name="widget_processes_sort_mem">SORT: MEM</string>
+    <string name="widget_processes_col_pid">PID</string>
+    <string name="widget_processes_col_name">PROCESS</string>
+    <string name="widget_processes_col_user">USER</string>
+    <string name="widget_processes_col_cpu">CPU %</string>
+    <string name="widget_processes_col_mem">MEM %</string>
+    <string name="widget_processes_card_process_format">PROCESS %1$d OF %2$d</string>
+    <string name="widget_processes_status_healthy">NOMINAL</string>
+    <string name="widget_processes_status_elevated">HIGH LOAD</string>
+    <string name="widget_processes_status_critical">CRITICAL</string>
+    <string name="widget_processes_empty">NO ACTIVE PROCESSES FOUND</string>
 </resources>

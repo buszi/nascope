@@ -4,6 +4,7 @@ import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersBrick
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixBrick
 import io.buszi.nascope.ui.dashboard.widgets.memory.MemorySwapBrick
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoBrick
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListBrick
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsThermalsBrick
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsBrick
 import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewBrick
@@ -25,6 +26,7 @@ class BrickRegistry {
         NetworkIoBrick,
         SensorsThermalsBrick,
         ContainersBrick,
+        ProcessListBrick,
     )
 
     fun getActiveBricks(): List<DashboardBrick> = bricks
