@@ -56,6 +56,8 @@ data class StorageMountData(
     val usedBytes: Long,
     val freeBytes: Long,
     val isHealthy: Boolean = true,
+    val mountOptions: String = "",
+    val inodeUsagePercent: Float = 0f,
 )
 
 /**
@@ -65,6 +67,8 @@ data class StoragePoolsData(
     val mounts: List<StorageMountData>,
     val readRateBytesPerSec: Long,
     val writeRateBytesPerSec: Long,
+    val readHistory: List<Float> = emptyList(),
+    val writeHistory: List<Float> = emptyList(),
 )
 
 /**
@@ -242,6 +246,8 @@ class TelemetryStateHolder {
                     usedBytes = 153_600_000_000L,
                     freeBytes = 358_400_000_000L,
                     isHealthy = true,
+                    mountOptions = "rw,noatime,discard",
+                    inodeUsagePercent = 12.4f,
                 ),
                 StorageMountData(
                     mountPoint = "/volume1",
@@ -251,6 +257,8 @@ class TelemetryStateHolder {
                     usedBytes = 2_470_000_000_000L,
                     freeBytes = 1_330_000_000_000L,
                     isHealthy = true,
+                    mountOptions = "rw,relatime,compress=zstd:3",
+                    inodeUsagePercent = 3.1f,
                 ),
                 StorageMountData(
                     mountPoint = "/zpool/media",
@@ -260,6 +268,8 @@ class TelemetryStateHolder {
                     usedBytes = 6_880_000_000_000L,
                     freeBytes = 1_120_000_000_000L,
                     isHealthy = false,
+                    mountOptions = "rw,xattr,noacl",
+                    inodeUsagePercent = 41.8f,
                 ),
                 StorageMountData(
                     mountPoint = "/mnt/backup",
@@ -269,10 +279,22 @@ class TelemetryStateHolder {
                     usedBytes = 420_000_000_000L,
                     freeBytes = 1_580_000_000_000L,
                     isHealthy = true,
+                    mountOptions = "rw,relatime,nofail",
+                    inodeUsagePercent = 8.7f,
                 ),
             ),
             readRateBytesPerSec = 42_500_000L,
             writeRateBytesPerSec = 128_300_000L,
+            readHistory = listOf(
+                31.2f, 35.8f, 40.1f, 44.6f, 38.9f, 36.4f, 41.7f, 52.3f, 58.0f, 49.5f,
+                43.2f, 40.8f, 45.1f, 47.9f, 42.0f, 39.6f, 44.3f, 50.2f, 46.7f, 41.1f,
+                38.4f, 43.8f, 48.5f, 45.2f, 41.9f, 40.3f, 44.8f, 46.1f, 43.5f, 42.5f,
+            ),
+            writeHistory = listOf(
+                96.4f, 110.2f, 124.8f, 138.5f, 131.0f, 119.7f, 127.3f, 142.9f, 151.6f, 139.2f,
+                128.4f, 122.0f, 133.8f, 140.5f, 129.1f, 118.6f, 126.9f, 137.4f, 144.0f, 132.7f,
+                121.5f, 125.8f, 134.6f, 139.9f, 130.4f, 124.2f, 129.7f, 133.1f, 127.8f, 128.3f,
+            ),
         ),
     )
     val storagePools: StateFlow<StoragePoolsData> = _storagePools.asStateFlow()

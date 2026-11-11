@@ -154,4 +154,22 @@
     <string name="screen_details_route_tag">ROUTE: DETAILS(%1$s)</string>
     <string name="screen_details_description">Opened screen: Details for %1$s brick.</string>
     <string name="screen_details_close">Close Details</string>
+
+    <!-- Storage details -->
+    <string name="details_storage_title">STORAGE // DETAILS</string>
+    <string name="details_storage_subtitle">%1$d MOUNTS // %2$s TOTAL</string>
+    <string name="details_storage_overview">CAPACITY OVERVIEW</string>
+    <string name="details_storage_free_format">%1$s FREE</string>
+    <string name="details_storage_distribution">USAGE DISTRIBUTION</string>
+    <string name="details_storage_io">DISK I/O</string>
+    <string name="details_storage_mounts">MOUNT POINTS</string>
+    <string name="details_storage_sort_usage">USAGE</string>
+    <string name="details_storage_sort_name">NAME</string>
+    <string name="details_storage_sort_size">SIZE</string>
+    <string name="details_storage_field_device">DEVICE</string>
+    <string name="details_storage_field_filesystem">FILESYSTEM</string>
+    <string name="details_storage_field_options">OPTIONS</string>
+    <string name="details_storage_field_free">FREE</string>
+    <string name="details_storage_field_inodes">INODES</string>
+    <string name="details_storage_no_mounts">NO STORAGE MOUNTS DETECTED</string>
 </resources>

@@ -101,3 +101,9 @@ override val details: BrickDetails = BrickDetails { onClose, modifier ->
 - `NascopeAppScaffold` resolves `NavRoute.Details(brickId)` through `BrickRegistry.findBrick(id)?.details`; the same composable fills the 340–380dp inspector pane on Medium/Expanded and the whole screen on Compact.
 - `DashboardScreen` only attaches a click handler to bricks that have details.
 - Affordance: `DashboardScreen` provides `LocalBrickInteraction` (`None` / `Openable` / `Open`) around each brick and `DashboardWidget` renders it: a trailing `DetailsGlyph` (↗) when openable, plus an accent (`telemetryA`) border and raised fill while the brick's details are open. Bricks must use `DashboardWidget` as their root for this to apply.
+
+### Details screen building blocks (`ui/details/components`)
+- `DetailsScaffold`: shared frame (header with title/subtitle/status tag/close action, scrollable body). The close action is hidden on Compact, where the top bar provides back navigation.
+- `DetailsSection`: titled `TelemetryCard` grouping one aspect of the details; `DetailsKeyValueRow` for property readouts; `DetailsLoadingPlaceholder` for the loading state.
+- `SelectableChip` (`ui/common/components/inputs`): single-choice toggle for sort orders and filters.
+- A details ViewModel follows the same MVI rules as widget ViewModels and owns its own UI state (sort, filter, expanded rows); data comes from `TelemetryStateHolder`.

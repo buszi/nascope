@@ -61,9 +61,6 @@ import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewS
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-private const val StorageWarningThreshold: Float = 0.80f
-private const val StorageCriticalThreshold: Float = 0.90f
-
 @Composable
 fun StoragePoolsWidget(
     modifier: Modifier = Modifier,
@@ -421,16 +418,9 @@ private fun MountPointCard(
     isWide: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val ratio = if (mount.totalBytes > 0L) {
-        (mount.usedBytes.toFloat() / mount.totalBytes).coerceIn(0f, 1f)
-    } else 0f
+    val ratio = mount.usageRatio
     val percentage = (ratio * 100).toInt()
-
-    val mountStatus = when {
-        !mount.isHealthy || ratio >= StorageCriticalThreshold -> StatusLevel.Critical
-        ratio >= StorageWarningThreshold -> StatusLevel.Degraded
-        else -> StatusLevel.Operational
-    }
+    val mountStatus = mount.status
 
     Column(
         modifier = modifier

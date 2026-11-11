@@ -100,20 +100,7 @@ class StoragePoolsViewModel(
             }
 
         val overallStatus: StatusLevel
-            get() {
-                if (mounts.isEmpty()) return StatusLevel.Operational
-                val hasCritical = mounts.any { mount ->
-                    !mount.isHealthy || (mount.totalBytes > 0 && (mount.usedBytes.toFloat() / mount.totalBytes) >= 0.90f)
-                }
-                if (hasCritical) return StatusLevel.Critical
-
-                val hasDegraded = mounts.any { mount ->
-                    mount.totalBytes > 0 && (mount.usedBytes.toFloat() / mount.totalBytes) >= 0.80f
-                }
-                if (hasDegraded) return StatusLevel.Degraded
-
-                return StatusLevel.Operational
-            }
+            get() = mounts.overallStatus
 
         val totalCapacityBytes: Long
             get() = mounts.sumOf { it.totalBytes }
