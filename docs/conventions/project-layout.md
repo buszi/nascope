@@ -4,6 +4,20 @@ Structure and organization for code in the Nascope codebase.
 
 ---
 
+## Modules
+
+See [`module-architecture.md`](./module-architecture.md) for responsibilities and dependency direction.
+
+| Module | Contents |
+| :--- | :--- |
+| `domain-model/` | Shared domain models (`io.buszi.nascope.domain.model`), e.g. `domain/model/connection/`. Data only, no dependencies. |
+| `resources/` | Compose resources (strings, drawables, fonts). |
+| `shared/` | UI, ViewModels, navigation, design system, Koin application root. |
+
+Planned (Phase 4): `network/`, `storage/` and `domain/`, added by their own tasks.
+
+---
+
 ## Source Directory Layout
 
 | Location | Contents |

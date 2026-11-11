@@ -10,6 +10,7 @@ To keep documentation focused and modular, conventions are split into dedicated 
 
 | Topic | Document | When to Read |
 | :--- | :--- | :--- |
+| **Module Architecture** | [`docs/conventions/module-architecture.md`](./conventions/module-architecture.md) | Adding a module, interface, use case or domain model; deciding which layer code belongs to and which way dependencies point. |
 | **Project Layout** | [`docs/conventions/project-layout.md`](./conventions/project-layout.md) | Adding new files, structuring packages, understanding directory responsibilities. |
 | **Design System & Tokens** | [`docs/conventions/design-system.md`](./conventions/design-system.md) | Styling UI, choosing colors, typography (Inter vs JetBrains Mono), surface elevation layers. |
 | **Composable API & Performance** | [`docs/conventions/compose-api.md`](./conventions/compose-api.md) | Creating reusable composables, parameter ordering, previews, animation labels, draw phase rules. |
@@ -30,3 +31,4 @@ To keep documentation focused and modular, conventions are split into dedicated 
 4. **Stateful vs Stateless UI**: Separate composables into a stateful entrypoint (Koin + lifecycle) and a pure stateless composable (`viewState` + `onViewAction`).
 5. **Unit test standard**: Place tests in `shared/src/jvmTest/kotlin/`. Use `@get:Rule val coroutineRule = TestCoroutineRule()`, test flows with Turbine, and put test data in a `companion object` at the end of the file.
 6. **No git commit**: Never run `git commit`. Leave all changes in the working tree for review.
+7. **Layered modules**: `:shared` (UI) -> `:domain` (use cases) -> `:network` / `:storage` (thin public interfaces, internal implementations) -> `:domain-model`. ViewModels inject use cases only; data modules return domain models and hold no business rules.

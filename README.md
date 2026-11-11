@@ -16,6 +16,8 @@ nascope/
 │       ├── plugins.kmp.compose          # Compose Multiplatform dependencies & compiler
 │       ├── plugins.android.application  # Android application conventions
 │       └── plugins.desktop.application  # Desktop JVM application conventions
+├── domain-model/                 # Shared domain models (plain Kotlin, no dependencies)
+│   └── src/commonMain/kotlin/io/buszi/nascope/domain/model/
 ├── resources/                    # Common Compose Multiplatform assets & resources
 │   └── src/commonMain/composeResources/
 ├── shared/                       # Core shared business logic & UI components

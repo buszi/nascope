@@ -26,5 +26,6 @@ plugins {
 
 include(":androidApp")
 include(":desktopApp")
+include(":domain-model")
 include(":resources")
 include(":shared")
