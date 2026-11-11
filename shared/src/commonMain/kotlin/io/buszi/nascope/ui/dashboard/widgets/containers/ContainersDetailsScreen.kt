@@ -286,26 +286,31 @@ private fun ContainerDetailsCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(AppTheme.dimensions.statusDotSize)
-                    .background(accent, AppTheme.shapes.full),
-            )
-            Text(
-                text = container.name,
-                style = AppTheme.typography.codeBase.copy(fontWeight = FontWeight.SemiBold),
-                color = AppTheme.colors.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            Text(
-                text = "#${container.id}",
-                style = AppTheme.typography.labelCode,
-                color = AppTheme.colors.textMuted,
-                maxLines = 1,
-            )
-            Box(modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(AppTheme.dimensions.statusDotSize)
+                        .background(accent, AppTheme.shapes.full),
+                )
+                Text(
+                    text = container.name,
+                    style = AppTheme.typography.codeBase.copy(fontWeight = FontWeight.SemiBold),
+                    color = AppTheme.colors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Text(
+                    text = "#${container.id}",
+                    style = AppTheme.typography.labelCode,
+                    color = AppTheme.colors.textMuted,
+                    maxLines = 1,
+                )
+            }
             TagChip(text = container.state.label())
         }
 

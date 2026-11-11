@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -204,6 +206,7 @@ private fun WideStoragePoolsContent(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CompactStoragePoolsContent(
     viewState: ViewState,
@@ -214,8 +217,8 @@ private fun CompactStoragePoolsContent(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
     ) {
-        // Compact Disk I/O Row
-        Row(
+        // Compact Disk I/O Row: read and write stay intact and wrap as units when the brick is narrow
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(AppTheme.colors.inputBackground, AppTheme.shapes.base)
@@ -226,7 +229,7 @@ private fun CompactStoragePoolsContent(
                 )
                 .padding(horizontal = AppTheme.spacing.spaceSm, vertical = AppTheme.spacing.spaceXs),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
@@ -246,6 +249,8 @@ private fun CompactStoragePoolsContent(
                     text = stringResource(Res.string.widget_storage_io_rate_format, formatMbRate(viewState.readRateBytesPerSec)),
                     style = AppTheme.typography.codeBase,
                     color = AppTheme.colors.textPrimary,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
 
@@ -267,6 +272,8 @@ private fun CompactStoragePoolsContent(
                     text = stringResource(Res.string.widget_storage_io_rate_format, formatMbRate(viewState.writeRateBytesPerSec)),
                     style = AppTheme.typography.codeBase,
                     color = AppTheme.colors.textPrimary,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
         }

@@ -259,6 +259,7 @@
     <string name="details_network_field_total_tx">TOTAL TX</string>
     <string name="details_network_link_speed_format">%1$d Mbps</string>
     <string name="details_network_errors_format">%1$d / %2$d</string>
+    <string name="details_network_errors_tag">%1$d ERRORS</string>
     <string name="details_network_unknown_speed">UNKNOWN</string>
 
     <!-- Sensors details -->

@@ -407,18 +407,23 @@ private fun MountDetailsCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
         ) {
-            Text(
-                text = mount.mountPoint,
-                style = AppTheme.typography.codeBase,
-                color = AppTheme.colors.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            if (mount.fsType.isNotBlank()) {
-                TagChip(text = mount.fsType)
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+            ) {
+                Text(
+                    text = mount.mountPoint,
+                    style = AppTheme.typography.codeBase,
+                    color = AppTheme.colors.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (mount.fsType.isNotBlank()) {
+                    TagChip(text = mount.fsType)
+                }
             }
-            Box(modifier = Modifier.weight(1f))
             StatusDot(
                 status = status,
                 pulsing = status == StatusLevel.Critical,

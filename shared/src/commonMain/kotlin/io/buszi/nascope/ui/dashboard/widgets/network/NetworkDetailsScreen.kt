@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.details_network_errors_format
+import io.buszi.nascope.resources.details_network_errors_tag
 import io.buszi.nascope.resources.details_network_field_errors
 import io.buszi.nascope.resources.details_network_field_ip
 import io.buszi.nascope.resources.details_network_field_link_speed
@@ -282,12 +283,11 @@ private fun InterfaceDetailsCard(
                 color = AppTheme.colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
+                modifier = Modifier.weight(1f),
             )
-            Box(modifier = Modifier.weight(1f))
             if (iface.totalErrors > 0L) {
                 TagChip(
-                    text = iface.totalErrors.toString(),
+                    text = stringResource(Res.string.details_network_errors_tag, iface.totalErrors),
                     dotColor = AppTheme.colors.degraded,
                 )
             }

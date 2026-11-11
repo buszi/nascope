@@ -209,22 +209,24 @@ private fun HistorySection(
         title = stringResource(Res.string.details_cpu_history),
         modifier = modifier,
         headerAction = {
-            Text(
-                text = stringResource(
-                    Res.string.details_cpu_history_average,
-                    formatPercentValue(viewState.usageHistoryAverage),
-                ),
-                style = AppTheme.typography.labelCode,
-                color = AppTheme.colors.textMuted,
-            )
-            Text(
-                text = stringResource(
-                    Res.string.details_cpu_history_peak,
-                    formatPercentValue(viewState.usageHistoryPeak),
-                ),
-                style = AppTheme.typography.labelCode,
-                color = AppTheme.colors.textMuted,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm)) {
+                Text(
+                    text = stringResource(
+                        Res.string.details_cpu_history_average,
+                        formatPercentValue(viewState.usageHistoryAverage),
+                    ),
+                    style = AppTheme.typography.labelCode,
+                    color = AppTheme.colors.textMuted,
+                )
+                Text(
+                    text = stringResource(
+                        Res.string.details_cpu_history_peak,
+                        formatPercentValue(viewState.usageHistoryPeak),
+                    ),
+                    style = AppTheme.typography.labelCode,
+                    color = AppTheme.colors.textMuted,
+                )
+            }
         },
     ) {
         MiniSparkline(
@@ -234,7 +236,7 @@ private fun HistorySection(
                 .height(AppTheme.dimensions.sparklineHeight * 2),
             lineColor = AppTheme.colors.telemetryA,
             minValue = 0f,
-            maxValue = 100f,
+            maxValue = (viewState.usageHistoryPeak * 1.25f).coerceIn(20f, 100f),
         )
     }
 }

@@ -37,6 +37,7 @@ import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
+import io.buszi.nascope.ui.dashboard.framework.title
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.navigation.NavRoute
 import org.jetbrains.compose.resources.stringResource
@@ -62,7 +63,10 @@ fun NascopeTopBar(
     val windowWidthClass = AppTheme.windowWidthClass
     val breadcrumbText = when (currentRoute) {
         NavRoute.Dashboard -> stringResource(Res.string.nav_breadcrumb_dashboard)
-        is NavRoute.Details -> stringResource(Res.string.nav_breadcrumb_details, currentRoute.brickId.name)
+        is NavRoute.Details -> stringResource(
+            Res.string.nav_breadcrumb_details,
+            currentRoute.brickId.title(compact = windowWidthClass == WindowWidthClass.Compact),
+        )
         NavRoute.Nodes -> stringResource(Res.string.nav_breadcrumb_nodes)
         NavRoute.Settings -> stringResource(Res.string.nav_breadcrumb_settings)
     }

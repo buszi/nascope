@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -126,18 +127,23 @@ fun LinearGauge(
             }
         }
 
-        // Track bar
+        // Track bar. The fill is a sibling drawn above the track: Modifier.border draws over its content, which hid
+        // the fill completely on thin (2dp) gauges.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(barHeight)
-                .background(color = trackColor, shape = shape)
-                .border(
-                    width = AppTheme.dimensions.hairlineBorder,
-                    color = borderColor,
-                    shape = shape,
-                ),
+                .height(barHeight),
         ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = trackColor, shape = shape)
+                    .border(
+                        width = AppTheme.dimensions.hairlineBorder,
+                        color = borderColor,
+                        shape = shape,
+                    ),
+            )
             if (animatedProgress > 0f) {
                 Box(
                     modifier = Modifier
