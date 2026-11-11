@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,16 +26,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.modifier.optionalModifier
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
+import io.buszi.nascope.ui.dashboard.framework.BrickInteraction
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
+import io.buszi.nascope.ui.dashboard.framework.LocalBrickInteraction
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun DashboardScreen(
     modifier: Modifier = Modifier,
+    selectedBrickId: DashboardBrickId? = null,
     onOpenDetails: (DashboardBrickId) -> Unit = {},
 ) {
     val viewModel = koinViewModel<DashboardViewModel>()
@@ -43,6 +48,7 @@ fun DashboardScreen(
     DashboardScreen(
         viewState = viewState,
         modifier = modifier,
+        selectedBrickId = selectedBrickId,
         onOpenDetails = onOpenDetails,
     )
 }
@@ -51,6 +57,7 @@ fun DashboardScreen(
 fun DashboardScreen(
     viewState: ViewState,
     modifier: Modifier = Modifier,
+    selectedBrickId: DashboardBrickId? = null,
     onOpenDetails: (DashboardBrickId) -> Unit = {},
 ) {
     BoxWithConstraints(
@@ -95,21 +102,31 @@ fun DashboardScreen(
                 key = { it.id.name },
                 span = { brick -> brick.span.calculateSpan(this) },
             ) { brick ->
-                val baseModifier = if (fixedHeights) {
-                    Modifier.fillMaxWidth().height(
-                        brick.height.resolve(
-                            unit = AppTheme.dimensions.brickHeightUnit,
-                            gutter = AppTheme.spacing.spaceMd,
-                        ),
-                    )
-                } else {
-                    Modifier.fillMaxWidth()
+                val baseModifier = Modifier
+                    .fillMaxWidth()
+                    .optionalModifier(fixedHeights) {
+                        height(
+                            brick.height.resolve(
+                                unit = AppTheme.dimensions.brickHeightUnit,
+                                gutter = AppTheme.spacing.spaceMd,
+                            ),
+                        )
+                    }
+                val hasDetails = brick.details != null
+                val interaction = when {
+                    !hasDetails -> BrickInteraction.None
+                    brick.id == selectedBrickId -> BrickInteraction.Open
+                    else -> BrickInteraction.Openable
                 }
-                brick.Content(
-                    modifier = baseModifier
-                        .clip(AppTheme.shapes.lg)
-                        .clickable { onOpenDetails(brick.id) },
-                )
+                CompositionLocalProvider(LocalBrickInteraction provides interaction) {
+                    brick.Content(
+                        modifier = baseModifier
+                            .clip(AppTheme.shapes.lg)
+                            .optionalModifier(hasDetails) {
+                                clickable { onOpenDetails(brick.id) }
+                            },
+                    )
+                }
             }
         }
     }

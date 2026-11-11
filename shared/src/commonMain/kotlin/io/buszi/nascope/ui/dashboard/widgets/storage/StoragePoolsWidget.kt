@@ -53,6 +53,7 @@ import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.modifier.optionalModifier
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewAction
@@ -548,7 +549,7 @@ private fun PaginationArrowButton(
                 shape = AppTheme.shapes.sm,
             )
             .clip(AppTheme.shapes.sm)
-            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
+            .optionalModifier(enabled) { clickable(onClick = onClick) },
         contentAlignment = Alignment.Center,
     ) {
         Text(

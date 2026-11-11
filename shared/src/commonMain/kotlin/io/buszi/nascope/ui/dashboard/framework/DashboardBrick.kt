@@ -93,16 +93,38 @@ sealed interface BrickHeight {
 }
 
 /**
+ * Drill-down content of a brick, rendered in the right-docked inspector pane on Medium/Expanded
+ * windows and as a full-screen destination on Compact windows.
+ *
+ * Every brick with details owns a dedicated implementation (its own screen and ViewModel);
+ * details are never shared between bricks.
+ */
+@Stable
+fun interface BrickDetails {
+
+    /**
+     * @param onClose Closes the details (pops the details route).
+     * @param modifier Layout modifier supplied by the hosting pane / screen.
+     */
+    @Composable
+    fun Content(onClose: () -> Unit, modifier: Modifier)
+}
+
+/**
  * Contract implemented by every dashboard brick.
  *
  * Each brick is self-contained: it specifies its sizing policy and renders
  * its own content (which internally creates and binds its dedicated ViewModel).
+ *
+ * A brick opts into drill-down by providing [details]. Bricks without details are not clickable
+ * and show no affordance, so the dashboard only advertises interactions that lead somewhere.
  */
 @Stable
 interface DashboardBrick {
     val id: DashboardBrickId
     val span: BrickSpan
     val height: BrickHeight get() = BrickHeight.OneUnit
+    val details: BrickDetails? get() = null
 
     @Composable
     fun Content(modifier: Modifier)

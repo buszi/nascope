@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import org.koin.compose.koinInject
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import io.buszi.nascope.ui.common.theme.AppTheme
@@ -33,6 +34,8 @@ import io.buszi.nascope.ui.common.util.LocalWindowWidthClass
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
 import io.buszi.nascope.ui.dashboard.DashboardScreen
+import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.details.BrickDetailsScreen
 import io.buszi.nascope.ui.navigation.components.NascopeBottomBar
 import io.buszi.nascope.ui.navigation.components.NascopeSidebarRail
@@ -58,8 +61,11 @@ import io.buszi.nascope.ui.settings.SettingsScreen
 fun NascopeAppScaffold(
     modifier: Modifier = Modifier,
     navigator: NascopeNavigator = rememberNascopeNavigator(),
-    dashboardContent: @Composable (onOpenDetails: (io.buszi.nascope.ui.dashboard.framework.DashboardBrickId) -> Unit) -> Unit = { onOpenDetails ->
-        DashboardScreen(onOpenDetails = onOpenDetails)
+    dashboardContent: @Composable (
+        selectedBrickId: DashboardBrickId?,
+        onOpenDetails: (DashboardBrickId) -> Unit,
+    ) -> Unit = { selectedBrickId, onOpenDetails ->
+        DashboardScreen(selectedBrickId = selectedBrickId, onOpenDetails = onOpenDetails)
     },
 ) {
     BoxWithConstraints(
@@ -131,8 +137,12 @@ fun NascopeAppScaffold(
 private fun NascopeNavDisplay(
     navigator: NascopeNavigator,
     windowWidthClass: WindowWidthClass,
-    dashboardContent: @Composable (onOpenDetails: (io.buszi.nascope.ui.dashboard.framework.DashboardBrickId) -> Unit) -> Unit,
+    dashboardContent: @Composable (
+        selectedBrickId: DashboardBrickId?,
+        onOpenDetails: (DashboardBrickId) -> Unit,
+    ) -> Unit,
 ) {
+    val brickRegistry = koinInject<BrickRegistry>()
     val splitStrategy = remember(windowWidthClass) {
         DashboardSplitSceneStrategy<NavKey>(windowWidthClass = windowWidthClass)
     }
@@ -156,16 +166,24 @@ private fun NascopeNavDisplay(
             entry<NavRoute.Dashboard>(
                 metadata = DashboardSplitSceneStrategy.mainPane(),
             ) {
-                dashboardContent(navigator::navigateToDetails)
+                dashboardContent(navigator.selectedBrickId, navigator::navigateToDetails)
             }
 
             entry<NavRoute.Details>(
                 metadata = DashboardSplitSceneStrategy.detailPane(),
             ) { route ->
-                BrickDetailsScreen(
-                    brickId = route.brickId,
-                    onClose = { navigator.navigateBack() },
-                )
+                val details = remember(route.brickId) { brickRegistry.findBrick(route.brickId)?.details }
+                if (details != null) {
+                    details.Content(
+                        onClose = { navigator.navigateBack() },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    BrickDetailsScreen(
+                        brickId = route.brickId,
+                        onClose = { navigator.navigateBack() },
+                    )
+                }
             }
 
             entry<NavRoute.Nodes> {
@@ -184,7 +202,7 @@ private fun NascopeNavDisplay(
 private fun NascopeAppScaffoldPreview() {
     AppTheme {
         NascopeAppScaffold(
-            dashboardContent = {
+            dashboardContent = { _, _ ->
                 NodesScreen()
             },
         )

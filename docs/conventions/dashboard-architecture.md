@@ -84,3 +84,20 @@ interface DashboardBrick {
 ### Zero Empty Spaces Policy
 - Bricks must adapt their span to `WindowWidthClass` to avoid awkward empty cells or unbalanced gaps at the end of rows.
 - If a row has leftover space or a brick contains expansive data (e.g., storage pool breakdowns or network traffic timelines), it should report `FullRow` or an expanded cell span for wider form factors.
+
+---
+
+## 5. Brick Details (Drill-Down)
+
+A brick opts into drill-down by overriding `details: BrickDetails?` (default `null`):
+
+```kotlin
+override val details: BrickDetails = BrickDetails { onClose, modifier ->
+    StorageDetailsScreen(onClose = onClose, modifier = modifier)
+}
+```
+
+- Each brick owns a **separate** details screen + ViewModel in its own package. Details are only added when they show more than the brick already shows.
+- `NascopeAppScaffold` resolves `NavRoute.Details(brickId)` through `BrickRegistry.findBrick(id)?.details`; the same composable fills the 340–380dp inspector pane on Medium/Expanded and the whole screen on Compact.
+- `DashboardScreen` only attaches a click handler to bricks that have details.
+- Affordance: `DashboardScreen` provides `LocalBrickInteraction` (`None` / `Openable` / `Open`) around each brick and `DashboardWidget` renders it: a trailing `DetailsGlyph` (↗) when openable, plus an accent (`telemetryA`) border and raised fill while the brick's details are open. Bricks must use `DashboardWidget` as their root for this to apply.

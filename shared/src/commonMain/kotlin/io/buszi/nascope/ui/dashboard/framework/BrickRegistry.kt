@@ -30,4 +30,7 @@ class BrickRegistry {
     )
 
     fun getActiveBricks(): List<DashboardBrick> = bricks
+
+    /** Returns the brick registered under [id], or `null` if it is not available. */
+    fun findBrick(id: DashboardBrickId): DashboardBrick? = bricks.firstOrNull { it.id == id }
 }

@@ -33,7 +33,10 @@ import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.common.modifier.optionalModifier
 import io.buszi.nascope.ui.common.util.Message
+import io.buszi.nascope.ui.dashboard.framework.BrickInteraction
+import io.buszi.nascope.ui.dashboard.framework.LocalBrickInteraction
 
 /**
  * Base scaffold container for all modular telemetry bricks.
@@ -42,6 +45,8 @@ import io.buszi.nascope.ui.common.util.Message
  * - Layer 1 `subSurface` substrate with hairline border and `shapes.lg` radius.
  * - Standardized header displaying uppercase `labelUi` title, optional subtitle,
  *   optional status indicator / badge slot, and trailing action menu slot.
+ * - Drill-down affordance read from [LocalBrickInteraction]: a trailing [DetailsGlyph] when the brick
+ *   can open details, plus an accented border and raised fill while its details are open.
  * - Cohesive lifecycle state handling:
  *   - [WidgetState.Ready]: Renders [content].
  *   - [WidgetState.Loading]: Renders [loadingContent] (or default skeleton).
@@ -78,6 +83,23 @@ fun DashboardWidget(
     loadingContent: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val interaction = LocalBrickInteraction.current
+    val isOpen = interaction == BrickInteraction.Open
+    val effectiveBackground = if (isOpen) AppTheme.colors.elevatedOverlay else backgroundColor
+    val effectiveBorderColor = if (isOpen) AppTheme.colors.telemetryA else borderColor
+    val effectiveBorderWidth = if (isOpen) AppTheme.dimensions.focusRing else borderWidth
+    val effectiveHeaderAction: (@Composable RowScope.() -> Unit)? =
+        if (interaction == BrickInteraction.None) {
+            headerAction
+        } else {
+            {
+                headerAction?.invoke(this)
+                DetailsGlyph(
+                    tint = if (isOpen) AppTheme.colors.telemetryA else AppTheme.colors.textMuted,
+                )
+            }
+        }
+
     BoxWithConstraints(modifier = modifier) {
         // Bounded height means the grid enforces a fixed brick slot: fill it and clip the content.
         val hasBoundedHeight = constraints.hasBoundedHeight
@@ -86,8 +108,8 @@ fun DashboardWidget(
             modifier = Modifier
                 .then(if (hasBoundedHeight) Modifier.fillMaxSize() else Modifier.fillMaxWidth())
                 .clip(shape)
-                .background(backgroundColor, shape)
-                .border(borderWidth, borderColor, shape)
+                .background(effectiveBackground, shape)
+                .border(effectiveBorderWidth, effectiveBorderColor, shape)
                 .padding(contentPadding),
         ) {
         // Standardized Widget Header
@@ -95,7 +117,7 @@ fun DashboardWidget(
             modifier = Modifier.fillMaxWidth(),
         ) {
             val isCompact = maxWidth < 480.dp
-            val wrapHeaderAction = (subtitle != null && isCompact) || (subtitle == null && maxWidth < 320.dp && headerAction != null)
+            val wrapHeaderAction = (subtitle != null && isCompact) || (subtitle == null && maxWidth < 320.dp && effectiveHeaderAction != null)
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -140,12 +162,12 @@ fun DashboardWidget(
                             Spacer(modifier = Modifier.weight(1f))
                         }
 
-                        if (headerAction != null) {
+                        if (effectiveHeaderAction != null) {
                             Spacer(modifier = Modifier.width(AppTheme.spacing.spaceSm))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
-                                content = headerAction,
+                                content = effectiveHeaderAction,
                             )
                         }
                     }
@@ -174,12 +196,12 @@ fun DashboardWidget(
                             }
                         }
 
-                        if (headerAction != null) {
+                        if (effectiveHeaderAction != null) {
                             Spacer(modifier = Modifier.width(AppTheme.spacing.spaceSm))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
-                                content = headerAction,
+                                content = effectiveHeaderAction,
                             )
                         }
                     }
@@ -203,7 +225,7 @@ fun DashboardWidget(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (hasBoundedHeight) Modifier.weight(1f) else Modifier)
+                .optionalModifier(hasBoundedHeight) { weight(1f) }
                 .clipToBounds(),
         ) {
             when (state) {
