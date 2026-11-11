@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -36,7 +37,6 @@ import io.buszi.nascope.ui.common.util.toWindowWidthClass
 import io.buszi.nascope.ui.dashboard.DashboardScreen
 import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
-import io.buszi.nascope.ui.details.BrickDetailsScreen
 import io.buszi.nascope.ui.navigation.components.NascopeBottomBar
 import io.buszi.nascope.ui.navigation.components.NascopeSidebarRail
 import io.buszi.nascope.ui.navigation.components.NascopeTopBar
@@ -179,10 +179,8 @@ private fun NascopeNavDisplay(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    BrickDetailsScreen(
-                        brickId = route.brickId,
-                        onClose = { navigator.navigateBack() },
-                    )
+                    // A brick without details (e.g. restored state after a layout change) has nothing to show.
+                    LaunchedEffect(route) { navigator.navigateBack() }
                 }
             }
 

@@ -106,4 +106,6 @@ override val details: BrickDetails = BrickDetails { onClose, modifier ->
 - `DetailsScaffold`: shared frame (header with title/subtitle/status tag/close action, scrollable body). The close action is hidden on Compact, where the top bar provides back navigation.
 - `DetailsSection`: titled `TelemetryCard` grouping one aspect of the details; `DetailsKeyValueRow` for property readouts; `DetailsStat` for label-over-value metric readouts; `DetailsPager` for paginated lists; `DetailsLoadingPlaceholder` for the loading state.
 - `SelectableChip` (`ui/common/components/inputs`): single-choice toggle for sort orders and filters.
+- Bricks with details: CPU Matrix, Containers, Process List, Storage Pools, Network I/O and Sensors & Thermals. System Overview and Memory & Swap have none because their cards already show all their data. Add details to a brick only when they show more than the card does.
+- If a `Details` route points at a brick without details (e.g. restored state), `NascopeAppScaffold` pops it immediately.
 - A details ViewModel follows the same MVI rules as widget ViewModels and owns its own UI state (sort, filter, expanded rows); data comes from `TelemetryStateHolder`.

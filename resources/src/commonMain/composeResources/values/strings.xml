@@ -150,10 +150,6 @@
     <string name="screen_settings_title">Settings</string>
     <string name="screen_settings_route_tag">ROUTE: SETTINGS</string>
     <string name="screen_settings_description">Opened screen: Settings. Polling intervals, alert thresholds, and telemetry preferences will be configured here.</string>
-    <string name="screen_details_header">TELEMETRY // DETAILS</string>
-    <string name="screen_details_title">Details: %1$s</string>
-    <string name="screen_details_route_tag">ROUTE: DETAILS(%1$s)</string>
-    <string name="screen_details_description">Opened screen: Details for %1$s brick.</string>
     <string name="screen_details_close">Close Details</string>
 
     <!-- Storage details -->
