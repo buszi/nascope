@@ -10,6 +10,8 @@ import androidx.compose.runtime.ReadOnlyComposable
 import io.buszi.nascope.LocalPlatform
 import io.buszi.nascope.Platform
 import io.buszi.nascope.getPlatform
+import io.buszi.nascope.ui.common.util.LocalWindowWidthClass
+import io.buszi.nascope.ui.common.util.WindowWidthClass
 
 @Composable
 fun AppTheme(
@@ -114,4 +116,12 @@ object AppTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalPlatform.current
+
+    /**
+     * Ambient window width size class ([WindowWidthClass.Compact], [WindowWidthClass.Medium], [WindowWidthClass.Expanded]).
+     */
+    val windowWidthClass: WindowWidthClass
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalWindowWidthClass.current
 }

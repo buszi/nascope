@@ -2,6 +2,7 @@ package io.buszi.nascope.ui.common.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.unit.Dp
 import io.buszi.nascope.ui.common.theme.AppDimensions
 import io.buszi.nascope.ui.common.theme.AppTheme
@@ -38,6 +39,15 @@ enum class WindowWidthClass {
         }
     }
 }
+
+typealias WindowSizeClass = WindowWidthClass
+
+/**
+ * Ambient window-level [WindowWidthClass] updated dynamically on window resize and orientation change.
+ */
+val LocalWindowWidthClass = compositionLocalOf { WindowWidthClass.Compact }
+
+val LocalWindowSizeClass = LocalWindowWidthClass
 
 /**
  * Resolves the [WindowWidthClass] for this [Dp] width using ambient [AppTheme.dimensions].

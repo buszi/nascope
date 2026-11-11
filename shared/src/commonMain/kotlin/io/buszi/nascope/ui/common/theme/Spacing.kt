@@ -48,7 +48,12 @@ data class AppDimensions(
     val sidebarDesktopWidth: Dp = 240.dp,
     val sidebarTabletWidth: Dp = 56.dp,
     val liveLogDrawerWidth: Dp = 320.dp,
+    val detailInspectorWidth: Dp = 360.dp,
     val commandPaletteWidth: Dp = 580.dp,
+    val topBarHeight: Dp = 52.dp,
+    val bottomBarHeight: Dp = 60.dp,
+    val navIndicatorThickness: Dp = 3.dp,
+    val navIconSize: Dp = 18.dp,
 
     // Dashboard modular brick height unit (1U)
     val brickHeightUnit: Dp = 250.dp,

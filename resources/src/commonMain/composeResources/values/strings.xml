@@ -131,4 +131,27 @@
     <string name="widget_processes_status_elevated">HIGH LOAD</string>
     <string name="widget_processes_status_critical">CRITICAL</string>
     <string name="widget_processes_empty">NO ACTIVE PROCESSES FOUND</string>
+    <string name="nav_destination_dashboard">DASHBOARD</string>
+    <string name="nav_destination_nodes">NODES</string>
+    <string name="nav_destination_settings">SETTINGS</string>
+    <string name="nav_breadcrumb_dashboard">TELEMETRY // DASHBOARD</string>
+    <string name="nav_breadcrumb_details">TELEMETRY // DETAILS // %1$s</string>
+    <string name="nav_breadcrumb_nodes">CLUSTER // NODES</string>
+    <string name="nav_breadcrumb_settings">SYSTEM // SETTINGS</string>
+    <string name="nav_action_back">BACK</string>
+    <string name="nav_active_node_name">alpha-node-01</string>
+    <string name="nav_status_online">ONLINE</string>
+    <string name="screen_nodes_header">CLUSTER // NODES</string>
+    <string name="screen_nodes_title">Nodes</string>
+    <string name="screen_nodes_route_tag">ROUTE: NODES</string>
+    <string name="screen_nodes_description">Opened screen: Nodes. Multi-server profile management and node switching will be implemented in Phase 4.</string>
+    <string name="screen_settings_header">SYSTEM // SETTINGS</string>
+    <string name="screen_settings_title">Settings</string>
+    <string name="screen_settings_route_tag">ROUTE: SETTINGS</string>
+    <string name="screen_settings_description">Opened screen: Settings. Polling intervals, alert thresholds, and telemetry preferences will be configured here.</string>
+    <string name="screen_details_header">TELEMETRY // DETAILS</string>
+    <string name="screen_details_title">Details: %1$s</string>
+    <string name="screen_details_route_tag">ROUTE: DETAILS(%1$s)</string>
+    <string name="screen_details_description">Opened screen: Details for %1$s brick.</string>
+    <string name="screen_details_close">Close Details</string>
 </resources>

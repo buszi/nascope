@@ -1,6 +1,7 @@
 package io.buszi.nascope.ui.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.ui.common.components.badges.StatusChip
@@ -27,28 +29,41 @@ import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun DashboardScreen() {
+fun DashboardScreen(
+    modifier: Modifier = Modifier,
+    onOpenDetails: (DashboardBrickId) -> Unit = {},
+) {
     val viewModel = koinViewModel<DashboardViewModel>()
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
 
     DashboardScreen(
         viewState = viewState,
+        modifier = modifier,
+        onOpenDetails = onOpenDetails,
     )
 }
 
 @Composable
 fun DashboardScreen(
     viewState: ViewState,
+    modifier: Modifier = Modifier,
+    onOpenDetails: (DashboardBrickId) -> Unit = {},
 ) {
     BoxWithConstraints(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(AppTheme.colors.canvasBackground),
     ) {
-        val widthClass = maxWidth.toWindowWidthClass()
+        val effectiveWidth = if (AppTheme.windowWidthClass != WindowWidthClass.Compact) {
+            maxWidth + AppTheme.dimensions.sidebarTabletWidth
+        } else {
+            maxWidth
+        }
+        val widthClass = effectiveWidth.toWindowWidthClass()
         val fixedHeights = widthClass != WindowWidthClass.Compact
         val columnCount = when (widthClass) {
             WindowWidthClass.Compact -> 2
@@ -80,7 +95,7 @@ fun DashboardScreen(
                 key = { it.id.name },
                 span = { brick -> brick.span.calculateSpan(this) },
             ) { brick ->
-                val brickModifier = if (fixedHeights) {
+                val baseModifier = if (fixedHeights) {
                     Modifier.fillMaxWidth().height(
                         brick.height.resolve(
                             unit = AppTheme.dimensions.brickHeightUnit,
@@ -90,7 +105,11 @@ fun DashboardScreen(
                 } else {
                     Modifier.fillMaxWidth()
                 }
-                brick.Content(modifier = brickModifier)
+                brick.Content(
+                    modifier = baseModifier
+                        .clip(AppTheme.shapes.lg)
+                        .clickable { onOpenDetails(brick.id) },
+                )
             }
         }
     }

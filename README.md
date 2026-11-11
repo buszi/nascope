@@ -21,9 +21,14 @@ nascope/
 ├── shared/                       # Core shared business logic & UI components
 │   ├── src/commonMain/kotlin/
 │   │   └── io/buszi/nascope/
-│   │       ├── App.kt            # Root composable & telemetry dashboard preview
+│   │       ├── App.kt            # Root composable & Navigation 3 scaffold entrypoint
 │   │       ├── ui/common/theme/  # Obsidian Telemetry Design System
-│   │       └── ui/common/components/  # Reusable UI primitives
+│   │       ├── ui/common/components/  # Reusable UI primitives
+│   │       ├── ui/navigation/    # Adaptive Navigation 3 scaffold, routes & multi-pane scene strategy
+│   │       ├── ui/dashboard/     # Modular telemetry dashboard & brick widgets
+│   │       ├── ui/details/       # Brick detail inspector / drill-down screen
+│   │       ├── ui/nodes/         # Cluster node management screen
+│   │       └── ui/settings/      # Application settings screen
 │   ├── src/androidMain/          # Android-specific implementations
 │   └── src/jvmMain/              # JVM-specific implementations
 ├── androidApp/                   # Android entry point (MainActivity)
@@ -54,11 +59,11 @@ AppTheme {
 
 | File | Responsibilities & Tokens |
 | :--- | :--- |
-| **[`AppTheme.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/AppTheme.kt)** | Entry composable `AppTheme(...)` providing `CompositionLocalProvider` for all token groups; `object AppTheme` for static, ergonomic token access (`colors`, `colorScheme`, `typography`, `materialTypography`, `shapes`, `materialShapes`, `spacing`, `dimensions`, `platform`). |
+| **[`AppTheme.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/AppTheme.kt)** | Entry composable `AppTheme(...)` providing `CompositionLocalProvider` for all token groups; `object AppTheme` for static, ergonomic token access (`colors`, `colorScheme`, `typography`, `materialTypography`, `shapes`, `materialShapes`, `spacing`, `dimensions`, `platform`, `windowWidthClass`). |
 | **[`Colors.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Colors.kt)** | • **`DarkColorScheme`**: Full Material 3 dark color scheme mapping.<br>• **`AppColors`**:<br>&nbsp;&nbsp;- *Base / Surfaces*: `canvasBackground` (`#0B0F17`), `subSurface` (`#12141A`), `elevatedOverlay` (`#181C24`), `activeHoverRowFill` (`#1E232F40`), `inputBackground` (`#0E121A`).<br>&nbsp;&nbsp;- *Borders*: `baseBorder` (`#1E232F`), `subtleDivider` (`#171B26`), `focusHighlight` (`#384259`), `elevatedBorder` (`#282E3E`).<br>&nbsp;&nbsp;- *Telemetry*: `operational` (`#10B981`) + halo, `degraded` (`#F59E0B`) + halo, `critical` (`#F43F5E`) + halo, `telemetryA` (`#8B5CF6` core pipelines), `telemetryB` (`#06B6D4` network I/O).<br>&nbsp;&nbsp;- *Text Stack*: `textPrimary` (`#F1F5F9`), `textSecondary` (`#94A3B8`), `textMuted` (`#64748B`), `textDisabled` (`#334155`).<br>&nbsp;&nbsp;- *Badges & Buttons*: `healthyBadgeBackground` / `border`, `warningBadgeBackground` / `border`, `criticalBadgeBackground` / `border`, `buttonPrimary`, `buttonPrimaryHover` (`#7C3AED`). |
 | **[`Typography.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Typography.kt)** | • **Dual-Type Strategy**:<br>&nbsp;&nbsp;- **Inter** (`interFontFamily`): `headlineXl` (36sp), `headlineXlMobile` (28sp), `headlineLg` (24sp), `headlineSm` (18sp), `bodyLg` (15sp), `bodyMd` (14sp), `bodySm` (12sp), `labelUi` (11sp with positive tracking `0.04em`).<br>&nbsp;&nbsp;- **JetBrains Mono** (`monoFontFamily`): `metricDisplay` (32sp), `metricMd` (20sp), `codeBase` (13sp), `labelCode` (11sp with `0.02em` tracking). All telemetry styles use **tabular numerals** (`fontFeatureSettings = "tnum"`).<br>• Fully mapped to Material 3 `Typography`. |
 | **[`Shapes.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Shapes.kt)** | Tight technical radiuses: `sm` (2dp), `base` (4dp), `md` (6dp), `lg` (8dp), `xl` (12dp), `full` (CircleShape / 9999px for status dots and badges). Also configures Material 3 `Shapes`. |
-| **[`Spacing.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Spacing.kt)** | • **`AppSpacing`**: Micro & structural cadence (`space2xs` = 2dp, `spaceXs` = 4dp, `spaceSm` = 8dp, `spaceMd` = 12dp, `spaceLg` = 16dp, `spaceXl` = 24dp, `space2xl` = 32dp), margins, and gutters.<br>• **`AppDimensions`**: Hairline border (1dp), focus ring (2dp), status dot (6dp), button heights (32dp dense / 36dp regular), input height (32dp), table header (28dp), sidebar desktop (240dp), sidebar tablet (56dp), log drawer (320dp), command palette width (580dp). |
+| **[`Spacing.kt`](./shared/src/commonMain/kotlin/io/buszi/nascope/ui/common/theme/Spacing.kt)** | • **`AppSpacing`**: Micro & structural cadence (`space2xs` = 2dp, `spaceXs` = 4dp, `spaceSm` = 8dp, `spaceMd` = 12dp, `spaceLg` = 16dp, `spaceXl` = 24dp, `space2xl` = 32dp), margins, and gutters.<br>• **`AppDimensions`**: Hairline border (1dp), focus ring (2dp), status dot (6dp), button heights (32dp dense / 36dp regular), input height (32dp), table header (28dp), sidebar desktop (240dp), sidebar tablet (56dp), top bar height (52dp), bottom bar height (60dp), detail inspector width (360dp), log drawer (320dp), command palette width (580dp). |
 
 ---
 

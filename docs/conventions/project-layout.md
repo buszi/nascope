@@ -11,10 +11,13 @@ Structure and organization for code in the Nascope codebase.
 | `shared/src/commonMain/kotlin/io/buszi/nascope/` | All shared UI, state holders, and business logic. |
 | `.../ui/common/theme/` | Design system tokens (`AppTheme`, colors, typography, shapes, spacing, dimensions). |
 | `.../ui/common/components/<group>/` | Reusable UI primitives grouped by category: `containers`, `badges`, `metrics`, `gauges`, `inputs`, ... |
-| `.../ui/common/util/` | Shared UI utilities and layout helpers (e.g., `WindowWidthClass`). |
+| `.../ui/common/util/` | Shared UI utilities and layout helpers (e.g., `WindowWidthClass`, `LocalWindowWidthClass`). |
+| `.../ui/navigation/` | Adaptive Navigation 3 scaffold (`NascopeAppScaffold`), routes (`NavRoute`), backstack state (`NascopeNavigator`), and multi-pane scene strategy (`DashboardSplitSceneStrategy`). |
+| `.../ui/navigation/components/` | Adaptive navigation chrome (`NascopeSidebarRail`, `NascopeBottomBar`, `NascopeTopBar`, `NavigationGlyph`). |
 | `.../ui/dashboard/` | Dashboard container screen and orchestration ViewModel. |
 | `.../ui/dashboard/framework/` | Dashboard brick contracts (`DashboardBrick`, `BrickSpan`, `BrickRegistry`). |
 | `.../ui/dashboard/widgets/<name>/` | Dashboard "bricks" built from common components (e.g., `system/`, `storage/`). |
+| `.../ui/details/`, `.../ui/nodes/`, `.../ui/settings/` | Destination screens for brick details/inspector, cluster node management, and application settings. |
 | `.../data/` | Data layer, repositories, telemetry contracts, and state holders (`telemetry/`). |
 | `shared/src/androidMain/`, `shared/src/jvmMain/` | Platform-specific code only, via `expect`/`actual` or platform-specific interfaces. |
 | `shared/src/jvmTest/kotlin/` | All unit tests (ViewModels, state holders, utilities). |
