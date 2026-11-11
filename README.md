@@ -18,6 +18,8 @@ nascope/
 │       └── plugins.desktop.application  # Desktop JVM application conventions
 ├── domain-model/                 # Shared domain models (plain Kotlin, no dependencies)
 │   └── src/commonMain/kotlin/io/buszi/nascope/domain/model/
+├── network/                      # Glances HTTP access (Ktor + OkHttp), connection client
+│   └── src/{commonMain,androidMain,jvmMain}/kotlin/io/buszi/nascope/network/
 ├── storage/                      # Profile & preference stores (DataStore), secret store (Keystore / OS keyring)
 │   └── src/{commonMain,androidMain,jvmMain}/kotlin/io/buszi/nascope/storage/
 ├── resources/                    # Common Compose Multiplatform assets & resources
@@ -25,6 +27,7 @@ nascope/
 ├── shared/                       # Core shared business logic & UI components
 │   ├── src/commonMain/kotlin/
 │   │   └── io/buszi/nascope/
+│   │       ├── di/               # Koin root module + initNascope() (Koin + Napier startup)
 │   │       ├── App.kt            # Root composable & Navigation 3 scaffold entrypoint
 │   │       ├── ui/common/theme/  # Obsidian Telemetry Design System
 │   │       ├── ui/common/components/  # Reusable UI primitives
@@ -35,7 +38,7 @@ nascope/
 │   │       └── ui/settings/      # Application settings screen
 │   ├── src/androidMain/          # Android-specific implementations
 │   └── src/jvmMain/              # JVM-specific implementations
-├── androidApp/                   # Android entry point (MainActivity)
+├── androidApp/                   # Android entry point (NascopeApplication, MainActivity)
 ├── desktopApp/                   # Desktop JVM entry point (main.kt)
 └── docs/                         # Developer documentation (CONVENTIONS.md)
 ```

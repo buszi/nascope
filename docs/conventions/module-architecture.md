@@ -111,10 +111,10 @@ Start with the nested form. Move a model to `:domain-model` only when a second c
 ## 6. Dependency Injection
 
 - `:network`, `:storage` and `:domain` each declare one Koin module class (`@Module @Configuration @ComponentScan("<module package>")`) and apply the Koin compiler plugin.
-- The root `@KoinApplication` lives in `:shared`.
+- The root `@KoinApplication` lives in `:shared`. Koin is started (together with Napier's `DebugAntilog`) by `initNascope()` from `:shared`, called once by each platform entry point before any UI exists: `NascopeApplication.onCreate` on Android, the first line of `main` on desktop. `App()` does not start Koin.
 - **Cross-module discovery works without `includes`**: the Koin compiler plugin emits discovery hints for each `@Configuration` module, and `koinConfiguration<NascopeApp>()` resolved `:storage` definitions (verified in TASK-4.2). Do not wire modules with `@Module(includes = ...)`.
 - Platform-specific definitions are annotated classes in `androidMain` / `jvmMain` (e.g. `AndroidStorageDirectory`, `JvmStorageDirectory`) implementing an `internal` common interface; the common module class consumes that interface. Where the choice depends on availability (secret store), use an `internal expect fun` returning `null` when unavailable and fall back in common code.
-- Platform objects (e.g. the Android `Context`) are registered by the platform entry point through the `platformConfiguration` parameter of `App()` (a `KoinAppDeclaration`, default empty); modules receive them by constructor injection. `MainActivity` registers `single<Context> { applicationContext }`; `desktopApp` passes nothing.
+- Platform objects (e.g. the Android `Context`) are registered by the platform entry point through the `platformConfiguration` parameter of `initNascope()` (a `KoinAppDeclaration`, default empty); modules receive them by constructor injection. `NascopeApplication` registers `single<Context> { applicationContext }`; `desktopApp` passes nothing.
 
 ---
 

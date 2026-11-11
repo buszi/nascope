@@ -2,31 +2,19 @@ package io.buszi.nascope
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import io.buszi.nascope.di.NascopeApp
 import io.buszi.nascope.ui.common.testing.testTagsAsResourceId
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.navigation.NascopeAppScaffold
-import org.koin.compose.KoinApplication
-import org.koin.dsl.KoinAppDeclaration
-import org.koin.plugin.module.dsl.koinConfiguration
 
 /**
  * Main application entry point composable.
  *
- * Applies Koin dependency injection, [AppTheme], and hosts the adaptive Navigation 3 application scaffold.
- *
- * @param platformConfiguration extra Koin configuration supplied by the platform entry point,
- * e.g. the Android application `Context`.
+ * Applies [AppTheme] and hosts the adaptive Navigation 3 application scaffold.
+ * Koin must already be running: platform entry points call [io.buszi.nascope.di.initNascope] first.
  */
 @Composable
-@Preview
-fun App(platformConfiguration: KoinAppDeclaration = {}) {
-    KoinApplication(
-        configuration = koinConfiguration<NascopeApp>(platformConfiguration),
-    ) {
-        AppTheme {
-            NascopeAppScaffold(modifier = Modifier.testTagsAsResourceId())
-        }
+fun App() {
+    AppTheme {
+        NascopeAppScaffold(modifier = Modifier.testTagsAsResourceId())
     }
 }

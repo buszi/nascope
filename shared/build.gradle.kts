@@ -25,6 +25,8 @@ kotlin {
 
             implementation(libs.compose.components.resources)
 
+            implementation(libs.napier)
+
             implementation(libs.koin.core)
             implementation(libs.koin.annotations)
             implementation(libs.koin.compose)
