@@ -49,7 +49,8 @@ private const val EndpointHaloAlpha: Float = 0.35f
  * @param strokeWidthPx Line stroke width in pixels. Defaults to `1.5f` px per design specifications.
  * @param minValue Optional lower bound for scaling. If omitted, derives from [data].
  * @param maxValue Optional upper bound for scaling. If omitted, derives from [data].
- * @param animateEntry Whether to animate the entry reveal when [data] is first populated or changes.
+ * @param animateEntry Whether to animate the entry reveal when [data] first has enough samples to draw a line.
+ * Later changes of [data] are drawn at once, without replaying the reveal.
  */
 @Composable
 fun MiniSparkline(
@@ -65,8 +66,11 @@ fun MiniSparkline(
 ) {
     val entryProgress = remember { Animatable(if (animateEntry) 0f else 1f) }
 
-    LaunchedEffect(data, animateEntry) {
-        if (animateEntry) {
+    // Keyed on whether there is a line to reveal, not on the data: live history gets a new sample every poll,
+    // and replaying the reveal each time made the whole graph blink.
+    val hasLine = data.size >= 2
+    LaunchedEffect(hasLine, animateEntry) {
+        if (animateEntry && hasLine) {
             entryProgress.snapTo(0f)
             entryProgress.animateTo(
                 targetValue = 1f,
