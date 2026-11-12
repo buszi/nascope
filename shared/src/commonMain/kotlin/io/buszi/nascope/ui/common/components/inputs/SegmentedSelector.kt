@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.ui.common.modifier.optionalModifier
@@ -51,6 +52,7 @@ private const val MaxOptions = 3
  * @param optionLabel Maps a value to its label, rendered in code typography.
  * @param modifier Root layout modifier.
  * @param enabled Controls interactivity; a disabled control is dimmed.
+ * @param optionTestTag Optional test tag per option, so UI automation can pick a single segment.
  * @param shape Outline shape, defaults to [AppTheme.shapes.base].
  * @param backgroundColor Fill of unselected segments, defaults to [AppTheme.colors.inputBackground].
  * @param borderColor Outline and divider color, defaults to [AppTheme.colors.baseBorder].
@@ -64,6 +66,7 @@ fun <T> SegmentedSelector(
     optionLabel: (T) -> String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    optionTestTag: (T) -> String? = { null },
     shape: Shape = AppTheme.shapes.base,
     backgroundColor: Color = AppTheme.colors.inputBackground,
     borderColor: Color = AppTheme.colors.baseBorder,
@@ -97,7 +100,9 @@ fun <T> SegmentedSelector(
                 onClick = { onSelect(option) },
                 enabled = enabled,
                 selectedColor = selectedColor,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .then(optionTestTag(option)?.let { Modifier.testTag(it) } ?: Modifier),
             )
         }
     }

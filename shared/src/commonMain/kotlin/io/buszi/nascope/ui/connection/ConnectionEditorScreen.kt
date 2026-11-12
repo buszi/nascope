@@ -1,0 +1,356 @@
+package io.buszi.nascope.ui.connection
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.connection_action_back
+import io.buszi.nascope.resources.connection_action_saving
+import io.buszi.nascope.resources.connection_action_submit
+import io.buszi.nascope.resources.connection_action_testing
+import io.buszi.nascope.resources.connection_alias_placeholder
+import io.buszi.nascope.resources.connection_auth_toggle
+import io.buszi.nascope.resources.connection_checks_title
+import io.buszi.nascope.resources.connection_field_alias
+import io.buszi.nascope.resources.connection_field_host
+import io.buszi.nascope.resources.connection_field_password
+import io.buszi.nascope.resources.connection_field_port
+import io.buszi.nascope.resources.connection_field_protocol
+import io.buszi.nascope.resources.connection_field_username
+import io.buszi.nascope.resources.connection_host_helper
+import io.buszi.nascope.resources.connection_host_placeholder
+import io.buszi.nascope.resources.connection_password_hide
+import io.buszi.nascope.resources.connection_password_keep_helper
+import io.buszi.nascope.resources.connection_password_show
+import io.buszi.nascope.resources.connection_port_helper
+import io.buszi.nascope.resources.connection_secret_not_persisted
+import io.buszi.nascope.resources.connection_title_edit
+import io.buszi.nascope.resources.connection_title_new
+import io.buszi.nascope.ui.common.components.buttons.ButtonSize
+import io.buszi.nascope.ui.common.components.buttons.PrimaryButton
+import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
+import io.buszi.nascope.ui.common.components.containers.CenteredPanel
+import io.buszi.nascope.ui.common.components.containers.TelemetryCard
+import io.buszi.nascope.ui.common.components.inputs.FormField
+import io.buszi.nascope.ui.common.components.inputs.PasswordTextField
+import io.buszi.nascope.ui.common.components.inputs.SegmentedSelector
+import io.buszi.nascope.ui.common.components.inputs.TelemetrySwitch
+import io.buszi.nascope.ui.common.components.inputs.TelemetryTextField
+import io.buszi.nascope.ui.common.model.ConnectionCheckStatusUi
+import io.buszi.nascope.ui.common.model.ConnectionCheckStepUi
+import io.buszi.nascope.ui.common.model.ConnectionCheckUi
+import io.buszi.nascope.ui.common.model.ConnectionFailureUi
+import io.buszi.nascope.ui.common.model.FormErrorUi
+import io.buszi.nascope.ui.common.model.ServerProtocolUi
+import io.buszi.nascope.ui.common.testing.TestTags
+import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.common.util.minimumTouchTarget
+import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.Phase
+import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction
+import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewState
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
+
+@Composable
+fun ConnectionEditorScreen(
+    profileId: String? = null,
+    onBack: (() -> Unit)? = null,
+) {
+    val viewModel = koinViewModel<ConnectionEditorViewModel>(parameters = { parametersOf(profileId) })
+    val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+
+    ConnectionEditorContent(
+        viewState = viewState,
+        onViewAction = viewModel::onViewAction,
+        onBack = onBack,
+    )
+}
+
+@Composable
+fun ConnectionEditorContent(
+    viewState: ViewState,
+    onViewAction: (ViewAction) -> Unit,
+    onBack: (() -> Unit)? = null,
+) {
+    val usernameFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(viewState.usernameFocusRequest) {
+        if (viewState.usernameFocusRequest > 0) runCatching { usernameFocusRequester.requestFocus() }
+    }
+
+    CenteredPanel(
+        modifier = Modifier
+            .background(AppTheme.colors.canvasBackground)
+            .testTag(TestTags.ConnectionScreen),
+    ) {
+        Text(
+            text = stringResource(if (viewState.isEditMode) Res.string.connection_title_edit else Res.string.connection_title_new),
+            style = AppTheme.typography.headlineLg,
+            color = AppTheme.colors.textPrimary,
+        )
+
+        FormField(
+            label = stringResource(Res.string.connection_field_alias),
+            errorText = viewState.aliasError?.message(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            TelemetryTextField(
+                value = viewState.alias,
+                onValueChange = { onViewAction(ViewAction.OnAliasChange(it)) },
+                enabled = viewState.isEditable,
+                isError = viewState.aliasError != null,
+                placeholder = stringResource(Res.string.connection_alias_placeholder),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .minimumTouchTarget()
+                    .testTag(TestTags.ConnectionAlias),
+            )
+        }
+
+        FormField(
+            label = stringResource(Res.string.connection_field_protocol),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            SegmentedSelector(
+                options = ServerProtocolUi.entries,
+                selected = viewState.protocol,
+                onSelect = { onViewAction(ViewAction.OnProtocolSelect(it)) },
+                optionLabel = ServerProtocolUi::label,
+                enabled = viewState.isEditable,
+                optionTestTag = { TestTags.connectionProtocol(it.name) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        FormField(
+            label = stringResource(Res.string.connection_field_host),
+            helperText = stringResource(Res.string.connection_host_helper),
+            errorText = viewState.hostError?.message(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            TelemetryTextField(
+                value = viewState.host,
+                onValueChange = { onViewAction(ViewAction.OnHostChange(it)) },
+                enabled = viewState.isEditable,
+                isError = viewState.hostError != null,
+                placeholder = stringResource(Res.string.connection_host_placeholder),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .minimumTouchTarget()
+                    .testTag(TestTags.ConnectionHost),
+            )
+        }
+
+        FormField(
+            label = stringResource(Res.string.connection_field_port),
+            helperText = stringResource(Res.string.connection_port_helper),
+            errorText = viewState.portError?.message(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            TelemetryTextField(
+                value = viewState.port,
+                onValueChange = { onViewAction(ViewAction.OnPortChange(it)) },
+                enabled = viewState.isEditable,
+                isError = viewState.portError != null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .minimumTouchTarget()
+                    .testTag(TestTags.ConnectionPort),
+            )
+        }
+
+        TelemetrySwitch(
+            checked = viewState.authEnabled,
+            onCheckedChange = { onViewAction(ViewAction.OnAuthToggle(it)) },
+            enabled = viewState.isEditable,
+            label = stringResource(Res.string.connection_auth_toggle),
+            modifier = Modifier.testTag(TestTags.ConnectionAuthToggle),
+        )
+
+        if (viewState.authEnabled) {
+            FormField(
+                label = stringResource(Res.string.connection_field_username),
+                errorText = viewState.usernameError?.message(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                TelemetryTextField(
+                    value = viewState.username,
+                    onValueChange = { onViewAction(ViewAction.OnUsernameChange(it)) },
+                    enabled = viewState.isEditable,
+                    isError = viewState.usernameError != null,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .minimumTouchTarget()
+                        .focusRequester(usernameFocusRequester)
+                        .testTag(TestTags.ConnectionUsername),
+                )
+            }
+
+            FormField(
+                label = stringResource(Res.string.connection_field_password),
+                helperText = if (viewState.isEditMode) stringResource(Res.string.connection_password_keep_helper) else null,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                PasswordTextField(
+                    value = viewState.password,
+                    onValueChange = { onViewAction(ViewAction.OnPasswordChange(it)) },
+                    showLabel = stringResource(Res.string.connection_password_show),
+                    hideLabel = stringResource(Res.string.connection_password_hide),
+                    enabled = viewState.isEditable,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                        autoCorrectEnabled = false,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { onViewAction(ViewAction.OnSubmit) }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TestTags.ConnectionPassword),
+                )
+            }
+        }
+
+        TelemetryCard(
+            title = stringResource(Res.string.connection_checks_title),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            viewState.checks.forEach { ConnectionCheckRow(it) }
+        }
+
+        if (viewState.showSecretNotPersistedNotice) {
+            Text(
+                text = stringResource(Res.string.connection_secret_not_persisted),
+                style = AppTheme.typography.bodySm,
+                color = AppTheme.colors.degraded,
+            )
+        }
+
+        PrimaryButton(
+            text = stringResource(
+                when (viewState.phase) {
+                    Phase.Idle, Phase.Saved -> Res.string.connection_action_submit
+                    Phase.Testing -> Res.string.connection_action_testing
+                    Phase.Saving -> Res.string.connection_action_saving
+                },
+            ),
+            onClick = { onViewAction(ViewAction.OnSubmit) },
+            size = ButtonSize.Regular,
+            enabled = viewState.canSubmit,
+            modifier = Modifier
+                .fillMaxWidth()
+                .minimumTouchTarget()
+                .testTag(TestTags.ConnectionSubmit),
+        )
+
+        if (onBack != null) {
+            SecondaryButton(
+                text = stringResource(Res.string.connection_action_back),
+                onClick = onBack,
+                size = ButtonSize.Regular,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .minimumTouchTarget()
+                    .testTag(TestTags.ConnectionBack),
+            )
+        }
+    }
+}
+
+@Composable
+private fun FormErrorUi.message(): String = stringResource(messageRes)
+
+@Preview
+@Composable
+private fun ConnectionEditorContentNewPreview() {
+    AppTheme {
+        ConnectionEditorContent(
+            viewState = ViewState(),
+            onViewAction = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ConnectionEditorContentErrorsPreview() {
+    AppTheme {
+        ConnectionEditorContent(
+            viewState = ViewState(
+                alias = "",
+                host = "http://alpha-node-01.local/",
+                port = "70000",
+                hostError = FormErrorUi.HostContainsScheme,
+                aliasError = FormErrorUi.AliasBlank,
+                portError = FormErrorUi.PortOutOfRange,
+            ),
+            onViewAction = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ConnectionEditorContentTestingPreview() {
+    AppTheme {
+        ConnectionEditorContent(
+            viewState = ViewState(
+                alias = "NAS rack 2",
+                host = "alpha-node-01.local",
+                authEnabled = true,
+                password = "secret",
+                phase = Phase.Testing,
+                checks = listOf(
+                    ConnectionCheckUi(ConnectionCheckStepUi.ReachHost, ConnectionCheckStatusUi.Passed),
+                    ConnectionCheckUi(ConnectionCheckStepUi.DetectGlances, ConnectionCheckStatusUi.Passed),
+                    ConnectionCheckUi(ConnectionCheckStepUi.Authenticate, ConnectionCheckStatusUi.Running),
+                ),
+            ),
+            onViewAction = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ConnectionEditorContentFailedPreview() {
+    AppTheme {
+        ConnectionEditorContent(
+            viewState = ViewState(
+                alias = "NAS rack 2",
+                host = "alpha-node-01.local",
+                authEnabled = true,
+                isEditMode = true,
+                checks = listOf(
+                    ConnectionCheckUi(ConnectionCheckStepUi.ReachHost, ConnectionCheckStatusUi.Passed),
+                    ConnectionCheckUi(ConnectionCheckStepUi.DetectGlances, ConnectionCheckStatusUi.Passed),
+                    ConnectionCheckUi(
+                        step = ConnectionCheckStepUi.Authenticate,
+                        status = ConnectionCheckStatusUi.Failed,
+                        failure = ConnectionFailureUi.Unauthorized,
+                    ),
+                ),
+                showSecretNotPersistedNotice = true,
+            ),
+            onViewAction = {},
+        )
+    }
+}

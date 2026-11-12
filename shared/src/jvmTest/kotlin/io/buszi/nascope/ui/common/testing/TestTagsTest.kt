@@ -39,7 +39,15 @@ class TestTagsTest {
         assertEquals("welcome_connect", TestTags.WelcomeConnect)
         assertEquals("welcome_demo", TestTags.WelcomeDemo)
         assertEquals("welcome_screen", TestTags.WelcomeScreen)
-        assertEquals("setup_back", TestTags.SetupBack)
+    }
+
+    @Test
+    fun connectionEditorTagsAreSnakeCase() {
+        assertEquals("connection_host", TestTags.ConnectionHost)
+        assertEquals("connection_submit", TestTags.ConnectionSubmit)
+        assertEquals("connection_protocol_https", TestTags.connectionProtocol("Https"))
+        assertEquals("connection_check_reach_host", TestTags.connectionCheck("ReachHost"))
+        assertEquals("connection_check_detect_glances", TestTags.connectionCheck("DetectGlances"))
     }
 
     @Test

@@ -35,6 +35,7 @@ nascope/
 │   │       ├── ui/common/theme/  # Obsidian Telemetry Design System
 │   │       ├── ui/common/components/  # Reusable UI primitives
 │   │       ├── ui/root/          # Root gate: loading / setup flow / main scaffold
+│   │       ├── ui/connection/    # Connection editor: add / edit a server with a live test
 │   │       ├── ui/setup/         # Welcome & connection setup flow (outside the scaffold)
 │   │       ├── ui/navigation/    # Adaptive Navigation 3 scaffold, routes & multi-pane scene strategy
 │   │       ├── ui/dashboard/     # Modular telemetry dashboard & brick widgets

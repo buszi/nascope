@@ -19,7 +19,19 @@ object TestTags {
     const val WelcomeScreen: String = "welcome_screen"
     const val WelcomeConnect: String = "welcome_connect"
     const val WelcomeDemo: String = "welcome_demo"
-    const val SetupBack: String = "setup_back"
+
+    // Connection editor
+    const val ConnectionScreen: String = "connection_screen"
+    const val ConnectionAlias: String = "connection_alias"
+    fun connectionProtocol(protocolName: String): String = "connection_protocol_${protocolName.snake()}"
+    const val ConnectionHost: String = "connection_host"
+    const val ConnectionPort: String = "connection_port"
+    const val ConnectionAuthToggle: String = "connection_auth_toggle"
+    const val ConnectionUsername: String = "connection_username"
+    const val ConnectionPassword: String = "connection_password"
+    const val ConnectionSubmit: String = "connection_submit"
+    const val ConnectionBack: String = "connection_back"
+    fun connectionCheck(stepName: String): String = "connection_check_${stepName.snake()}"
 
     // Dashboard
     const val DashboardGrid: String = "dashboard_grid"

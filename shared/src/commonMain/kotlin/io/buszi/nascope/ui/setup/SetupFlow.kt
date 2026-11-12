@@ -31,6 +31,7 @@ import androidx.navigation3.ui.NavDisplay
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.LocalWindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
+import io.buszi.nascope.ui.connection.ConnectionEditorScreen
 
 /**
  * Setup flow shown while no server is configured. It is rendered outside the navigation scaffold, so
@@ -38,7 +39,7 @@ import io.buszi.nascope.ui.common.util.toWindowWidthClass
  * and Escape go from the connection form back to the welcome screen.
  */
 @Composable
-fun SetupFlow(modifier: Modifier = Modifier) {
+fun SetupFlow() {
     val backStack = rememberNavBackStack(SetupRouteSavedStateConfiguration, SetupRoute.Welcome)
     val navigateBack: () -> Unit = {
         if (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
@@ -52,7 +53,7 @@ fun SetupFlow(modifier: Modifier = Modifier) {
     }
 
     BoxWithConstraints(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(AppTheme.colors.canvasBackground)
             .windowInsetsPadding(WindowInsets.safeDrawing)
@@ -82,8 +83,7 @@ fun SetupFlow(modifier: Modifier = Modifier) {
                         WelcomeScreen(onConnectToServer = { backStack.add(SetupRoute.Connection) })
                     }
                     entry<SetupRoute.Connection> {
-                        // Placeholder until the connection editor replaces it.
-                        ConnectionPlaceholderScreen(onBack = navigateBack)
+                        ConnectionEditorScreen(onBack = navigateBack)
                     }
                 },
             )
