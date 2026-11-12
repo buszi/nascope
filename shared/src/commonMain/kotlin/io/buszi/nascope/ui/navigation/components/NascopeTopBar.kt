@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.nav_action_back
+import io.buszi.nascope.resources.nav_breadcrumb_connection_editor
 import io.buszi.nascope.resources.nav_breadcrumb_dashboard
 import io.buszi.nascope.resources.nav_breadcrumb_details
 import io.buszi.nascope.resources.nav_breadcrumb_nodes
@@ -33,7 +34,6 @@ import io.buszi.nascope.resources.nav_mode_demo
 import io.buszi.nascope.resources.nav_tag_sample_data
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.TagChip
-import io.buszi.nascope.ui.common.components.badges.color
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
@@ -41,6 +41,7 @@ import io.buszi.nascope.ui.dashboard.framework.title
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.navigation.NavRoute
 import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.Mode
+import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.ViewAction
 import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.ViewState
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -52,15 +53,18 @@ fun NascopeTopBar(
     currentRoute: NavRoute,
     canNavigateBack: Boolean,
     onNavigateBack: () -> Unit,
+    onManageNodes: () -> Unit,
 ) {
     val viewModel = koinViewModel<NascopeTopBarViewModel>()
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
 
     NascopeTopBarContent(
         viewState = viewState,
+        onViewAction = viewModel::onViewAction,
         currentRoute = currentRoute,
         canNavigateBack = canNavigateBack,
         onNavigateBack = onNavigateBack,
+        onManageNodes = onManageNodes,
     )
 }
 
@@ -73,9 +77,11 @@ fun NascopeTopBar(
 @Composable
 fun NascopeTopBarContent(
     viewState: ViewState,
+    onViewAction: (ViewAction) -> Unit,
     currentRoute: NavRoute,
     canNavigateBack: Boolean,
     onNavigateBack: () -> Unit,
+    onManageNodes: () -> Unit,
 ) {
     val windowWidthClass = AppTheme.windowWidthClass
     val breadcrumbText = when (currentRoute) {
@@ -85,6 +91,7 @@ fun NascopeTopBarContent(
             currentRoute.brickId.title(compact = windowWidthClass == WindowWidthClass.Compact),
         )
         NavRoute.Nodes -> stringResource(Res.string.nav_breadcrumb_nodes)
+        is NavRoute.ConnectionEditor -> stringResource(Res.string.nav_breadcrumb_connection_editor)
         NavRoute.Settings -> stringResource(Res.string.nav_breadcrumb_settings)
     }
 
@@ -137,11 +144,12 @@ fun NascopeTopBarContent(
 
                     Mode.Server -> {
                         if (windowWidthClass != WindowWidthClass.Compact) {
-                            TagChip(
-                                text = viewState.nodeName,
-                                dotColor = viewState.connectionStatus.level.color,
-                                pulsing = viewState.connectionStatus.pulsing,
-                                modifier = Modifier.testTag(TestTags.TopBarNode),
+                            NodeSwitcher(
+                                activeNode = viewState.nodes.firstOrNull { it.isActive },
+                                nodeName = viewState.nodeName,
+                                nodes = viewState.nodes,
+                                onSelectNode = { onViewAction(ViewAction.OnSelectNode(it)) },
+                                onManageNodes = onManageNodes,
                             )
                         }
                         TagChip(
@@ -221,6 +229,7 @@ private fun NascopeTopBarPreview() {
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
         ) {
             NascopeTopBarContent(
+                onViewAction = {},
                 viewState = ViewState(
                     mode = Mode.Server,
                     nodeName = "alpha-node-01",
@@ -229,8 +238,10 @@ private fun NascopeTopBarPreview() {
                 currentRoute = NavRoute.Dashboard,
                 canNavigateBack = false,
                 onNavigateBack = {},
+                onManageNodes = {},
             )
             NascopeTopBarContent(
+                onViewAction = {},
                 viewState = ViewState(
                     mode = Mode.Server,
                     nodeName = "alpha-node-01",
@@ -239,8 +250,10 @@ private fun NascopeTopBarPreview() {
                 currentRoute = NavRoute.Details(DashboardBrickId.CpuMatrix),
                 canNavigateBack = true,
                 onNavigateBack = {},
+                onManageNodes = {},
             )
             NascopeTopBarContent(
+                onViewAction = {},
                 viewState = ViewState(
                     mode = Mode.Server,
                     nodeName = "alpha-node-01",
@@ -249,12 +262,15 @@ private fun NascopeTopBarPreview() {
                 currentRoute = NavRoute.Nodes,
                 canNavigateBack = false,
                 onNavigateBack = {},
+                onManageNodes = {},
             )
             NascopeTopBarContent(
+                onViewAction = {},
                 viewState = ViewState(mode = Mode.Demo),
                 currentRoute = NavRoute.Settings,
                 canNavigateBack = false,
                 onNavigateBack = {},
+                onManageNodes = {},
             )
         }
     }

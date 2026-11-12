@@ -3,8 +3,10 @@ package io.buszi.nascope.ui.navigation.components
 import app.cash.turbine.turbineScope
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
+import io.buszi.nascope.domain.connection.ObserveServerProfilesUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
+import io.buszi.nascope.domain.connection.SetActiveServerUseCase
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
@@ -15,10 +17,17 @@ import io.buszi.nascope.domain.model.connection.ServerProtocol
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.model.ConnectionStatusUi
+import io.buszi.nascope.ui.common.model.NodeUi
+import io.buszi.nascope.ui.common.model.ServerProtocolUi
+import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.ViewAction.OnSelectNode
 import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.Mode
 import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.ViewState
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.verifySequence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +37,7 @@ import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@Suppress("UnusedFlow")
 @OptIn(ExperimentalCoroutinesApi::class)
 class NascopeTopBarViewModelTest {
 
@@ -36,11 +46,15 @@ class NascopeTopBarViewModelTest {
 
     private val observeSession = mockk<ObserveSessionUseCase>()
     private val observeConnectionStatus = mockk<ObserveConnectionStatusUseCase>()
+    private val observeServerProfiles = mockk<ObserveServerProfilesUseCase>()
+    private val setActiveServer = mockk<SetActiveServerUseCase>()
 
     private val viewModel by lazy {
         NascopeTopBarViewModel(
             observeSession = observeSession,
             observeConnectionStatus = observeConnectionStatus,
+            observeServerProfiles = observeServerProfiles,
+            setActiveServer = setActiveServer,
         )
     }
 
@@ -49,6 +63,7 @@ class NascopeTopBarViewModelTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.NotConfigured)
             every { observeConnectionStatus() } returns MutableStateFlow(Status.Idle)
+            every { observeServerProfiles() } returns MutableStateFlow(listOf(profile, other))
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -60,6 +75,7 @@ class NascopeTopBarViewModelTest {
             verifySequence {
                 observeSession()
                 observeConnectionStatus()
+                observeServerProfiles()
             }
         }
     }
@@ -69,6 +85,7 @@ class NascopeTopBarViewModelTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Demo)
             every { observeConnectionStatus() } returns MutableStateFlow(Status.Idle)
+            every { observeServerProfiles() } returns MutableStateFlow(listOf(profile, other))
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -89,6 +106,7 @@ class NascopeTopBarViewModelTest {
             val status = MutableStateFlow<Status>(Status.Connecting)
             every { observeSession() } returns MutableStateFlow(Session.Connected(profile))
             every { observeConnectionStatus() } returns status
+            every { observeServerProfiles() } returns MutableStateFlow(listOf(profile, other))
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -117,6 +135,7 @@ class NascopeTopBarViewModelTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(profile))
             every { observeConnectionStatus() } returns MutableStateFlow(Status.Idle)
+            every { observeServerProfiles() } returns MutableStateFlow(listOf(profile, other))
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -135,6 +154,7 @@ class NascopeTopBarViewModelTest {
             val status = MutableStateFlow<Status>(Status.Online)
             every { observeSession() } returns session
             every { observeConnectionStatus() } returns status
+            every { observeServerProfiles() } returns MutableStateFlow(listOf(profile, other))
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -153,8 +173,47 @@ class NascopeTopBarViewModelTest {
         }
     }
 
-    private fun serverState(status: ConnectionStatusUi) =
-        ViewState(mode = Mode.Server, nodeName = "Alpha", connectionStatus = status)
+    private fun serverState(status: ConnectionStatusUi) = ViewState(
+        mode = Mode.Server,
+        nodeName = "Alpha",
+        connectionStatus = status,
+        nodes = listOf(
+            NodeUi(
+                id = "alpha",
+                alias = "Alpha",
+                host = "alpha.local",
+                port = 61208,
+                protocol = ServerProtocolUi.Http,
+                isActive = true,
+                connectionStatus = status,
+            ),
+            NodeUi(
+                id = "beta",
+                alias = "Beta",
+                host = "beta.local",
+                port = 8443,
+                protocol = ServerProtocolUi.Https,
+            ),
+        ),
+    )
+
+    @Test
+    fun nascopeTopBarViewModelSwitchesTheActiveServerFromTheQuickSwitcher() = runTest {
+        turbineScope {
+            every { observeSession() } returns MutableStateFlow(Session.Connected(profile))
+            every { observeConnectionStatus() } returns MutableStateFlow(Status.Online)
+            every { observeServerProfiles() } returns MutableStateFlow(listOf(profile, other))
+            coEvery { setActiveServer(other.id) } just runs
+
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            viewModel.onViewAction(OnSelectNode("beta"))
+            runCurrent()
+
+            viewStateTurbine.cancelAndConsumeItems()
+            coVerify(exactly = 1) { setActiveServer(other.id) }
+        }
+    }
 
     companion object {
         private val profile = ServerProfile(
@@ -162,6 +221,13 @@ class NascopeTopBarViewModelTest {
             alias = "Alpha",
             address = ServerAddress(ServerProtocol.Http, "alpha.local", 61208),
             apiVersion = GlancesApiVersion.V4,
+            auth = ServerAuth.None,
+        )
+        private val other = ServerProfile(
+            id = ServerProfileId("beta"),
+            alias = "Beta",
+            address = ServerAddress(ServerProtocol.Https, "beta.local", 8443),
+            apiVersion = GlancesApiVersion.V3,
             auth = ServerAuth.None,
         )
     }

@@ -94,4 +94,70 @@ class NascopeNavigatorTest {
         assertFalse(navigator.canNavigateBack)
         assertEquals(listOf<NavKey>(NavRoute.Dashboard), navigator.backStack.toList())
     }
+
+    @Test
+    fun connectionEditorOpensOnTopOfNodesAndBelongsToTheNodesDestination() {
+        val navigator = createNavigator()
+        navigator.navigateToTopLevel(TopLevelDestination.Nodes)
+
+        navigator.navigateToConnectionEditor(null)
+
+        assertEquals(NavRoute.ConnectionEditor(null), navigator.currentRoute)
+        assertEquals(TopLevelDestination.Nodes, navigator.activeTopLevelDestination)
+        assertEquals(
+            listOf<NavKey>(NavRoute.Dashboard, NavRoute.Nodes, NavRoute.ConnectionEditor(null)),
+            navigator.backStack.toList(),
+        )
+    }
+
+    @Test
+    fun connectionEditorFromAnotherDestinationBuildsTheNodesBackStack() {
+        val navigator = createNavigator()
+
+        navigator.navigateToConnectionEditor("alpha")
+
+        assertEquals(
+            listOf<NavKey>(NavRoute.Dashboard, NavRoute.Nodes, NavRoute.ConnectionEditor("alpha")),
+            navigator.backStack.toList(),
+        )
+    }
+
+    @Test
+    fun backFromTheConnectionEditorReturnsToNodes() {
+        val navigator = createNavigator()
+        navigator.navigateToTopLevel(TopLevelDestination.Nodes)
+        navigator.navigateToConnectionEditor("alpha")
+
+        assertTrue(navigator.navigateBack())
+
+        assertEquals(NavRoute.Nodes, navigator.currentRoute)
+    }
+
+    @Test
+    fun openingTheConnectionEditorForAnotherProfileReplacesTheTopEntry() {
+        val navigator = createNavigator()
+        navigator.navigateToTopLevel(TopLevelDestination.Nodes)
+        navigator.navigateToConnectionEditor("alpha")
+
+        navigator.navigateToConnectionEditor("beta")
+        navigator.navigateToConnectionEditor("beta")
+
+        assertEquals(
+            listOf<NavKey>(NavRoute.Dashboard, NavRoute.Nodes, NavRoute.ConnectionEditor("beta")),
+            navigator.backStack.toList(),
+        )
+    }
+
+    @Test
+    fun switchingTabsFromTheConnectionEditorLeavesIt() {
+        val navigator = createNavigator()
+        navigator.navigateToConnectionEditor(null)
+
+        navigator.navigateToTopLevel(TopLevelDestination.Nodes)
+        assertEquals(listOf<NavKey>(NavRoute.Dashboard, NavRoute.Nodes), navigator.backStack.toList())
+
+        navigator.navigateToConnectionEditor(null)
+        navigator.navigateToTopLevel(TopLevelDestination.Dashboard)
+        assertEquals(listOf<NavKey>(NavRoute.Dashboard), navigator.backStack.toList())
+    }
 }

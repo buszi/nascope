@@ -70,9 +70,14 @@ import org.koin.core.parameter.parametersOf
 fun ConnectionEditorScreen(
     profileId: String? = null,
     onBack: (() -> Unit)? = null,
+    onSaved: () -> Unit = {},
 ) {
     val viewModel = koinViewModel<ConnectionEditorViewModel>(parameters = { parametersOf(profileId) })
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(viewState.phase) {
+        if (viewState.phase == Phase.Saved) onSaved()
+    }
 
     ConnectionEditorContent(
         viewState = viewState,

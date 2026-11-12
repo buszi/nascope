@@ -18,11 +18,27 @@ object TestTags {
     const val TopBarStatus: String = "top_bar_status"
     const val TopBarDemo: String = "top_bar_demo"
     const val TopBarSampleData: String = "top_bar_sample_data"
+    fun topBarNodeOption(id: String): String = "top_bar_node_option_${id.slug()}"
+    const val TopBarManageNodes: String = "top_bar_manage_nodes"
 
     // Setup flow
     const val WelcomeScreen: String = "welcome_screen"
     const val WelcomeConnect: String = "welcome_connect"
     const val WelcomeDemo: String = "welcome_demo"
+
+    // Nodes
+    const val NodesScreen: String = "nodes_screen"
+    const val NodesAdd: String = "nodes_add"
+    fun nodesNode(id: String): String = "nodes_node_${id.slug()}"
+    fun nodesUse(id: String): String = "nodes_use_${id.slug()}"
+    fun nodesEdit(id: String): String = "nodes_edit_${id.slug()}"
+    fun nodesDelete(id: String): String = "nodes_delete_${id.slug()}"
+    const val NodesDeleteConfirm: String = "nodes_delete_confirm"
+    const val NodesDeleteCancel: String = "nodes_delete_cancel"
+    const val NodesDemoNotice: String = "nodes_demo_notice"
+    const val NodesDemoConnect: String = "nodes_demo_connect"
+    const val NodesDemoExit: String = "nodes_demo_exit"
+    const val NodesUseDemo: String = "nodes_use_demo"
 
     // Connection editor
     const val ConnectionScreen: String = "connection_screen"

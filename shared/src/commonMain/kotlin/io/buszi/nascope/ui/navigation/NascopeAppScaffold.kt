@@ -40,6 +40,7 @@ import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.LocalWindowWidthClass
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
+import io.buszi.nascope.ui.connection.ConnectionEditorScreen
 import io.buszi.nascope.ui.dashboard.DashboardScreen
 import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
@@ -123,6 +124,7 @@ fun NascopeAppScaffold(
                         currentRoute = navigator.currentRoute,
                         canNavigateBack = navigator.canNavigateBack,
                         onNavigateBack = { navigator.navigateBack() },
+                        onManageNodes = { navigator.navigateToTopLevel(TopLevelDestination.Nodes) },
                     )
 
                     Box(
@@ -202,7 +204,17 @@ private fun NascopeNavDisplay(
             }
 
             entry<NavRoute.Nodes> {
-                NodesScreen()
+                NodesScreen(
+                    onAddServer = { navigator.navigateToConnectionEditor(null) },
+                    onEditServer = navigator::navigateToConnectionEditor,
+                )
+            }
+
+            entry<NavRoute.ConnectionEditor> { route ->
+                ConnectionEditorScreen(
+                    profileId = route.profileId,
+                    onSaved = { navigator.navigateBack() },
+                )
             }
 
             entry<NavRoute.Settings> {
@@ -217,9 +229,7 @@ private fun NascopeNavDisplay(
 private fun NascopeAppScaffoldPreview() {
     AppTheme {
         NascopeAppScaffold(
-            dashboardContent = { _, _ ->
-                NodesScreen()
-            },
+            dashboardContent = { _, _ -> },
         )
     }
 }

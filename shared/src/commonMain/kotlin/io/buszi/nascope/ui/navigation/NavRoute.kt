@@ -33,6 +33,10 @@ sealed interface NavRoute : NavKey {
     @Serializable
     data object Nodes : NavRoute
 
+    /** Add a server, or edit the stored one with [profileId], inside the main shell. Part of the Nodes destination. */
+    @Serializable
+    data class ConnectionEditor(val profileId: String?) : NavRoute
+
     /** Application preferences and telemetry polling configuration destination. */
     @Serializable
     data object Settings : NavRoute
@@ -64,11 +68,12 @@ enum class TopLevelDestination(
 /**
  * Resolves the [TopLevelDestination] associated with this [NavRoute].
  *
- * [NavRoute.Details] belongs to the [TopLevelDestination.Dashboard] hierarchy.
+ * [NavRoute.Details] belongs to the [TopLevelDestination.Dashboard] hierarchy and
+ * [NavRoute.ConnectionEditor] to the [TopLevelDestination.Nodes] hierarchy.
  */
 fun NavRoute.toTopLevelDestination(): TopLevelDestination = when (this) {
     NavRoute.Dashboard, is NavRoute.Details -> TopLevelDestination.Dashboard
-    NavRoute.Nodes -> TopLevelDestination.Nodes
+    NavRoute.Nodes, is NavRoute.ConnectionEditor -> TopLevelDestination.Nodes
     NavRoute.Settings -> TopLevelDestination.Settings
 }
 
@@ -81,6 +86,7 @@ val NavRouteSavedStateConfiguration: SavedStateConfiguration = SavedStateConfigu
             subclass(NavRoute.Dashboard::class)
             subclass(NavRoute.Details::class)
             subclass(NavRoute.Nodes::class)
+            subclass(NavRoute.ConnectionEditor::class)
             subclass(NavRoute.Settings::class)
         }
     }

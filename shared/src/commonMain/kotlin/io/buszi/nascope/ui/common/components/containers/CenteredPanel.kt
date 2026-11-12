@@ -31,6 +31,8 @@ import io.buszi.nascope.ui.common.util.WindowWidthClass
  *
  * @param modifier Root layout modifier; the layout fills the available space.
  * @param maxWidth Maximum content width on wide windows.
+ * @param verticalAlignment Where the content sits when it is shorter than the screen: centred for focused
+ * flows, at the top for lists.
  * @param verticalArrangement Spacing between the content children.
  * @param content Column content.
  */
@@ -38,6 +40,7 @@ import io.buszi.nascope.ui.common.util.WindowWidthClass
 fun CenteredPanel(
     modifier: Modifier = Modifier,
     maxWidth: Dp = AppTheme.dimensions.setupPanelMaxWidth,
+    verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(AppTheme.spacing.spaceLg),
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -55,7 +58,7 @@ fun CenteredPanel(
                 .verticalScroll(rememberScrollState())
                 .padding(margin),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.aligned(verticalAlignment),
         ) {
             Column(
                 modifier = Modifier

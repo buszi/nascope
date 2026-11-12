@@ -12,7 +12,8 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
  * State-driven Navigation 3 backstack controller for Nascope.
  *
  * Manages top-level destination switching (`Dashboard`, `Nodes`, `Settings`),
- * contextual brick detail drill-downs (`Details(brickId)`), and back navigation
+ * contextual brick detail drill-downs (`Details(brickId)`), the connection editor on top of
+ * `Nodes` (`ConnectionEditor(profileId)`), and back navigation
  * while keeping [NavRoute.Dashboard] anchored at the root of the backstack.
  */
 @Stable
@@ -93,6 +94,29 @@ class NascopeNavigator(
             }
             backStack.add(target)
         }
+    }
+
+    /**
+     * Opens the connection editor for a new server ([profileId] `null`) or for the stored profile with that id.
+     *
+     * The editor sits on top of [NavRoute.Nodes], so back and a successful save return to the node list.
+     * Opening it for a different profile while it is already open replaces the top entry.
+     */
+    fun navigateToConnectionEditor(profileId: String?) {
+        val target = NavRoute.ConnectionEditor(profileId)
+        val current = currentRoute
+        if (current == target) return
+
+        if (current is NavRoute.ConnectionEditor && backStack.isNotEmpty()) {
+            backStack[backStack.lastIndex] = target
+            return
+        }
+        if (current != NavRoute.Nodes) {
+            backStack.clear()
+            backStack.add(NavRoute.Dashboard)
+            backStack.add(NavRoute.Nodes)
+        }
+        backStack.add(target)
     }
 
     /**

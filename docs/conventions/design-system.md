@@ -66,5 +66,5 @@ Building blocks for forms such as the connection editor. All of them use tokens 
 
 ### Focused single-column screens
 
-`CenteredPanel` (`ui/common/components/containers/`) lays out setup-style screens: on Compact the content fills the width inside the standard margin, on Medium and Expanded it is a centred column limited to `AppDimensions.setupPanelMaxWidth` (480dp). It centres vertically and scrolls when the content does not fit. Use it for the welcome screen and the connection editor instead of building new layouts.
+`CenteredPanel` (`ui/common/components/containers/`) lays out setup-style screens: on Compact the content fills the width inside the standard margin, on Medium and Expanded it is a centred column limited to `AppDimensions.setupPanelMaxWidth` (480dp). It centres vertically (or sits at the top with `verticalAlignment = Alignment.Top`, as the node list does) and scrolls when the content does not fit. Use it for the welcome screen and the connection editor instead of building new layouts.
 

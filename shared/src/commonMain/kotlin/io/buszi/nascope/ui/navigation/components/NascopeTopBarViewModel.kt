@@ -4,21 +4,29 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
+import io.buszi.nascope.domain.connection.ObserveServerProfilesUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
+import io.buszi.nascope.domain.connection.SetActiveServerUseCase
+import io.buszi.nascope.domain.model.connection.ServerProfileId
 import io.buszi.nascope.ui.common.model.ConnectionStatusUi
+import io.buszi.nascope.ui.common.model.NodeUi
+import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.ViewAction.OnSelectNode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class NascopeTopBarViewModel(
     private val observeSession: ObserveSessionUseCase,
     private val observeConnectionStatus: ObserveConnectionStatusUseCase,
+    private val observeServerProfiles: ObserveServerProfilesUseCase,
+    private val setActiveServer: SetActiveServerUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -28,16 +36,26 @@ class NascopeTopBarViewModel(
         observeSessionAndStatus()
     }
 
+    fun onViewAction(action: ViewAction) {
+        when (action) {
+            is OnSelectNode -> viewModelScope.launch { setActiveServer(ServerProfileId(action.id)) }
+        }
+    }
+
     private fun observeSessionAndStatus() {
-        combine(observeSession(), observeConnectionStatus()) { session, status ->
+        combine(observeSession(), observeConnectionStatus(), observeServerProfiles()) { session, status, profiles ->
             when (session) {
                 Session.NotConfigured -> ViewState(mode = Mode.None)
                 Session.Demo -> ViewState(mode = Mode.Demo)
-                is Session.Connected -> ViewState(
-                    mode = Mode.Server,
-                    nodeName = session.profile.alias,
-                    connectionStatus = ConnectionStatusUi.from(status),
-                )
+                is Session.Connected -> {
+                    val connectionStatus = ConnectionStatusUi.from(status)
+                    ViewState(
+                        mode = Mode.Server,
+                        nodeName = session.profile.alias,
+                        connectionStatus = connectionStatus,
+                        nodes = NodeUi.from(profiles, session.profile.id, connectionStatus),
+                    )
+                }
             }
         }.onEach { viewState ->
             mutableViewState.value = viewState
@@ -49,6 +67,8 @@ class NascopeTopBarViewModel(
         val mode: Mode = Mode.None,
         val nodeName: String = "",
         val connectionStatus: ConnectionStatusUi = ConnectionStatusUi.Connecting,
+        /** The stored servers the quick switcher offers; the active one is marked. */
+        val nodes: List<NodeUi> = emptyList(),
     )
 
     /** What the top bar says about the data source. */
@@ -61,5 +81,9 @@ class NascopeTopBarViewModel(
 
         /** A real server: its name, live status and a `SAMPLE DATA` tag while the bricks are still hardcoded. */
         Server,
+    }
+
+    sealed interface ViewAction {
+        data class OnSelectNode(val id: String) : ViewAction
     }
 }

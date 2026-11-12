@@ -145,10 +145,6 @@
     <string name="nav_connection_offline">OFFLINE</string>
     <string name="nav_mode_demo">DEMO</string>
     <string name="nav_tag_sample_data">SAMPLE DATA</string>
-    <string name="screen_nodes_header">CLUSTER // NODES</string>
-    <string name="screen_nodes_title">Nodes</string>
-    <string name="screen_nodes_route_tag">ROUTE: NODES</string>
-    <string name="screen_nodes_description">Opened screen: Nodes. Multi-server profile management and node switching will be implemented in Phase 4.</string>
     <string name="screen_settings_header">SYSTEM // SETTINGS</string>
     <string name="screen_settings_title">Settings</string>
     <string name="screen_settings_route_tag">ROUTE: SETTINGS</string>
@@ -330,4 +326,21 @@
     <string name="connection_error_port_not_a_number">The port must be a number</string>
     <string name="connection_error_port_out_of_range">The port must be between 1 and 65535</string>
     <string name="connection_error_username_blank">Enter the username</string>
+    <string name="nav_breadcrumb_connection_editor">CLUSTER // NODES // SERVER</string>
+    <string name="nav_node_switcher_manage">Manage nodes</string>
+    <string name="nodes_title">Nodes</string>
+    <string name="nodes_action_add">Add server</string>
+    <string name="nodes_empty">No servers saved yet.</string>
+    <string name="nodes_marker_active">ACTIVE</string>
+    <string name="nodes_action_use">Use</string>
+    <string name="nodes_action_edit">Edit</string>
+    <string name="nodes_action_delete">Delete</string>
+    <string name="nodes_delete_prompt">Delete %1$s? Its saved password is removed too.</string>
+    <string name="nodes_delete_confirm">Delete</string>
+    <string name="nodes_delete_cancel">Cancel</string>
+    <string name="nodes_demo_title">DEMO MODE</string>
+    <string name="nodes_demo_description">You are viewing demo data. Connect to a server to see your own telemetry.</string>
+    <string name="nodes_demo_connect">Connect to a server</string>
+    <string name="nodes_demo_exit">Exit demo</string>
+    <string name="nodes_demo_use">Use demo data</string>
 </resources>

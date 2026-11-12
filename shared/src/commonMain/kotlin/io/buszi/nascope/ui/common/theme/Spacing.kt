@@ -55,6 +55,7 @@ data class AppDimensions(
     val detailInspectorWidth: Dp = 360.dp,
     val commandPaletteWidth: Dp = 580.dp,
     val setupPanelMaxWidth: Dp = 480.dp,
+    val nodeSwitcherWidth: Dp = 280.dp,
     val topBarHeight: Dp = 52.dp,
     val bottomBarHeight: Dp = 60.dp,
     val navIndicatorThickness: Dp = 3.dp,

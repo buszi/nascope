@@ -50,6 +50,17 @@ class TestTagsTest {
     }
 
     @Test
+    fun nodesAndSwitcherTagsAreSnakeCaseSlugsOfTheProfileId() {
+        assertEquals("nodes_node_e0e8ba61_dd02", TestTags.nodesNode("e0e8ba61-dd02"))
+        assertEquals("nodes_use_alpha", TestTags.nodesUse("alpha"))
+        assertEquals("nodes_edit_alpha", TestTags.nodesEdit("alpha"))
+        assertEquals("nodes_delete_alpha", TestTags.nodesDelete("alpha"))
+        assertEquals("top_bar_node_option_alpha", TestTags.topBarNodeOption("alpha"))
+        assertEquals("nodes_add", TestTags.NodesAdd)
+        assertEquals("top_bar_manage_nodes", TestTags.TopBarManageNodes)
+    }
+
+    @Test
     fun connectionEditorTagsAreSnakeCase() {
         assertEquals("connection_host", TestTags.ConnectionHost)
         assertEquals("connection_submit", TestTags.ConnectionSubmit)
