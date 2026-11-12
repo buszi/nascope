@@ -63,6 +63,7 @@ import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.model.MemorySwapUi
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.memory.MemorySwapViewModel.ViewAction
@@ -196,6 +197,10 @@ fun MemorySwapWidget(
     }
 }
 
+/** [MemorySwapUi.usedExcludingCacheBytes] as a fraction of the total RAM, for the breakdown. */
+private val MemorySwapUi.usedExcludingCacheRatio: Float
+    get() = if (totalBytes > 0L) (usedExcludingCacheBytes.toFloat() / totalBytes).coerceIn(0f, 1f) else 0f
+
 @Composable
 private fun WideMemorySwapContent(
     viewState: ViewState,
@@ -253,7 +258,7 @@ private fun WideMemorySwapContent(
 
         // Tiered Bar Gauge
         TieredBarGauge(
-            usedRatio = usedMemRatio,
+            usedRatio = viewState.memory.usedExcludingCacheRatio,
             cachedRatio = cachedMemRatio,
             buffersRatio = buffersMemRatio,
             usedColor = usedColor,
@@ -291,8 +296,8 @@ private fun WideMemorySwapContent(
                 ) {
                     MemoryCell(
                         label = stringResource(Res.string.widget_memory_swap_used),
-                        bytes = viewState.memory.usedBytes,
-                        ratio = usedMemRatio,
+                        bytes = viewState.memory.usedExcludingCacheBytes,
+                        ratio = viewState.memory.usedExcludingCacheRatio,
                         indicatorColor = usedColor,
                         modifier = Modifier.weight(1f),
                     )
@@ -329,8 +334,8 @@ private fun WideMemorySwapContent(
                     ) {
                         MemoryCell(
                             label = stringResource(Res.string.widget_memory_swap_used),
-                            bytes = viewState.memory.usedBytes,
-                            ratio = usedMemRatio,
+                            bytes = viewState.memory.usedExcludingCacheBytes,
+                            ratio = viewState.memory.usedExcludingCacheRatio,
                             indicatorColor = usedColor,
                             modifier = Modifier.weight(1f),
                         )
@@ -433,7 +438,7 @@ private fun CompactMemorySwapContent(
 
         // Compact Tiered Bar Gauge
         TieredBarGauge(
-            usedRatio = usedMemRatio,
+            usedRatio = viewState.memory.usedExcludingCacheRatio,
             cachedRatio = cachedMemRatio,
             buffersRatio = buffersMemRatio,
             usedColor = usedColor,
@@ -463,8 +468,8 @@ private fun CompactMemorySwapContent(
         ) {
             CompactMemoryRow(
                 label = stringResource(Res.string.widget_memory_swap_used),
-                bytes = viewState.memory.usedBytes,
-                ratio = usedMemRatio,
+                bytes = viewState.memory.usedExcludingCacheBytes,
+                ratio = viewState.memory.usedExcludingCacheRatio,
                 indicatorColor = usedColor,
             )
             CompactMemoryRow(

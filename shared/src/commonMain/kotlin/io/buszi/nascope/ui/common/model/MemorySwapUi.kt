@@ -18,6 +18,19 @@ data class MemorySwapUi(
     val usedSwapBytes: Long = 0L,
     val freeSwapBytes: Long = 0L,
 ) {
+    /**
+     * [usedBytes] without the cache, for the breakdown next to cached, buffers and free.
+     *
+     * Depending on the host, Glances' `used` already includes the cache, so the four parts add up to more than
+     * [totalBytes]. Only in that case the cache and buffers are taken out of it; otherwise it is [usedBytes].
+     */
+    val usedExcludingCacheBytes: Long
+        get() {
+            val cache = (cachedBytes ?: 0L) + (buffersBytes ?: 0L)
+            val overlaps = usedBytes + cache + freeBytes > totalBytes
+            return if (overlaps) (usedBytes - cache).coerceAtLeast(0L) else usedBytes
+        }
+
     companion object {
         fun from(data: ObserveMemoryUseCase.Data): MemorySwapUi = MemorySwapUi(
             totalBytes = data.memory.totalBytes,
