@@ -111,19 +111,23 @@ fun SensorsThermalsWidget(
             } else {
                 stringResource(Res.string.widget_sensors_title_compact)
             },
-            subtitle = subtitleText,
+            subtitle = if (viewState.widgetState.isReady) subtitleText else null,
             modifier = Modifier.fillMaxSize(),
             state = viewState.widgetState,
-            statusTag = {
-                StatusChip(
-                    text = statusLabel,
-                    status = viewState.sensors.overallStatus,
-                    pulsing = viewState.sensors.overallStatus == StatusLevel.Critical,
-                )
-            },
-            headerAction = {
-                TagChip(text = headerActionText)
-            },
+            statusTag = if (viewState.widgetState.isReady) {
+                {
+                    StatusChip(
+                        text = statusLabel,
+                        status = viewState.sensors.overallStatus,
+                        pulsing = viewState.sensors.overallStatus == StatusLevel.Critical,
+                    )
+                }
+            } else null,
+            headerAction = if (viewState.widgetState.isReady) {
+                {
+                    TagChip(text = headerActionText)
+                }
+            } else null,
         ) {
             val sensors = viewState.sensors
 
