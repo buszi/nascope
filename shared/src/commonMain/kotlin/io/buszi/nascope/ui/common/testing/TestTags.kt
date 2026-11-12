@@ -15,6 +15,12 @@ object TestTags {
     fun navigation(destinationName: String): String = "nav_${destinationName.snake()}"
     const val TopBarBack: String = "top_bar_back"
 
+    // Setup flow
+    const val WelcomeScreen: String = "welcome_screen"
+    const val WelcomeConnect: String = "welcome_connect"
+    const val WelcomeDemo: String = "welcome_demo"
+    const val SetupBack: String = "setup_back"
+
     // Dashboard
     const val DashboardGrid: String = "dashboard_grid"
     fun brick(id: DashboardBrickId): String = "brick_${id.name.snake()}"

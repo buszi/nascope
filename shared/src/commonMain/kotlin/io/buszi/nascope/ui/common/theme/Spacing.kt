@@ -54,6 +54,7 @@ data class AppDimensions(
     val liveLogDrawerWidth: Dp = 320.dp,
     val detailInspectorWidth: Dp = 360.dp,
     val commandPaletteWidth: Dp = 580.dp,
+    val setupPanelMaxWidth: Dp = 480.dp,
     val topBarHeight: Dp = 52.dp,
     val bottomBarHeight: Dp = 60.dp,
     val navIndicatorThickness: Dp = 3.dp,

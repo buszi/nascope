@@ -1,20 +1,18 @@
 package io.buszi.nascope
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import io.buszi.nascope.ui.common.testing.testTagsAsResourceId
 import io.buszi.nascope.ui.common.theme.AppTheme
-import io.buszi.nascope.ui.navigation.NascopeAppScaffold
+import io.buszi.nascope.ui.root.AppRoot
 
 /**
  * Main application entry point composable.
  *
- * Applies [AppTheme] and hosts the adaptive Navigation 3 application scaffold.
+ * Applies [AppTheme] and hosts the root gate, which shows the setup flow or the adaptive navigation scaffold.
  * Koin must already be running: platform entry points call [io.buszi.nascope.di.initNascope] first.
  */
 @Composable
 fun App() {
     AppTheme {
-        NascopeAppScaffold(modifier = Modifier.testTagsAsResourceId())
+        AppRoot()
     }
 }

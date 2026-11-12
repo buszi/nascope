@@ -35,6 +35,14 @@ class TestTagsTest {
     }
 
     @Test
+    fun setupFlowTagsAreSnakeCase() {
+        assertEquals("welcome_connect", TestTags.WelcomeConnect)
+        assertEquals("welcome_demo", TestTags.WelcomeDemo)
+        assertEquals("welcome_screen", TestTags.WelcomeScreen)
+        assertEquals("setup_back", TestTags.SetupBack)
+    }
+
+    @Test
     fun filterTagsWithoutStateMeanAll() {
         assertEquals("containers_filter_all", TestTags.containersFilter(null))
         assertEquals("process_filter_all", TestTags.processFilter(null))

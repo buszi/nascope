@@ -64,3 +64,7 @@ Building blocks for forms such as the connection editor. All of them use tokens 
 - **Touch targets:** on `WindowWidthClass.Compact` interactive form components grow to `AppDimensions.minTouchTarget` (48dp) through `Modifier.minimumTouchTarget()` (`ui/common/util`). Apply it before any fixed `height(...)`. `TelemetryTextField` itself stays 32dp; add `Modifier.minimumTouchTarget()` when using it directly in a form on Compact (`PasswordTextField` does it already).
 - **Focus previews:** previews use `rememberFocusedInteractionSource()` (internal to the package) to show the focused state.
 
+### Focused single-column screens
+
+`CenteredPanel` (`ui/common/components/containers/`) lays out setup-style screens: on Compact the content fills the width inside the standard margin, on Medium and Expanded it is a centred column limited to `AppDimensions.setupPanelMaxWidth` (480dp). It centres vertically and scrolls when the content does not fit. Use it for the welcome screen and the connection editor instead of building new layouts.
+
