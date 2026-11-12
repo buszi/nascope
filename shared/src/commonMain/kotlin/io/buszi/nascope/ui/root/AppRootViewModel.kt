@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
+import io.buszi.nascope.domain.foreground.SetAppForegroundUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ import org.koin.core.annotation.KoinViewModel
 @KoinViewModel
 class AppRootViewModel(
     private val observeSession: ObserveSessionUseCase,
+    private val setAppForeground: SetAppForegroundUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -29,6 +31,12 @@ class AppRootViewModel(
             .launchIn(viewModelScope)
     }
 
+    fun onViewAction(action: ViewAction) {
+        when (action) {
+            is ViewAction.OnForegroundChanged -> setAppForeground(action.isForeground)
+        }
+    }
+
     private fun Session.toDestination(): Destination = when (this) {
         Session.NotConfigured -> Destination.Setup
         Session.Demo, is Session.Connected -> Destination.Main
@@ -38,6 +46,11 @@ class AppRootViewModel(
     data class ViewState(
         val destination: Destination = Destination.Loading,
     )
+
+    sealed interface ViewAction {
+        /** The app became visible (`true`) or stopped being visible (`false`). */
+        data class OnForegroundChanged(val isForeground: Boolean) : ViewAction
+    }
 
     /** The top-level flow to render. */
     enum class Destination {

@@ -5,6 +5,7 @@ import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
 import io.buszi.nascope.domain.connection.toServerConnection
+import io.buszi.nascope.domain.foreground.AppForegroundState
 import io.buszi.nascope.domain.model.connection.ServerProfile
 import io.buszi.nascope.network.GlancesConnectionClient
 import io.buszi.nascope.storage.SecretStore
@@ -15,6 +16,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -23,7 +26,8 @@ import kotlinx.coroutines.flow.shareIn
 import org.koin.core.annotation.Single
 
 /**
- * Follows the session and, while a server is connected, checks it every [PollIntervalMillis] ms.
+ * Follows the session and, while a server is connected and the app is in the foreground, checks it every
+ * [PollIntervalMillis] ms. Returning to the foreground checks immediately; no request is made in the background.
  *
  * A single polling loop serves all collectors. It starts with the first collector, stops when the last
  * one leaves, and restarts from `Connecting` when the connected profile changes.
@@ -34,6 +38,7 @@ internal class ObserveConnectionStatusUseCaseImpl(
     observeSession: ObserveSessionUseCase,
     private val client: GlancesConnectionClient,
     private val secretStore: SecretStore,
+    private val appForegroundState: AppForegroundState,
     applicationScope: CoroutineScope,
     dispatcher: CoroutineDispatcher,
 ) : ObserveConnectionStatusUseCase {
@@ -58,6 +63,14 @@ internal class ObserveConnectionStatusUseCaseImpl(
 
     private fun poll(profile: ServerProfile): Flow<Status> = flow {
         emit(Status.Connecting)
+        emitAll(
+            appForegroundState.isForeground
+                .distinctUntilChanged()
+                .flatMapLatest { foreground -> if (foreground) check(profile) else emptyFlow() },
+        )
+    }
+
+    private fun check(profile: ServerProfile): Flow<Status> = flow {
         while (true) {
             val connection = profile.toServerConnection(secretStore)
             val failure = client.verifyAccess(connection.address, connection.apiVersion, connection.credentials)

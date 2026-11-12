@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.ui.common.testing.testTagsAsResourceId
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.navigation.NascopeAppScaffold
 import io.buszi.nascope.ui.root.AppRootViewModel.Destination
+import io.buszi.nascope.ui.root.AppRootViewModel.ViewAction
 import io.buszi.nascope.ui.root.AppRootViewModel.ViewState
 import io.buszi.nascope.ui.setup.SetupFlow
 import org.koin.compose.viewmodel.koinViewModel
@@ -19,6 +21,11 @@ import org.koin.compose.viewmodel.koinViewModel
 fun AppRoot() {
     val viewModel = koinViewModel<AppRootViewModel>()
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+
+    LifecycleStartEffect(viewModel) {
+        viewModel.onViewAction(ViewAction.OnForegroundChanged(true))
+        onStopOrDispose { viewModel.onViewAction(ViewAction.OnForegroundChanged(false)) }
+    }
 
     AppRootContent(viewState = viewState)
 }

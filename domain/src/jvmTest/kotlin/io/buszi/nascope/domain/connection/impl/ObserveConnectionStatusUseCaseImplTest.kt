@@ -4,6 +4,7 @@ import app.cash.turbine.turbineScope
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
+import io.buszi.nascope.domain.foreground.AppForegroundState
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
@@ -24,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -42,6 +44,7 @@ class ObserveConnectionStatusUseCaseImplTest {
     private val observeSession = mockk<ObserveSessionUseCase>()
     private val client = mockk<GlancesConnectionClient>()
     private val secretStore = mockk<SecretStore>()
+    private val appForegroundState = FakeAppForegroundState(initial = true)
     private val applicationScope = CoroutineScope(SupervisorJob() + coroutineRule.dispatcher)
 
     private val useCase by lazy {
@@ -49,6 +52,7 @@ class ObserveConnectionStatusUseCaseImplTest {
             observeSession = observeSession,
             client = client,
             secretStore = secretStore,
+            appForegroundState = appForegroundState,
             applicationScope = applicationScope,
             dispatcher = coroutineRule.dispatcher,
         )
@@ -272,6 +276,82 @@ class ObserveConnectionStatusUseCaseImplTest {
 
             assertEquals(listOf(Status.Connecting, Status.Online), secondTurbine.cancelAndConsumeItems())
             coVerify(exactly = 2) { client.verifyAccess(any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun observeConnectionStatusUseCaseMakesNoRequestInTheBackgroundAndChecksImmediatelyOnReturn() = runTest {
+        turbineScope {
+            every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
+            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+
+            val statusTurbine = useCase().testIn(this)
+            runCurrent()
+            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any()) }
+
+            appForegroundState.flag.value = false
+            runCurrent()
+            advanceTimeBy(60_000)
+            runCurrent()
+            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any()) }
+
+            appForegroundState.flag.value = true
+            runCurrent()
+
+            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any()) }
+            assertEquals(
+                listOf(Status.Connecting, Status.Online),
+                statusTurbine.cancelAndConsumeItems(),
+            )
+        }
+    }
+
+    @Test
+    fun observeConnectionStatusUseCaseWaitsInConnectingUntilTheAppIsInTheForeground() = runTest {
+        turbineScope {
+            appForegroundState.flag.value = false
+            every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
+            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+
+            val statusTurbine = useCase().testIn(this)
+            runCurrent()
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+
+            appForegroundState.flag.value = true
+            runCurrent()
+
+            assertEquals(listOf(Status.Connecting, Status.Online), statusTurbine.cancelAndConsumeItems())
+        }
+    }
+
+    @Test
+    fun observeConnectionStatusUseCaseDoesNotRestartFromConnectingWhenReturningToTheForeground() = runTest {
+        turbineScope {
+            every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
+            coEvery { client.verifyAccess(any(), any(), any()) } returnsMany listOf(
+                null,
+                ConnectionFailure.Timeout,
+            )
+
+            val statusTurbine = useCase().testIn(this)
+            runCurrent()
+            appForegroundState.flag.value = false
+            runCurrent()
+            appForegroundState.flag.value = true
+            runCurrent()
+
+            assertEquals(
+                listOf(Status.Connecting, Status.Online, Status.Offline(ConnectionFailure.Timeout)),
+                statusTurbine.cancelAndConsumeItems(),
+            )
+        }
+    }
+
+    private class FakeAppForegroundState(initial: Boolean) : AppForegroundState {
+        val flag = MutableStateFlow(initial)
+        override val isForeground: Flow<Boolean> = flag
+        override fun set(isForeground: Boolean) {
+            flag.value = isForeground
         }
     }
 
