@@ -32,7 +32,7 @@ If the code and this document disagree after a review correction, fix this docum
 
 ## 2. `:domain-model`
 
-- Contains models that more than one module needs: entities, value classes, enums and sealed result/failure types (e.g. `ServerProfile`, `ServerCredentials`, `ConnectionFailure`). Packages: `domain.model.connection` (server profiles, connection input and failures) and `domain.model.telemetry` (raw Glances snapshot models such as `CpuUsage` and `TelemetryFailure`: raw units, no history, no formatting).
+- Contains models that more than one module needs: entities, value classes, enums and sealed result/failure types (e.g. `ServerProfile`, `ServerCredentials`, `ConnectionFailure`). Packages: `domain.model.connection` (server profiles, connection input and failures), `domain.model.telemetry` (raw Glances snapshot models such as `CpuUsage` and `TelemetryFailure`: raw units, no history, no formatting; plus `TelemetryState`, the `Loading` / `Ready(data, isStale)` / `Failed(failure)` result of every observing telemetry use case) and `domain.model.settings` (`RefreshInterval`).
 - Plain Kotlin only: no Koin, no Ktor, no serialization annotations, no coroutines, no logic beyond trivial derived properties.
 - A model belongs here only if it crosses a module boundary as a parameter or return type of a `:network` / `:storage` interface, or is shared by several use cases. Models produced by one use case do **not** belong here (see section 4).
 
@@ -88,7 +88,11 @@ If the code and this document disagree after a review correction, fix this docum
 
 ### Other domain classes
 
-- `domain/telemetry/` holds the internal telemetry source layer: `TelemetrySource` (one session's telemetry), `LiveTelemetrySource` (delegates to `GlancesTelemetryClient`, building the `ServerConnection` on every call via `ServerProfile.toServerConnection`), `DemoTelemetrySource` (seeded random walk, never fails) and `TelemetrySourceProvider` (a new source per session change). Nothing there is public; observing use cases build on it in Phase 6. `:domain` depends on `kotlin-result` as `implementation`.
+- `domain/telemetry/` holds the telemetry data path:
+  - `TelemetrySource` (one session's telemetry), `LiveTelemetrySource` (delegates to `GlancesTelemetryClient`, building the `ServerConnection` on every call via `ServerProfile.toServerConnection`), `DemoTelemetrySource` (seeded random walk, never fails) and `TelemetrySourceProvider` (a new source per session change). All `internal`. `:domain` depends on `kotlin-result` as `implementation`.
+  - `TelemetryPoller` / `TelemetryPollerImpl` (`internal`, `@Single`): one shared polling loop per Glances plugin (`Polled` = `Loading` / `Value(value, isStale)` / `Failed`), tiers declared once in `TelemetryPlugin`.
+  - Public observing use cases (`Observe<Feature>UseCase`, each `() -> Flow<TelemetryState<Data>>` with `Data` nested) are thin: they pick one **primary** plugin (the state follows it) and optional **secondary** plugins (a loading, failed or unavailable secondary only makes its own fields `null`). The rule is written once in `PolledStates.kt` (`toTelemetryState`). `RefreshTelemetryUseCase` calls `TelemetryPoller.refresh()`. Use cases without history are `@Factory`.
+  - Koin check (TASK-6.4): use case implementations whose constructor takes the `internal` `TelemetryPoller` resolve fine through `KoinGraphTest` in `:shared`; no `KOIN-D001`, no workaround needed.
 
 - Supporting classes that make sense on their own (validators, policies, calculators, shared state holders) are allowed. Same rule: public interface only if `:shared` needs it, otherwise `internal`.
 

@@ -10,6 +10,14 @@ import io.buszi.nascope.domain.connection.SetActiveServerUseCase
 import io.buszi.nascope.domain.connection.SetDemoModeUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase
 import io.buszi.nascope.domain.connection.ValidateServerInputUseCase
+import io.buszi.nascope.domain.foreground.SetAppForegroundUseCase
+import io.buszi.nascope.domain.settings.ObserveRefreshIntervalUseCase
+import io.buszi.nascope.domain.settings.SetRefreshIntervalUseCase
+import io.buszi.nascope.domain.telemetry.ObserveContainersUseCase
+import io.buszi.nascope.domain.telemetry.ObserveMemoryUseCase
+import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase
+import io.buszi.nascope.domain.telemetry.ObserveSystemOverviewUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.plugin.module.dsl.koinConfiguration
@@ -37,5 +45,19 @@ class KoinGraphTest {
         assertNotNull(koin.get<DeleteServerProfileUseCase>())
         assertNotNull(koin.get<SetActiveServerUseCase>())
         assertNotNull(koin.get<SetDemoModeUseCase>())
+    }
+
+    @Test
+    fun resolvesTelemetryForegroundAndSettingsUseCases() {
+        val koin = startKoin(koinConfiguration<NascopeApp>()).koin
+
+        assertNotNull(koin.get<SetAppForegroundUseCase>())
+        assertNotNull(koin.get<ObserveRefreshIntervalUseCase>())
+        assertNotNull(koin.get<SetRefreshIntervalUseCase>())
+        assertNotNull(koin.get<ObserveSystemOverviewUseCase>())
+        assertNotNull(koin.get<ObserveMemoryUseCase>())
+        assertNotNull(koin.get<ObserveContainersUseCase>())
+        assertNotNull(koin.get<ObserveProcessesUseCase>())
+        assertNotNull(koin.get<RefreshTelemetryUseCase>())
     }
 }
