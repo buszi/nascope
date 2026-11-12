@@ -10,6 +10,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GlancesAlert
 import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
@@ -25,6 +26,7 @@ import io.buszi.nascope.storage.SecretStore
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration
+import kotlin.time.Instant
 
 /**
  * Telemetry of one connected profile. The [ServerConnection] is rebuilt on every call, so a changed
@@ -61,6 +63,8 @@ internal class LiveTelemetrySource(
     override suspend fun fetchContainers(): Result<List<ContainerUsage>, TelemetryFailure> =
         call { fetchContainers(it) }
     override suspend fun fetchGpus(): Result<List<GpuUsage>, TelemetryFailure> = call { fetchGpus(it) }
+    override suspend fun fetchAlerts(): Result<List<GlancesAlert>, TelemetryFailure> = call { fetchAlerts(it) }
+    override suspend fun fetchServerTime(): Result<Instant, TelemetryFailure> = call { fetchServerTime(it) }
     override suspend fun fetchProcessCount(): Result<ProcessCount, TelemetryFailure> = call { fetchProcessCount(it) }
     override suspend fun fetchProcesses(): Result<List<ProcessUsage>, TelemetryFailure> = call { fetchProcesses(it) }
 }

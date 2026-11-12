@@ -7,6 +7,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GlancesAlert
 import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
@@ -18,6 +19,7 @@ import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import kotlin.time.Duration
+import kotlin.time.Instant
 
 /** The telemetry of one session. Same functions as `GlancesTelemetryClient`, without the server parameter. */
 internal interface TelemetrySource {
@@ -37,6 +39,8 @@ internal interface TelemetrySource {
     suspend fun fetchSensors(): Result<List<SensorReading>, TelemetryFailure>
     suspend fun fetchContainers(): Result<List<ContainerUsage>, TelemetryFailure>
     suspend fun fetchGpus(): Result<List<GpuUsage>, TelemetryFailure>
+    suspend fun fetchAlerts(): Result<List<GlancesAlert>, TelemetryFailure>
+    suspend fun fetchServerTime(): Result<Instant, TelemetryFailure>
     suspend fun fetchProcessCount(): Result<ProcessCount, TelemetryFailure>
     suspend fun fetchProcesses(): Result<List<ProcessUsage>, TelemetryFailure>
 }

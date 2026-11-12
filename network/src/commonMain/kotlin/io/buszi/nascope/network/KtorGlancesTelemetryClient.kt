@@ -6,6 +6,7 @@ import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerConnection
 import io.buszi.nascope.domain.model.telemetry.ContainerUsage
+import io.buszi.nascope.domain.model.telemetry.GlancesAlert
 import io.buszi.nascope.domain.model.telemetry.CpuCoreUsage
 import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
@@ -21,6 +22,7 @@ import io.buszi.nascope.domain.model.telemetry.SensorReading
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.network.telemetry.parseAlerts
 import io.buszi.nascope.network.telemetry.parseCpu
 import io.buszi.nascope.network.telemetry.parseCpuCores
 import io.buszi.nascope.network.telemetry.parseCpuInfo
@@ -30,6 +32,7 @@ import io.buszi.nascope.network.telemetry.parseLoad
 import io.buszi.nascope.network.telemetry.parseMemory
 import io.buszi.nascope.network.telemetry.parsePlugins
 import io.buszi.nascope.network.telemetry.parseProcessCount
+import io.buszi.nascope.network.telemetry.parseServerTime
 import io.buszi.nascope.network.telemetry.parseSensors
 import io.buszi.nascope.network.telemetry.parseSwap
 import io.buszi.nascope.network.telemetry.parseSystem
@@ -46,6 +49,7 @@ import io.ktor.client.HttpClient
 import io.ktor.http.HttpStatusCode
 import org.koin.core.annotation.Single
 import kotlin.time.Duration
+import kotlin.time.Instant
 
 @Single
 internal class KtorGlancesTelemetryClient(
@@ -98,6 +102,12 @@ internal class KtorGlancesTelemetryClient(
 
     override suspend fun fetchGpus(server: ServerConnection): Result<List<GpuUsage>, TelemetryFailure> =
         get(server, "gpu", ::parseGpus)
+
+    override suspend fun fetchAlerts(server: ServerConnection): Result<List<GlancesAlert>, TelemetryFailure> =
+        get(server, "alert", ::parseAlerts)
+
+    override suspend fun fetchServerTime(server: ServerConnection): Result<Instant, TelemetryFailure> =
+        get(server, "now", ::parseServerTime)
 
     override suspend fun fetchProcessCount(server: ServerConnection): Result<ProcessCount, TelemetryFailure> =
         get(server, "processcount", ::parseProcessCount)

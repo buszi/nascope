@@ -1,5 +1,6 @@
 package io.buszi.nascope.ui.dashboard.framework
 
+import io.buszi.nascope.ui.dashboard.widgets.alerts.AlertsBrick
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersBrick
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixBrick
 import io.buszi.nascope.ui.dashboard.widgets.gpu.GpuBrick
@@ -21,6 +22,7 @@ import org.koin.core.annotation.Single
 class BrickRegistry {
     private val bricks: List<DashboardBrick> = listOf(
         SystemOverviewBrick,
+        AlertsBrick,
         CpuMatrixBrick,
         GpuBrick,
         MemorySwapBrick,

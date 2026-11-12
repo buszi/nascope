@@ -6,6 +6,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GlancesAlert
 import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
@@ -17,6 +18,7 @@ import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
 import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
+import kotlin.time.Instant
 
 /** One shared polling loop per Glances plugin. A loop exists only while something collects its flow. */
 internal interface TelemetryPoller {
@@ -36,6 +38,8 @@ internal interface TelemetryPoller {
     val sensors: Flow<Polled<List<SensorReading>>>
     val containers: Flow<Polled<List<ContainerUsage>>>
     val gpus: Flow<Polled<List<GpuUsage>>>
+    val alerts: Flow<Polled<List<GlancesAlert>>>
+    val serverTime: Flow<Polled<Instant>>
     val processCount: Flow<Polled<ProcessCount>>
     val processes: Flow<Polled<List<ProcessUsage>>>
 

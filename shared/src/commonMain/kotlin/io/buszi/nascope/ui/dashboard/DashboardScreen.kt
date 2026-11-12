@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.dashboard_header_demo_node
+import io.buszi.nascope.resources.dashboard_header_alerts
 import io.buszi.nascope.resources.dashboard_header_label
 import io.buszi.nascope.resources.dashboard_refresh
 import io.buszi.nascope.resources.nav_mode_demo
@@ -25,6 +26,8 @@ import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
 import io.buszi.nascope.ui.common.model.ConnectionStatusUi
+import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.AlertBadgeUi
 import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
@@ -32,6 +35,7 @@ import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -76,6 +80,7 @@ fun DashboardScreen(
                     viewState.nodeName
                 },
                 status = viewState.sessionStatus,
+                alertBadge = viewState.alertBadge,
                 onRefresh = { onViewAction(ViewAction.OnRefresh) },
             )
         },
@@ -86,6 +91,7 @@ fun DashboardScreen(
 private fun DashboardHeader(
     nodeName: String,
     status: SessionStatusUi,
+    alertBadge: AlertBadgeUi?,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -112,6 +118,14 @@ private fun DashboardHeader(
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (alertBadge != null) {
+                StatusChip(
+                    text = pluralStringResource(Res.plurals.dashboard_header_alerts, alertBadge.count, alertBadge.count),
+                    status = alertBadge.status,
+                    pulsing = alertBadge.status == StatusLevel.Critical,
+                    modifier = Modifier.testTag(TestTags.DashboardAlerts),
+                )
+            }
             // On Compact the top bar is right above and already shows the status.
             val visibleStatus = if (AppTheme.windowWidthClass == WindowWidthClass.Compact) SessionStatusUi.None else status
             when (visibleStatus) {

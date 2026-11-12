@@ -1,5 +1,6 @@
 package io.buszi.nascope.ui.dashboard.framework
 
+import io.buszi.nascope.ui.dashboard.widgets.alerts.AlertsBrick
 import io.buszi.nascope.ui.dashboard.widgets.gpu.GpuBrick
 import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewBrick
 import kotlin.test.Test
@@ -22,8 +23,14 @@ class BrickVisibilityTest {
     @Test
     fun theGpuBrickNeedsTheGpuPlugin() {
         assertEquals(setOf("gpu"), GpuBrick.requiredPlugins)
-        assertEquals(bricks, bricks.visibleWith(setOf("gpu")))
-        assertEquals(bricks - GpuBrick, bricks.visibleWith(setOf("cpu")))
+        assertEquals(bricks - AlertsBrick, bricks.visibleWith(setOf("gpu")))
+        assertEquals(bricks - GpuBrick - AlertsBrick, bricks.visibleWith(setOf("cpu")))
+    }
+
+    @Test
+    fun theAlertsBrickNeedsTheAlertPlugin() {
+        assertEquals(setOf("alert"), AlertsBrick.requiredPlugins)
+        assertEquals(bricks - GpuBrick, bricks.visibleWith(setOf("alert")))
     }
 
     @Test

@@ -36,6 +36,20 @@
     <string name="widget_gpu_memory">MEM %1$d%</string>
     <string name="widget_gpu_fan">FAN %1$d%</string>
     <string name="widget_gpu_no_gpu">NO GPU DETECTED</string>
+    <string name="widget_alerts_title">ALERTS</string>
+    <string name="widget_alerts_all_clear">ALL CLEAR</string>
+    <string name="widget_alerts_subtitle_active">%1$d ACTIVE</string>
+    <string name="widget_alerts_state_careful">CAREFUL</string>
+    <string name="widget_alerts_state_warning">WARNING</string>
+    <string name="widget_alerts_state_critical">CRITICAL</string>
+    <string name="widget_alerts_state_unknown">ALERT</string>
+    <string name="widget_alerts_active_for">FOR %1$s</string>
+    <string name="widget_alerts_lasted">LASTED %1$s</string>
+    <string name="widget_alerts_top_processes">TOP: %1$s</string>
+    <plurals name="dashboard_header_alerts">
+        <item quantity="one">%1$d ALERT</item>
+        <item quantity="other">%1$d ALERTS</item>
+    </plurals>
     <string name="widget_memory_swap_title">MEMORY &amp; SWAP</string>
     <string name="widget_memory_swap_title_compact">MEMORY</string>
     <string name="widget_memory_swap_status_nominal">NOMINAL</string>
@@ -273,6 +287,11 @@
     <string name="details_network_unknown_speed">UNKNOWN</string>
 
     <!-- Sensors details -->
+    <string name="details_alerts_title">ALERTS // DETAILS</string>
+    <string name="details_alerts_subtitle">%1$d ACTIVE // %2$d RECENT</string>
+    <string name="details_alerts_active">ACTIVE</string>
+    <string name="details_alerts_history">RECENT HISTORY</string>
+    <string name="details_alerts_no_history">NO ENDED ALERTS</string>
     <string name="details_sensors_title">SENSORS // DETAILS</string>
     <string name="details_sensors_subtitle">%1$d TEMPERATURE SENSORS // %2$d FANS</string>
     <string name="details_sensors_overview">THERMAL OVERVIEW</string>

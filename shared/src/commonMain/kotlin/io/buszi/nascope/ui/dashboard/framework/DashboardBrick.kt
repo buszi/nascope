@@ -15,6 +15,7 @@ enum class DashboardBrickId {
     SystemOverview,
     CpuMatrix,
     Gpu,
+    Alerts,
     MemorySwap,
     StoragePools,
     NetworkIo,

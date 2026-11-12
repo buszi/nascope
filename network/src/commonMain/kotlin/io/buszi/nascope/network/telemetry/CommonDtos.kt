@@ -99,3 +99,17 @@ internal data class SensorDto(
     val warning: Double? = null,
     val critical: Double? = null,
 )
+
+@Serializable
+internal data class AlertDto(
+    val begin: Long? = null,
+    /** `-1` while the alert is active. */
+    val end: Long? = null,
+    val state: String? = null,
+    val type: String? = null,
+    val min: Double? = null,
+    val max: Double? = null,
+    val avg: Double? = null,
+    val top: List<kotlinx.serialization.json.JsonElement>? = null,
+    @SerialName("global_msg") val globalMessage: String? = null,
+)

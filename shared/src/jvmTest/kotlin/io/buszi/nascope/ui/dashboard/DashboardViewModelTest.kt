@@ -12,10 +12,17 @@ import io.buszi.nascope.domain.model.connection.ServerAuth
 import io.buszi.nascope.domain.model.connection.ServerProfile
 import io.buszi.nascope.domain.model.connection.ServerProfileId
 import io.buszi.nascope.domain.model.connection.ServerProtocol
+import io.buszi.nascope.domain.model.telemetry.AlertState
+import io.buszi.nascope.domain.model.telemetry.GlancesAlert
+import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveAlertsUseCase
 import io.buszi.nascope.domain.telemetry.ObserveAvailablePluginsUseCase
 import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
+import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.AlertBadgeUi
 import io.buszi.nascope.ui.common.model.ConnectionStatusUi
 import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction.OnRefresh
@@ -46,6 +53,8 @@ class DashboardViewModelTest {
     private val observeSession = mockk<ObserveSessionUseCase>()
     private val observeConnectionStatus = mockk<ObserveConnectionStatusUseCase>()
     private val observeAvailablePlugins = mockk<ObserveAvailablePluginsUseCase>()
+    private val observeAlerts = mockk<ObserveAlertsUseCase>()
+    private val alertStates = MutableStateFlow<TelemetryState<ObserveAlertsUseCase.Data>>(TelemetryState.Loading)
     private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
     private val plugins = MutableStateFlow<Set<String>?>(null)
     private val session = MutableStateFlow<Session>(Session.NotConfigured)
@@ -56,11 +65,13 @@ class DashboardViewModelTest {
         every { observeSession() } returns session
         every { observeConnectionStatus() } returns status
         every { observeAvailablePlugins() } returns plugins
+        every { observeAlerts() } returns alertStates
         DashboardViewModel(
             brickRegistry = brickRegistry,
             observeSession = observeSession,
             observeConnectionStatus = observeConnectionStatus,
             observeAvailablePlugins = observeAvailablePlugins,
+            observeAlerts = observeAlerts,
             refreshTelemetry = refreshTelemetry,
         )
     }
@@ -102,6 +113,43 @@ class DashboardViewModelTest {
                 ),
                 shown.filterIndexed { i, bricks -> i == 0 || bricks != shown[i - 1] },
             )
+        }
+    }
+
+    @Test
+    fun dashboardViewModelShowsAnAlertBadgeOnlyOnAServerWithTheAlertPlugin() = runTest {
+        val warning = GlancesAlert("MEM", AlertState.Warning, 1, null, null, null, null, null, emptyList())
+        val critical = warning.copy(type = "CPU", state = AlertState.Critical)
+        turbineScope {
+            val turbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            alertStates.value = TelemetryState.Ready(ObserveAlertsUseCase.Data(listOf(critical, warning), emptyList(), null), false)
+            runCurrent()
+            assertEquals(null, turbine.cancelAndConsumeItems().last().alertBadge) // plugins still unknown: not polled
+        }
+        turbineScope {
+            val turbine = viewModel.viewState.testIn(this)
+            plugins.value = setOf("cpu", "alert")
+            runCurrent()
+            assertEquals(AlertBadgeUi(2, StatusLevel.Critical), turbine.cancelAndConsumeItems().last().alertBadge)
+        }
+    }
+
+    @Test
+    fun dashboardViewModelHidesTheAlertBadgeWithoutAlertsOrWhenTheyCannotBeRead() = runTest {
+        plugins.value = setOf("alert")
+        turbineScope {
+            val turbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            alertStates.value = TelemetryState.Ready(ObserveAlertsUseCase.Data(emptyList(), emptyList(), null), false)
+            runCurrent()
+            assertEquals(null, turbine.cancelAndConsumeItems().last().alertBadge)
+        }
+        turbineScope {
+            val turbine = viewModel.viewState.testIn(this)
+            alertStates.value = TelemetryState.Failed(TelemetryFailure.PluginUnavailable)
+            runCurrent()
+            assertEquals(null, turbine.cancelAndConsumeItems().last().alertBadge)
         }
     }
 
@@ -169,6 +217,7 @@ class DashboardViewModelTest {
             brickRegistry.getActiveBricks()
             observeSession()
             observeConnectionStatus()
+            observeAvailablePlugins()
             observeAvailablePlugins()
             refreshTelemetry()
         }

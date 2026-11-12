@@ -9,6 +9,8 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.AlertState
+import io.buszi.nascope.domain.model.telemetry.GlancesAlert
 import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
@@ -53,7 +55,7 @@ internal class DemoTelemetrySource(
     override suspend fun fetchPlugins(): Result<Set<String>, TelemetryFailure> = Ok(
         setOf(
             "system", "uptime", "load", "cpu", "percpu", "quicklook", "mem", "memswap", "fs", "diskio", "network",
-            "sensors", "containers", "gpu", "processcount", "processlist",
+            "sensors", "containers", "gpu", "alert", "now", "processcount", "processlist",
         ),
     )
 
@@ -97,6 +99,36 @@ internal class DemoTelemetrySource(
         load15 = walk(load15, 0.02, 0.05, 3.0)
         LoadAverage(load1.toFloat(), load5.toFloat(), load15.toFloat(), CORE_COUNT)
     }
+
+    // endregion
+
+    // region Alerts
+
+    /** The demo has no server: its clock is the device's. */
+    private val demoStart = kotlin.time.Clock.System.now().epochSeconds
+
+    override suspend fun fetchServerTime(): Result<kotlin.time.Instant, TelemetryFailure> =
+        Ok(kotlin.time.Clock.System.now())
+
+    override suspend fun fetchAlerts(): Result<List<GlancesAlert>, TelemetryFailure> = Ok(
+        listOf(
+            GlancesAlert(
+                type = "MEMSWAP", state = AlertState.Warning, beginEpochSeconds = demoStart - 25 * 60,
+                endEpochSeconds = null, min = 71.2, max = 76.4, avg = 73.5,
+                message = "High swap (paging) usage", topProcesses = emptyList(),
+            ),
+            GlancesAlert(
+                type = "CPU_USER", state = AlertState.Critical, beginEpochSeconds = demoStart - 3 * 3600,
+                endEpochSeconds = demoStart - 2 * 3600 - 40 * 60, min = 91.0, max = 99.0, avg = 95.2,
+                message = "High CPU user usage", topProcesses = listOf("ffmpeg", "python3"),
+            ),
+            GlancesAlert(
+                type = "LOAD", state = AlertState.Careful, beginEpochSeconds = demoStart - 5 * 3600,
+                endEpochSeconds = demoStart - 4 * 3600 - 50 * 60, min = 1.1, max = 1.6, avg = 1.3,
+                message = null, topProcesses = emptyList(),
+            ),
+        ),
+    )
 
     // endregion
 

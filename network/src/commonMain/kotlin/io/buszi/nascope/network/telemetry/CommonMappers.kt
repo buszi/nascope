@@ -5,7 +5,9 @@ import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getOrElse
+import io.buszi.nascope.domain.model.telemetry.AlertState
 import io.buszi.nascope.domain.model.telemetry.ContainerStatus
+import io.buszi.nascope.domain.model.telemetry.GlancesAlert
 import io.buszi.nascope.domain.model.telemetry.CpuCoreUsage
 import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
@@ -20,9 +22,11 @@ import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlin.time.Duration
+import kotlin.time.Instant
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -199,4 +203,38 @@ internal fun parsePlugins(body: String): Result<Set<String>, TelemetryFailure> {
         root.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.contentOrNull?.takeIf(String::isNotBlank) }
             .toSet(),
     )
+}
+
+/** An element without a begin time or a type is skipped; an unknown state becomes [AlertState.Unknown]. */
+internal fun parseAlerts(body: String): Result<List<GlancesAlert>, TelemetryFailure> =
+    parseList(body, AlertDto.serializer()) { d ->
+        val type = d.type?.takeIf { it.isNotBlank() } ?: return@parseList null
+        GlancesAlert(
+            type = type,
+            state = when (d.state?.uppercase()) {
+                "CAREFUL" -> AlertState.Careful
+                "WARNING" -> AlertState.Warning
+                "CRITICAL" -> AlertState.Critical
+                else -> AlertState.Unknown
+            },
+            beginEpochSeconds = d.begin ?: return@parseList null,
+            endEpochSeconds = d.end?.takeIf { it >= 0 },
+            min = d.min,
+            max = d.max,
+            avg = d.avg,
+            message = d.globalMessage?.takeIf { it.isNotBlank() },
+            topProcesses = d.top.orEmpty().mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content },
+        )
+    }
+
+/** The `now` plugin: `{"iso": "2026-11-12T19:22:37+00:00", ...}`. */
+internal fun parseServerTime(body: String): Result<Instant, TelemetryFailure> {
+    val root = parseRoot(body).getOrElse { return Err(it) }
+    val iso = ((root as? JsonObject)?.get("iso") as? JsonPrimitive)?.takeIf { it.isString }?.content
+        ?: return invalid("No iso time")
+    return try {
+        Ok(Instant.parse(iso))
+    } catch (e: Exception) {
+        invalid("Bad time: ${e.message}")
+    }
 }

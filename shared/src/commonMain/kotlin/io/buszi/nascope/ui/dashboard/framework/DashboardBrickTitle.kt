@@ -2,6 +2,7 @@ package io.buszi.nascope.ui.dashboard.framework
 
 import androidx.compose.runtime.Composable
 import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.widget_alerts_title
 import io.buszi.nascope.resources.widget_containers_title
 import io.buszi.nascope.resources.widget_containers_title_compact
 import io.buszi.nascope.resources.widget_cpu_matrix_title
@@ -32,6 +33,7 @@ fun DashboardBrickId.title(compact: Boolean = false): String = stringResource(
         DashboardBrickId.CpuMatrix ->
             if (compact) Res.string.widget_cpu_matrix_title_compact else Res.string.widget_cpu_matrix_title
         DashboardBrickId.Gpu -> Res.string.widget_gpu_title
+        DashboardBrickId.Alerts -> Res.string.widget_alerts_title
         DashboardBrickId.MemorySwap ->
             if (compact) Res.string.widget_memory_swap_title_compact else Res.string.widget_memory_swap_title
         DashboardBrickId.StoragePools ->

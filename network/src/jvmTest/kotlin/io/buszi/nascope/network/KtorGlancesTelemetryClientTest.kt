@@ -8,6 +8,7 @@ import io.buszi.nascope.domain.model.connection.ServerAddress
 import io.buszi.nascope.domain.model.connection.ServerConnection
 import io.buszi.nascope.domain.model.connection.ServerCredentials
 import io.buszi.nascope.domain.model.connection.ServerProtocol
+import io.buszi.nascope.domain.model.telemetry.AlertState
 import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.network.telemetry.Fixtures
@@ -56,6 +57,8 @@ class KtorGlancesTelemetryClientTest {
         Call("network", "network") { c, s -> c.fetchNetworkInterfaces(s) },
         Call("sensors", "sensors-synthetic") { c, s -> c.fetchSensors(s) },
         Call("containers", "containers") { c, s -> c.fetchContainers(s) },
+        Call("alert", "alert") { c, s -> c.fetchAlerts(s) },
+        Call("now", "now") { c, s -> c.fetchServerTime(s) },
         Call("processcount", "processcount") { c, s -> c.fetchProcessCount(s) },
         Call("processlist", "processlist") { c, s -> c.fetchProcesses(s) },
     )
@@ -174,6 +177,62 @@ class KtorGlancesTelemetryClientTest {
             TelemetryFailure.Connection(ConnectionFailure.Unauthorized),
             responding(HttpStatusCode.Unauthorized).client.fetchPlugins(connection(GlancesApiVersion.V4)).getError(),
         )
+    }
+
+    private fun alertsOf(body: String) =
+        responding(HttpStatusCode.OK, body).let { kotlinx.coroutines.runBlocking { it.client.fetchAlerts(connection(GlancesApiVersion.V4)) } }
+            .getOrElse { fail("$it") }
+
+    @Test
+    fun alertsParseTheNasPayloadWithTwoActiveWarnings() {
+        val alerts = alertsOf(Fixtures.read("v4-nas", "alert"))
+        assertEquals(listOf("MEMSWAP", "MEM"), alerts.map { it.type })
+        assertTrue(alerts.all { it.isActive && it.state == AlertState.Warning })
+        val first = alerts.first()
+        assertEquals(1794475982L, first.beginEpochSeconds)
+        assertEquals("High swap (paging) usage", first.message)
+        assertEquals(emptyList(), first.topProcesses)
+        assertEquals(72.79, first.min!!, 0.01)
+    }
+
+    @Test
+    fun alertsParseEndedUnknownAndIncompleteEntries() {
+        val alerts = alertsOf(
+            """[
+              {"begin": 10, "end": 20, "state": "CRITICAL", "type": "CPU_USER", "top": ["ffmpeg", 5, null], "global_msg": ""},
+              {"begin": 30, "end": -1, "state": "SOMETHING", "type": "NEW_METRIC"},
+              {"begin": 40, "state": "WARNING"},
+              {"state": "WARNING", "type": "LOAD"},
+              "junk"
+            ]""",
+        )
+        assertEquals(2, alerts.size)
+        assertEquals(20L, alerts[0].endEpochSeconds)
+        assertEquals(AlertState.Critical, alerts[0].state)
+        assertEquals(listOf("ffmpeg"), alerts[0].topProcesses)
+        assertEquals(null, alerts[0].message)
+        assertEquals(AlertState.Unknown, alerts[1].state)
+        assertEquals(null, alerts[1].endEpochSeconds)
+        assertEquals("NEW_METRIC", alerts[1].type)
+    }
+
+    @Test
+    fun alertsAnEmptyListIsNoAlerts() {
+        assertEquals(emptyList(), alertsOf("[]"))
+    }
+
+    @Test
+    fun alertsAnObjectIsInvalid() = runTest {
+        responding(HttpStatusCode.OK, "{}").client.fetchAlerts(connection(GlancesApiVersion.V4)).assertInvalid()
+    }
+
+    @Test
+    fun serverTimeIsReadFromTheIsoField() = runTest {
+        val time = responding(HttpStatusCode.OK, Fixtures.read("v4-nas", "now"))
+            .client.fetchServerTime(connection(GlancesApiVersion.V4)).getOrElse { fail("$it") }
+        assertEquals(1794511447L, time.epochSeconds) // 2026-11-12T19:24:07Z of the capture
+        responding(HttpStatusCode.OK, """{"iso": "nope"}""").client.fetchServerTime(connection(GlancesApiVersion.V4)).assertInvalid()
+        responding(HttpStatusCode.OK, """{"custom": "x"}""").client.fetchServerTime(connection(GlancesApiVersion.V4)).assertInvalid()
     }
 
     @Test

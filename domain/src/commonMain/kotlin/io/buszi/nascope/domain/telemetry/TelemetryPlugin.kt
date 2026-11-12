@@ -26,6 +26,8 @@ internal enum class TelemetryPlugin(val tier: PollTier) {
     Fs(PollTier.Slow),
     Sensors(PollTier.Slow),
     Containers(PollTier.Slow),
+    Alert(PollTier.Slow),
+    Now(PollTier.Slow),
     ProcessCount(PollTier.Slow),
     ProcessList(PollTier.Slow),
     Uptime(PollTier.Slow),
