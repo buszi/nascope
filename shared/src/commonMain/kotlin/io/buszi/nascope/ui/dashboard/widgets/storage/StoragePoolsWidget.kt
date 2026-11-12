@@ -160,42 +160,44 @@ private fun WideStoragePoolsContent(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
     ) {
-        // Disk I/O Throughput Section
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
-        ) {
-            Text(
-                text = stringResource(Res.string.widget_storage_throughput_label),
-                style = AppTheme.typography.labelUi,
-                color = AppTheme.colors.textMuted,
-            )
-
-            Row(
+        // Disk I/O Throughput Section: left out when the host has no disk I/O data
+        viewState.diskIo?.let { diskIo ->
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
             ) {
-                DiskIoCell(
-                    label = stringResource(Res.string.widget_storage_io_read),
-                    bytesPerSec = viewState.readRateBytesPerSec,
-                    indicatorColor = AppTheme.colors.telemetryB,
-                    modifier = Modifier.weight(1f),
+                Text(
+                    text = stringResource(Res.string.widget_storage_throughput_label),
+                    style = AppTheme.typography.labelUi,
+                    color = AppTheme.colors.textMuted,
                 )
-                DiskIoCell(
-                    label = stringResource(Res.string.widget_storage_io_write),
-                    bytesPerSec = viewState.writeRateBytesPerSec,
-                    indicatorColor = AppTheme.colors.telemetryA,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
 
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(AppTheme.dimensions.hairlineBorder)
-                .background(AppTheme.colors.subtleDivider),
-        )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+                ) {
+                    DiskIoCell(
+                        label = stringResource(Res.string.widget_storage_io_read),
+                        bytesPerSec = diskIo.readBytesPerSec,
+                        indicatorColor = AppTheme.colors.telemetryB,
+                        modifier = Modifier.weight(1f),
+                    )
+                    DiskIoCell(
+                        label = stringResource(Res.string.widget_storage_io_write),
+                        bytesPerSec = diskIo.writeBytesPerSec,
+                        indicatorColor = AppTheme.colors.telemetryA,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(AppTheme.dimensions.hairlineBorder)
+                    .background(AppTheme.colors.subtleDivider),
+            )
+        }
 
         // Mount Points Section
         MountPointsListSection(
@@ -217,73 +219,76 @@ private fun CompactStoragePoolsContent(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
     ) {
-        // Compact Disk I/O Row: read and write stay intact and wrap as units when the brick is narrow
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppTheme.colors.inputBackground, AppTheme.shapes.base)
-                .border(
-                    width = AppTheme.dimensions.hairlineBorder,
-                    color = AppTheme.colors.baseBorder,
-                    shape = AppTheme.shapes.base,
-                )
-                .padding(horizontal = AppTheme.spacing.spaceSm, vertical = AppTheme.spacing.spaceXs),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
-                verticalAlignment = Alignment.CenterVertically,
+        // Compact Disk I/O Row: left out when the host has no disk I/O data
+        viewState.diskIo?.let { diskIo ->
+            // Read and write stay intact and wrap as units when the brick is narrow
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppTheme.colors.inputBackground, AppTheme.shapes.base)
+                    .border(
+                        width = AppTheme.dimensions.hairlineBorder,
+                        color = AppTheme.colors.baseBorder,
+                        shape = AppTheme.shapes.base,
+                    )
+                    .padding(horizontal = AppTheme.spacing.spaceSm, vertical = AppTheme.spacing.spaceXs),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(AppTheme.spacing.spaceXs)
-                        .background(AppTheme.colors.telemetryB, AppTheme.shapes.full),
-                )
-                Text(
-                    text = stringResource(Res.string.widget_storage_io_read),
-                    style = AppTheme.typography.labelCode,
-                    color = AppTheme.colors.textMuted,
-                )
-                Text(
-                    text = stringResource(Res.string.widget_storage_io_rate_format, formatMbRate(viewState.readRateBytesPerSec)),
-                    style = AppTheme.typography.codeBase,
-                    color = AppTheme.colors.textPrimary,
-                    maxLines = 1,
-                    softWrap = false,
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(AppTheme.spacing.spaceXs)
+                            .background(AppTheme.colors.telemetryB, AppTheme.shapes.full),
+                    )
+                    Text(
+                        text = stringResource(Res.string.widget_storage_io_read),
+                        style = AppTheme.typography.labelCode,
+                        color = AppTheme.colors.textMuted,
+                    )
+                    Text(
+                        text = stringResource(Res.string.widget_storage_io_rate_format, formatMbRate(diskIo.readBytesPerSec)),
+                        style = AppTheme.typography.codeBase,
+                        color = AppTheme.colors.textPrimary,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(AppTheme.spacing.spaceXs)
+                            .background(AppTheme.colors.telemetryA, AppTheme.shapes.full),
+                    )
+                    Text(
+                        text = stringResource(Res.string.widget_storage_io_write),
+                        style = AppTheme.typography.labelCode,
+                        color = AppTheme.colors.textMuted,
+                    )
+                    Text(
+                        text = stringResource(Res.string.widget_storage_io_rate_format, formatMbRate(diskIo.writeBytesPerSec)),
+                        style = AppTheme.typography.codeBase,
+                        color = AppTheme.colors.textPrimary,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(AppTheme.spacing.spaceXs)
-                        .background(AppTheme.colors.telemetryA, AppTheme.shapes.full),
-                )
-                Text(
-                    text = stringResource(Res.string.widget_storage_io_write),
-                    style = AppTheme.typography.labelCode,
-                    color = AppTheme.colors.textMuted,
-                )
-                Text(
-                    text = stringResource(Res.string.widget_storage_io_rate_format, formatMbRate(viewState.writeRateBytesPerSec)),
-                    style = AppTheme.typography.codeBase,
-                    color = AppTheme.colors.textPrimary,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-            }
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(AppTheme.dimensions.hairlineBorder)
+                    .background(AppTheme.colors.subtleDivider),
+            )
         }
-
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(AppTheme.dimensions.hairlineBorder)
-                .background(AppTheme.colors.subtleDivider),
-        )
 
         // Compact Mount Points Section
         MountPointsListSection(

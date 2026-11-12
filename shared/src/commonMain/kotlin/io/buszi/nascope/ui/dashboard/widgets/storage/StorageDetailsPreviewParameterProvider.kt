@@ -1,27 +1,40 @@
 package io.buszi.nascope.ui.dashboard.widgets.storage
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import io.buszi.nascope.ui.common.model.DiskIoUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewState
 
 class StorageDetailsPreviewParameterProvider : PreviewParameterProvider<ViewState> {
     override val values: Sequence<ViewState> = sequenceOf(
-        // 1. Mixed health, first mount expanded
+        // 1. Mixed usage, one mount expanded
         ViewState(
             mounts = previewMounts,
-            readRateBytesPerSec = 42_500_000L,
-            writeRateBytesPerSec = 128_300_000L,
-            readHistory = listOf(31f, 36f, 40f, 45f, 39f, 36f, 42f, 52f, 58f, 49f, 43f, 41f),
-            writeHistory = listOf(96f, 110f, 125f, 138f, 131f, 120f, 127f, 143f, 152f, 139f, 128f, 122f),
+            diskIo = DiskIoUi(
+                readBytesPerSec = 42_500_000L,
+                writeBytesPerSec = 128_300_000L,
+                readHistory = listOf(31e6f, 36e6f, 40e6f, 45e6f, 39e6f, 36e6f, 42e6f, 52e6f, 58e6f, 49e6f, 43e6f, 41e6f),
+                writeHistory = listOf(96e6f, 110e6f, 125e6f, 138e6f, 131e6f, 120e6f, 127e6f, 143e6f, 152e6f, 139e6f, 128e6f, 122e6f),
+            ),
             expandedMountPoint = "/zpool/media",
             widgetState = WidgetState.Ready,
         ),
 
-        // 2. No mounts
+        // 2. No disk I/O and no mount metadata (Glances 3 without diskio)
+        ViewState(
+            mounts = listOf(StorageMountUi("/", "", "", 512_000_000_000L, 150_000_000_000L, 362_000_000_000L)),
+            expandedMountPoint = "/",
+            widgetState = WidgetState.Stale,
+        ),
+
+        // 3. No mounts
         ViewState(widgetState = WidgetState.Ready),
 
-        // 3. Loading
+        // 4. Unavailable
+        ViewState(widgetState = WidgetState.Unavailable),
+
+        // 5. Loading
         ViewState(widgetState = WidgetState.Loading),
     )
 
@@ -35,7 +48,6 @@ class StorageDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
                 usedBytes = 153_600_000_000L,
                 freeBytes = 358_400_000_000L,
                 mountOptions = "rw,noatime,discard",
-                inodeUsagePercent = 12.4f,
             ),
             StorageMountUi(
                 mountPoint = "/volume1",
@@ -45,7 +57,6 @@ class StorageDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
                 usedBytes = 2_470_000_000_000L,
                 freeBytes = 1_330_000_000_000L,
                 mountOptions = "rw,relatime,compress=zstd:3",
-                inodeUsagePercent = 3.1f,
             ),
             StorageMountUi(
                 mountPoint = "/zpool/media",
@@ -54,9 +65,7 @@ class StorageDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
                 totalBytes = 8_000_000_000_000L,
                 usedBytes = 6_880_000_000_000L,
                 freeBytes = 1_120_000_000_000L,
-                isHealthy = false,
                 mountOptions = "rw,xattr,noacl",
-                inodeUsagePercent = 41.8f,
             ),
         )
     }

@@ -25,13 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.resources.Res
-import io.buszi.nascope.resources.details_network_errors_format
-import io.buszi.nascope.resources.details_network_errors_tag
-import io.buszi.nascope.resources.details_network_field_errors
-import io.buszi.nascope.resources.details_network_field_ip
 import io.buszi.nascope.resources.details_network_field_link_speed
-import io.buszi.nascope.resources.details_network_field_mac
-import io.buszi.nascope.resources.details_network_field_mtu
 import io.buszi.nascope.resources.details_network_field_total_rx
 import io.buszi.nascope.resources.details_network_field_total_tx
 import io.buszi.nascope.resources.details_network_interfaces
@@ -67,7 +61,7 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewState
 import io.buszi.nascope.ui.details.components.DetailsKeyValueRow
-import io.buszi.nascope.ui.details.components.DetailsLoadingPlaceholder
+import io.buszi.nascope.ui.details.components.DetailsStatePlaceholder
 import io.buszi.nascope.ui.details.components.DetailsScaffold
 import io.buszi.nascope.ui.details.components.DetailsSection
 import io.buszi.nascope.ui.details.components.DetailsStat
@@ -102,6 +96,7 @@ fun NetworkDetailsScreen(
         onClose = onClose,
         testTag = TestTags.details(DashboardBrickId.NetworkIo),
         modifier = modifier,
+        widgetState = viewState.widgetState,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(
                 Res.string.details_network_subtitle,
@@ -128,7 +123,7 @@ fun NetworkDetailsScreen(
         },
     ) {
         if (!viewState.widgetState.isReady) {
-            DetailsLoadingPlaceholder()
+            DetailsStatePlaceholder(viewState.widgetState)
         } else if (viewState.interfaces.isEmpty()) {
             Text(
                 text = stringResource(Res.string.widget_network_no_interfaces),
@@ -285,12 +280,6 @@ private fun InterfaceDetailsCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            if (iface.totalErrors > 0L) {
-                TagChip(
-                    text = stringResource(Res.string.details_network_errors_tag, iface.totalErrors),
-                    dotColor = AppTheme.colors.degraded,
-                )
-            }
             StatusChip(
                 text = if (iface.isUp) {
                     stringResource(Res.string.details_network_link_up)
@@ -330,28 +319,12 @@ private fun InterfaceDetailsCard(
                     )
                 }
                 DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_network_field_ip),
-                    value = iface.ipAddress,
-                )
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_network_field_mac),
-                    value = iface.macAddress,
-                )
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_network_field_mtu),
-                    value = iface.mtu.toString(),
-                )
-                DetailsKeyValueRow(
                     label = stringResource(Res.string.details_network_field_link_speed),
-                    value = if (iface.linkSpeedMbps > 0) {
+                    value = if (iface.linkSpeedMbps != null && iface.linkSpeedMbps > 0) {
                         stringResource(Res.string.details_network_link_speed_format, iface.linkSpeedMbps)
                     } else {
                         stringResource(Res.string.details_network_unknown_speed)
                     },
-                )
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_network_field_errors),
-                    value = stringResource(Res.string.details_network_errors_format, iface.rxErrors, iface.txErrors),
                 )
                 DetailsKeyValueRow(
                     label = stringResource(Res.string.details_network_field_total_rx),

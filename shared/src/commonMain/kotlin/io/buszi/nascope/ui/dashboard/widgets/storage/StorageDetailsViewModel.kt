@@ -3,11 +3,16 @@ package io.buszi.nascope.ui.dashboard.widgets.storage
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.DiskIoUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
+import io.buszi.nascope.ui.common.model.StorageUi
 import io.buszi.nascope.ui.common.model.overallStatus
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
+import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnSelectSort
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnToggleMount
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +25,8 @@ import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class StorageDetailsViewModel(
-    private val telemetryStateHolder: TelemetryStateHolder,
+    private val observeStorage: ObserveStorageUseCase,
+    private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -46,17 +52,19 @@ class StorageDetailsViewModel(
     }
 
     private fun observeTelemetry() {
-        telemetryStateHolder.storagePools.onEach { storageData ->
+        observeStorage().onEach { state ->
             mutableViewState.update { current ->
+                val storage = when (state) {
+                    is TelemetryState.Ready -> StorageUi.from(state.data)
+                    TelemetryState.Loading -> StorageUi()
+                    is TelemetryState.Failed -> StorageUi(current.mounts, current.diskIo)
+                }
                 current.copy(
-                    mounts = storageData.mounts.map(StorageMountUi::from),
-                    readRateBytesPerSec = storageData.readRateBytesPerSec,
-                    writeRateBytesPerSec = storageData.writeRateBytesPerSec,
-                    readHistory = storageData.readHistory,
-                    writeHistory = storageData.writeHistory,
+                    mounts = storage.mounts,
+                    diskIo = storage.diskIo,
                     expandedMountPoint = current.expandedMountPoint
-                        ?.takeIf { expanded -> storageData.mounts.any { it.mountPoint == expanded } },
-                    widgetState = WidgetState.Ready,
+                        ?.takeIf { expanded -> storage.mounts.any { it.mountPoint == expanded } },
+                    widgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke),
                 )
             }
         }.launchIn(viewModelScope)
@@ -71,10 +79,7 @@ class StorageDetailsViewModel(
     @Stable
     data class ViewState(
         val mounts: List<StorageMountUi> = emptyList(),
-        val readRateBytesPerSec: Long = 0L,
-        val writeRateBytesPerSec: Long = 0L,
-        val readHistory: List<Float> = emptyList(),
-        val writeHistory: List<Float> = emptyList(),
+        val diskIo: DiskIoUi? = null,
         val sortOrder: SortOrder = SortOrder.Usage,
         val expandedMountPoint: String? = null,
         val widgetState: WidgetState = WidgetState.Loading,

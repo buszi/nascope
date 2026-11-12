@@ -1,28 +1,35 @@
 package io.buszi.nascope.ui.dashboard.widgets.network
 
+import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewAction.OnToggleInterface
+import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewState
 import app.cash.turbine.turbineScope
-import io.buszi.nascope.data.telemetry.NetworkInterfaceData
-import io.buszi.nascope.data.telemetry.NetworkIoData
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
+import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
+import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveNetworkUseCase
+import io.buszi.nascope.domain.telemetry.ObserveNetworkUseCase.Data
+import io.buszi.nascope.domain.telemetry.ObserveNetworkUseCase.Interface
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.NetworkInterfaceUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
-import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewAction.OnToggleInterface
-import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewState
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.verifySequence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NetworkDetailsViewModelTest {
@@ -30,124 +37,100 @@ class NetworkDetailsViewModelTest {
     @get:Rule
     val coroutineRule = TestCoroutineRule()
 
-    private val telemetryStateHolder = mockk<TelemetryStateHolder>()
+    private val observeNetwork = mockk<ObserveNetworkUseCase>()
+    private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
+    private val states = MutableStateFlow<TelemetryState<Data>>(TelemetryState.Loading)
 
     private val viewModel by lazy {
-        NetworkDetailsViewModel(
-            telemetryStateHolder = telemetryStateHolder,
-        )
+        every { observeNetwork() } returns states
+        NetworkDetailsViewModel(observeNetwork = observeNetwork, refreshTelemetry = refreshTelemetry)
+    }
+
+    private fun emit(vararg interfaces: Interface, stale: Boolean = false) {
+        states.value = TelemetryState.Ready(Data(interfaces.toList()), stale)
     }
 
     @Test
-    fun networkDetailsViewModelEmitsReadyStateWithTelemetryData() = runTest {
+    fun networkDetailsViewModelStartsLoadingThenShowsInterfacesWithoutLoopbackAndKnownSpeeds() = runTest {
+        viewModel // created now, so it collects what is emitted below
         turbineScope {
-            every { telemetryStateHolder.networkIo } returns MutableStateFlow(networkData)
-
-            val viewStateTurbine = viewModel.viewState.testIn(this)
+            val turbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            emit(iface("lo"), iface("eth0", rx = 12_500_000, speed = 1_000_000_000), iface("eth1", rx = 1))
             runCurrent()
 
             assertEquals(
                 listOf(
-                    initialViewState,
-                    readyViewState,
+                    ViewState(),
+                    ViewState(
+                        interfaces = listOf(ui("eth0", rx = 12_500_000, speedMbps = 1000), ui("eth1", rx = 1)),
+                        widgetState = WidgetState.Ready,
+                    ),
                 ),
-                viewStateTurbine.cancelAndConsumeItems(),
+                turbine.cancelAndConsumeItems(),
             )
-            verifySequence {
-                telemetryStateHolder.networkIo
-            }
         }
+        assertEquals(0.1f, viewModel.viewState.value.interfaces.first().linkUtilization)
+        assertEquals(null, viewModel.viewState.value.interfaces.last().linkUtilization)
     }
 
     @Test
-    fun networkDetailsViewModelTogglesInterfaceCollapse() = runTest {
-        turbineScope {
-            every { telemetryStateHolder.networkIo } returns MutableStateFlow(networkData)
+    fun networkDetailsViewModelTogglesCollapseAndForgetsAnInterfaceThatDisappears() = runTest {
+        viewModel // created now, so it collects what is emitted below
+        emit(iface("eth0"), iface("eth1"))
+        runCurrent()
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
+        viewModel.onViewAction(OnToggleInterface("eth1"))
+        assertEquals(false, viewModel.viewState.value.isExpanded("eth1"))
+        viewModel.onViewAction(OnToggleInterface("eth1"))
+        assertEquals(true, viewModel.viewState.value.isExpanded("eth1"))
 
-            assertTrue(viewModel.viewState.value.isExpanded("eth0"))
-
-            viewModel.onViewAction(OnToggleInterface("eth0"))
-            assertFalse(viewModel.viewState.value.isExpanded("eth0"))
-            assertTrue(viewModel.viewState.value.isExpanded("wlan0"))
-
-            viewModel.onViewAction(OnToggleInterface("eth0"))
-            assertTrue(viewModel.viewState.value.isExpanded("eth0"))
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.onViewAction(OnToggleInterface("eth1"))
+        emit(iface("eth0"))
+        runCurrent()
+        assertEquals(emptySet(), viewModel.viewState.value.collapsedNames)
     }
 
     @Test
-    fun networkDetailsViewModelForgetsCollapsedInterfaceThatDisappears() = runTest {
-        turbineScope {
-            val networkFlow = MutableStateFlow(networkData)
-            every { telemetryStateHolder.networkIo } returns networkFlow
+    fun networkDetailsViewModelMarksStaleKeepsTheContentAndMapsFailures() = runTest {
+        viewModel // created now, so it collects what is emitted below
+        emit(iface("eth0"), stale = true)
+        runCurrent()
+        assertEquals(WidgetState.Stale, viewModel.viewState.value.widgetState)
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-            viewModel.onViewAction(OnToggleInterface("wlan0"))
+        states.value = TelemetryState.Failed(TelemetryFailure.PluginUnavailable)
+        runCurrent()
+        assertEquals(WidgetState.Unavailable, viewModel.viewState.value.widgetState)
+        assertEquals(1, viewModel.viewState.value.interfaces.size)
 
-            networkFlow.value = networkData.copy(interfaces = networkData.interfaces.filter { it.name != "wlan0" })
-            runCurrent()
-
-            assertEquals(emptySet(), viewModel.viewState.value.collapsedNames)
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        states.value = TelemetryState.Loading
+        runCurrent()
+        assertEquals(ViewState(), viewModel.viewState.value)
     }
 
     @Test
-    fun networkDetailsViewStateComputesAggregates() {
-        val state = readyViewState
+    fun networkDetailsViewStateComputesAggregatesOverActiveInterfaces() {
+        val viewState = ViewState(
+            interfaces = listOf(ui("eth0", rx = 10, tx = 1), ui("eth1", rx = 5, tx = 2), ui("eth2", isUp = false, rx = 100)),
+        )
 
-        assertEquals(listOf("eth0"), state.activeInterfaces.map { it.name })
-        assertEquals(10_000_000L, state.aggregateRxBytesPerSec)
-        assertEquals(2_000_000L, state.aggregateTxBytesPerSec)
-        assertEquals(1_300L, state.totalRxBytes)
-        assertEquals(350L, state.totalTxBytes)
-        assertEquals(StatusLevel.Operational, state.overallStatus)
-        assertEquals(StatusLevel.Critical, state.copy(interfaces = emptyList()).overallStatus)
+        assertEquals(15L, viewState.aggregateRxBytesPerSec)
+        assertEquals(3L, viewState.aggregateTxBytesPerSec)
+        assertEquals(1_150L, viewState.totalRxBytes)
+        assertEquals(30L, viewState.totalTxBytes)
+        assertEquals(StatusLevel.Operational, viewState.overallStatus)
     }
 
     companion object {
-        private val eth0 = NetworkInterfaceData(
-            name = "eth0",
-            isUp = true,
-            ipAddress = "192.168.1.2/24",
-            rxBytesPerSec = 10_000_000L,
-            txBytesPerSec = 2_000_000L,
-            totalRxBytes = 1_000L,
-            totalTxBytes = 300L,
-            rxHistory = listOf(1f, 2f),
-            txHistory = listOf(0.5f, 1f),
-            macAddress = "aa:bb:cc:dd:ee:ff",
-            mtu = 1500,
-            linkSpeedMbps = 1000,
+        private fun iface(name: String, isUp: Boolean? = true, rx: Long = 0, tx: Long = 0, speed: Long? = null) = Interface(
+            usage = NetworkInterfaceUsage(name, null, isUp, speed, rx, tx, rx * 10, tx * 10),
+            rxHistory = listOf(rx.toFloat()),
+            txHistory = listOf(tx.toFloat()),
         )
 
-        private val wlan0 = NetworkInterfaceData(
-            name = "wlan0",
-            isUp = false,
-            ipAddress = "Disconnected",
-            rxBytesPerSec = 0L,
-            txBytesPerSec = 0L,
-            totalRxBytes = 300L,
-            totalTxBytes = 50L,
-        )
-
-        private val networkData = NetworkIoData(
-            interfaces = listOf(eth0, wlan0),
-            selectedInterfaceName = "eth0",
-        )
-
-        private val initialViewState = ViewState()
-
-        private val readyViewState = ViewState(
-            interfaces = networkData.interfaces.map(NetworkInterfaceUi::from),
-            widgetState = WidgetState.Ready,
+        private fun ui(name: String, isUp: Boolean = true, rx: Long = 0, tx: Long = 0, speedMbps: Int? = null) = NetworkInterfaceUi(
+            name = name, isUp = isUp, rxBytesPerSec = rx, txBytesPerSec = tx, totalRxBytes = rx * 10, totalTxBytes = tx * 10,
+            rxHistory = listOf(rx.toFloat()), txHistory = listOf(tx.toFloat()), linkSpeedMbps = speedMbps,
         )
     }
 }

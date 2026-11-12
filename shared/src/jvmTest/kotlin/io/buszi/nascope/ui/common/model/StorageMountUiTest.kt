@@ -1,5 +1,6 @@
 package io.buszi.nascope.ui.common.model
 
+import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,8 +25,15 @@ class StorageMountUiTest {
     }
 
     @Test
-    fun unhealthyMountIsCriticalRegardlessOfUsage() {
-        assertEquals(StatusLevel.Critical, mount(total = 100L, used = 1L, isHealthy = false).status)
+    fun fromMapsTheFileSystemAndLeavesMissingFieldsEmpty() {
+        assertEquals(
+            StorageMountUi("/volume1", "", "", 100L, 40L, 60L, ""),
+            StorageMountUi.from(FileSystemUsage("/volume1", null, null, 100L, 40L, 60L, null)),
+        )
+        assertEquals(
+            StorageMountUi("/", "sda1", "ext4", 100L, 40L, 60L, "rw,noatime"),
+            StorageMountUi.from(FileSystemUsage("/", "sda1", "ext4", 100L, 40L, 60L, "rw,noatime")),
+        )
     }
 
     @Test
@@ -41,13 +49,12 @@ class StorageMountUiTest {
         )
     }
 
-    private fun mount(total: Long, used: Long, isHealthy: Boolean = true) = StorageMountUi(
+    private fun mount(total: Long, used: Long) = StorageMountUi(
         mountPoint = "/",
         deviceName = "/dev/sda1",
         fsType = "ext4",
         totalBytes = total,
         usedBytes = used,
         freeBytes = total - used,
-        isHealthy = isHealthy,
     )
 }

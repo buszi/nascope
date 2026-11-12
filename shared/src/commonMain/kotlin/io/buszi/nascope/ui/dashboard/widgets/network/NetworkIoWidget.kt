@@ -458,14 +458,6 @@ private fun InterfaceCard(
                     haloColor = if (iface.isUp) AppTheme.colors.operationalHalo else Color.Transparent,
                 )
             }
-
-            Text(
-                text = iface.ipAddress,
-                style = AppTheme.typography.bodySm,
-                color = AppTheme.colors.textMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
     }
 }

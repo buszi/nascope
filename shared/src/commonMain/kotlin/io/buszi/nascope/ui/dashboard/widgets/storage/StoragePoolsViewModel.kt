@@ -3,11 +3,16 @@ package io.buszi.nascope.ui.dashboard.widgets.storage
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.model.DiskIoUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
+import io.buszi.nascope.ui.common.model.StorageUi
 import io.buszi.nascope.ui.common.model.overallStatus
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
+import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewAction.OnNextPage
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewAction.OnPrevPage
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewAction.OnRetry
@@ -21,7 +26,8 @@ import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class StoragePoolsViewModel(
-    private val telemetryStateHolder: TelemetryStateHolder,
+    private val observeStorage: ObserveStorageUseCase,
+    private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -33,15 +39,10 @@ class StoragePoolsViewModel(
 
     fun onViewAction(action: ViewAction) {
         when (action) {
-            OnRetry -> retry()
+            OnRetry -> refreshTelemetry()
             OnNextPage -> nextPage()
             OnPrevPage -> prevPage()
         }
-    }
-
-    private fun retry() {
-        mutableViewState.update { it.copy(widgetState = WidgetState.Loading) }
-        telemetryStateHolder.refresh()
     }
 
     private fun nextPage() {
@@ -66,15 +67,19 @@ class StoragePoolsViewModel(
     }
 
     private fun observeTelemetry() {
-        telemetryStateHolder.storagePools.onEach { storageData ->
+        observeStorage().onEach { state ->
             mutableViewState.update { current ->
-                val maxPage = if (storageData.mounts.isEmpty()) 0 else (storageData.mounts.size - 1) / current.pageSize
+                val storage = when (state) {
+                    is TelemetryState.Ready -> StorageUi.from(state.data)
+                    TelemetryState.Loading -> StorageUi()
+                    is TelemetryState.Failed -> StorageUi(current.mounts, current.diskIo)
+                }
+                val maxPage = if (storage.mounts.isEmpty()) 0 else (storage.mounts.size - 1) / current.pageSize
                 current.copy(
-                    mounts = storageData.mounts.map(StorageMountUi::from),
-                    readRateBytesPerSec = storageData.readRateBytesPerSec,
-                    writeRateBytesPerSec = storageData.writeRateBytesPerSec,
+                    mounts = storage.mounts,
+                    diskIo = storage.diskIo,
                     currentPage = current.currentPage.coerceIn(0, maxPage),
-                    widgetState = WidgetState.Ready,
+                    widgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke),
                 )
             }
         }.launchIn(viewModelScope)
@@ -83,8 +88,7 @@ class StoragePoolsViewModel(
     @Stable
     data class ViewState(
         val mounts: List<StorageMountUi> = emptyList(),
-        val readRateBytesPerSec: Long = 0L,
-        val writeRateBytesPerSec: Long = 0L,
+        val diskIo: DiskIoUi? = null,
         val currentPage: Int = 0,
         val pageSize: Int = 3,
         val widgetState: WidgetState = WidgetState.Loading,

@@ -1,11 +1,14 @@
 package io.buszi.nascope.ui.common.model
 
 import androidx.compose.runtime.Immutable
-import io.buszi.nascope.data.telemetry.StorageMountData
+import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 
 /**
  * UI representation of a mounted filesystem.
+ *
+ * [deviceName], [fsType] and [mountOptions] are empty when the host does not report them (Glances 3 has no
+ * mount options); the UI leaves such fields out.
  */
 @Immutable
 data class StorageMountUi(
@@ -15,18 +18,16 @@ data class StorageMountUi(
     val totalBytes: Long,
     val usedBytes: Long,
     val freeBytes: Long,
-    val isHealthy: Boolean = true,
     val mountOptions: String = "",
-    val inodeUsagePercent: Float = 0f,
 ) {
     /** Fraction of the capacity that is in use, in `[0.0, 1.0]`. */
     val usageRatio: Float
         get() = if (totalBytes > 0L) (usedBytes.toFloat() / totalBytes).coerceIn(0f, 1f) else 0f
 
-    /** Health status derived from [usageRatio] and [isHealthy]. */
+    /** Status derived from [usageRatio] only: Glances reports no pool health. */
     val status: StatusLevel
         get() = when {
-            !isHealthy || usageRatio >= CriticalThreshold -> StatusLevel.Critical
+            usageRatio >= CriticalThreshold -> StatusLevel.Critical
             usageRatio >= WarningThreshold -> StatusLevel.Degraded
             else -> StatusLevel.Operational
         }
@@ -35,16 +36,14 @@ data class StorageMountUi(
         const val WarningThreshold: Float = 0.80f
         const val CriticalThreshold: Float = 0.90f
 
-        fun from(data: StorageMountData) = StorageMountUi(
+        fun from(data: FileSystemUsage) = StorageMountUi(
             mountPoint = data.mountPoint,
-            deviceName = data.deviceName,
-            fsType = data.fsType,
+            deviceName = data.deviceName.orEmpty(),
+            fsType = data.fsType.orEmpty(),
             totalBytes = data.totalBytes,
             usedBytes = data.usedBytes,
             freeBytes = data.freeBytes,
-            isHealthy = data.isHealthy,
-            mountOptions = data.mountOptions,
-            inodeUsagePercent = data.inodeUsagePercent,
+            mountOptions = data.options.orEmpty(),
         )
     }
 }

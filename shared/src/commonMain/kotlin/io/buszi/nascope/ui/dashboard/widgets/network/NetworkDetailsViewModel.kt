@@ -3,10 +3,13 @@ package io.buszi.nascope.ui.dashboard.widgets.network
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveNetworkUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.NetworkInterfaceUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
+import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkDetailsViewModel.ViewAction.OnToggleInterface
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,7 +26,8 @@ import org.koin.core.annotation.KoinViewModel
  */
 @KoinViewModel
 class NetworkDetailsViewModel(
-    private val telemetryStateHolder: TelemetryStateHolder,
+    private val observeNetwork: ObserveNetworkUseCase,
+    private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -52,15 +56,19 @@ class NetworkDetailsViewModel(
     }
 
     private fun observeTelemetry() {
-        telemetryStateHolder.networkIo.onEach { data ->
+        observeNetwork().onEach { state ->
             mutableViewState.update { current ->
-                val interfaces = data.interfaces.map(NetworkInterfaceUi::from)
+                val interfaces = when (state) {
+                    is TelemetryState.Ready -> NetworkInterfaceUi.fromAll(state.data)
+                    TelemetryState.Loading -> emptyList()
+                    is TelemetryState.Failed -> current.interfaces
+                }
                 current.copy(
                     interfaces = interfaces,
                     collapsedNames = current.collapsedNames.filterTo(mutableSetOf()) { name ->
                         interfaces.any { it.name == name }
                     },
-                    widgetState = WidgetState.Ready,
+                    widgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke),
                 )
             }
         }.launchIn(viewModelScope)

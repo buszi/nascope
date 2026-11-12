@@ -28,7 +28,6 @@ import io.buszi.nascope.resources.details_storage_distribution
 import io.buszi.nascope.resources.details_storage_field_device
 import io.buszi.nascope.resources.details_storage_field_filesystem
 import io.buszi.nascope.resources.details_storage_field_free
-import io.buszi.nascope.resources.details_storage_field_inodes
 import io.buszi.nascope.resources.details_storage_field_options
 import io.buszi.nascope.resources.details_storage_free_format
 import io.buszi.nascope.resources.details_storage_io
@@ -57,6 +56,7 @@ import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
 import io.buszi.nascope.ui.common.components.inputs.SelectableChip
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
+import io.buszi.nascope.ui.common.model.DiskIoUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
@@ -65,7 +65,7 @@ import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.Sor
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewState
 import io.buszi.nascope.ui.details.components.DetailsKeyValueRow
-import io.buszi.nascope.ui.details.components.DetailsLoadingPlaceholder
+import io.buszi.nascope.ui.details.components.DetailsStatePlaceholder
 import io.buszi.nascope.ui.details.components.DetailsScaffold
 import io.buszi.nascope.ui.details.components.DetailsSection
 import org.jetbrains.compose.resources.stringResource
@@ -99,6 +99,7 @@ fun StorageDetailsScreen(
         onClose = onClose,
         testTag = TestTags.details(DashboardBrickId.StoragePools),
         modifier = modifier,
+        widgetState = viewState.widgetState,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(
                 Res.string.details_storage_subtitle,
@@ -124,7 +125,7 @@ fun StorageDetailsScreen(
         },
     ) {
         if (!viewState.widgetState.isReady) {
-            DetailsLoadingPlaceholder()
+            DetailsStatePlaceholder(viewState.widgetState)
         } else if (viewState.mounts.isEmpty()) {
             Text(
                 text = stringResource(Res.string.details_storage_no_mounts),
@@ -134,7 +135,7 @@ fun StorageDetailsScreen(
         } else {
             OverviewSection(viewState = viewState)
             DistributionSection(viewState = viewState)
-            DiskIoSection(viewState = viewState)
+            viewState.diskIo?.let { DiskIoSection(diskIo = it) }
             MountsSection(viewState = viewState, onViewAction = onViewAction)
         }
     }
@@ -263,7 +264,7 @@ private fun DistributionSection(
 
 @Composable
 private fun DiskIoSection(
-    viewState: ViewState,
+    diskIo: DiskIoUi,
     modifier: Modifier = Modifier,
 ) {
     DetailsSection(
@@ -273,14 +274,14 @@ private fun DiskIoSection(
         Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd)) {
             IoChannel(
                 label = stringResource(Res.string.widget_storage_io_read),
-                bytesPerSec = viewState.readRateBytesPerSec,
-                history = viewState.readHistory,
+                bytesPerSec = diskIo.readBytesPerSec,
+                history = diskIo.readHistory,
                 color = AppTheme.colors.telemetryB,
             )
             IoChannel(
                 label = stringResource(Res.string.widget_storage_io_write),
-                bytesPerSec = viewState.writeRateBytesPerSec,
-                history = viewState.writeHistory,
+                bytesPerSec = diskIo.writeBytesPerSec,
+                history = diskIo.writeHistory,
                 color = AppTheme.colors.telemetryA,
             )
         }
@@ -462,29 +463,28 @@ private fun MountDetailsCard(
                 modifier = Modifier.padding(top = AppTheme.spacing.spaceXs),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
             ) {
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_storage_field_device),
-                    value = mount.deviceName,
-                )
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_storage_field_filesystem),
-                    value = mount.fsType,
-                )
+                if (mount.deviceName.isNotBlank()) {
+                    DetailsKeyValueRow(
+                        label = stringResource(Res.string.details_storage_field_device),
+                        value = mount.deviceName,
+                    )
+                }
+                if (mount.fsType.isNotBlank()) {
+                    DetailsKeyValueRow(
+                        label = stringResource(Res.string.details_storage_field_filesystem),
+                        value = mount.fsType,
+                    )
+                }
                 DetailsKeyValueRow(
                     label = stringResource(Res.string.details_storage_field_free),
                     value = formatCapacity(mount.freeBytes),
                 )
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_storage_field_options),
-                    value = mount.mountOptions,
-                )
-                LinearGauge(
-                    progress = mount.inodeUsagePercent / 100f,
-                    label = stringResource(Res.string.details_storage_field_inodes),
-                    valueText = stringResource(Res.string.percentage_format, mount.inodeUsagePercent.toInt()),
-                    barHeight = AppTheme.spacing.space2xs,
-                    normalColor = AppTheme.colors.telemetryB,
-                )
+                if (mount.mountOptions.isNotBlank()) {
+                    DetailsKeyValueRow(
+                        label = stringResource(Res.string.details_storage_field_options),
+                        value = mount.mountOptions,
+                    )
+                }
             }
         }
     }

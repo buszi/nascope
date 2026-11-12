@@ -1,29 +1,36 @@
 package io.buszi.nascope.ui.dashboard.widgets.storage
 
-import app.cash.turbine.turbineScope
-import io.buszi.nascope.data.telemetry.StorageMountData
-import io.buszi.nascope.data.telemetry.StoragePoolsData
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
-import io.buszi.nascope.test.TestCoroutineRule
-import io.buszi.nascope.test.cancelAndConsumeItems
-import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase
+import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase.Data
+import io.buszi.nascope.ui.common.model.DiskIoUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
-import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.SortOrder
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnSelectSort
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnToggleMount
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewState
+import app.cash.turbine.turbineScope
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
+import io.buszi.nascope.test.TestCoroutineRule
+import io.buszi.nascope.test.cancelAndConsumeItems
+import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.verifySequence
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StorageDetailsViewModelTest {
@@ -31,126 +38,102 @@ class StorageDetailsViewModelTest {
     @get:Rule
     val coroutineRule = TestCoroutineRule()
 
-    private val telemetryStateHolder = mockk<TelemetryStateHolder>()
+    private val observeStorage = mockk<ObserveStorageUseCase>()
+    private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
+    private val states = MutableStateFlow<TelemetryState<Data>>(TelemetryState.Loading)
 
     private val viewModel by lazy {
-        StorageDetailsViewModel(
-            telemetryStateHolder = telemetryStateHolder,
+        every { observeStorage() } returns states
+        StorageDetailsViewModel(observeStorage = observeStorage, refreshTelemetry = refreshTelemetry)
+    }
+
+    private suspend fun TestScope.viewStates(vararg steps: TelemetryState<Data>): List<ViewState> {
+        var result: List<ViewState> = emptyList()
+        turbineScope {
+            val turbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            steps.forEach {
+                states.value = it
+                runCurrent()
+            }
+            result = turbine.cancelAndConsumeItems()
+        }
+        return result
+    }
+
+    @Test
+    fun storageDetailsViewModelStartsLoadingThenShowsMountsAndDiskIoWithHistory() = runTest {
+        assertEquals(
+            listOf(
+                ViewState(),
+                ViewState(mounts = listOf(small, big), diskIo = DiskIoUi(100, 50, listOf(1f, 2f), listOf(3f)), widgetState = WidgetState.Ready),
+            ),
+            viewStates(TelemetryState.Ready(data(), isStale = false)),
         )
     }
 
     @Test
-    fun storageDetailsViewModelEmitsReadyStateWithTelemetryData() = runTest {
-        turbineScope {
-            every { telemetryStateHolder.storagePools } returns MutableStateFlow(storageData)
+    fun storageDetailsViewModelLeavesOutMissingDiskIoAndMapsFailureStates() = runTest {
+        val states = viewStates(
+            TelemetryState.Ready(data().copy(readBytesPerSec = null, writeBytesPerSec = null), false),
+            TelemetryState.Ready(data(), true),
+            TelemetryState.Failed(TelemetryFailure.PluginUnavailable),
+            TelemetryState.Failed(TelemetryFailure.InvalidResponse("x")),
+        )
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-
-            assertEquals(
-                listOf(
-                    initialViewState,
-                    readyViewState,
-                ),
-                viewStateTurbine.cancelAndConsumeItems(),
-            )
-            verifySequence {
-                telemetryStateHolder.storagePools
-            }
-        }
+        assertEquals(null, states[1].diskIo)
+        assertEquals(WidgetState.Stale, states[2].widgetState)
+        assertEquals(WidgetState.Unavailable, states[3].widgetState)
+        assertIs<WidgetState.Error>(states[4].widgetState)
     }
 
     @Test
     fun storageDetailsViewModelSortsMounts() = runTest {
-        turbineScope {
-            every { telemetryStateHolder.storagePools } returns MutableStateFlow(storageData)
+        viewModel // created now, so it collects what is emitted below
+        states.value = TelemetryState.Ready(data(), false)
+        runCurrent()
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-
-            assertEquals(listOf("/zpool", "/data", "/"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
-
-            viewModel.onViewAction(OnSelectSort(SortOrder.Name))
-            assertEquals(listOf("/", "/data", "/zpool"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
-
-            viewModel.onViewAction(OnSelectSort(SortOrder.Size))
-            assertEquals(listOf("/zpool", "/data", "/"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        assertEquals(listOf("/small", "/big"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
+        viewModel.onViewAction(OnSelectSort(SortOrder.Name))
+        assertEquals(listOf("/big", "/small"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
+        viewModel.onViewAction(OnSelectSort(SortOrder.Size))
+        assertEquals(listOf("/big", "/small"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
+        viewModel.onViewAction(OnSelectSort(SortOrder.Usage))
+        assertEquals(listOf("/small", "/big"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
     }
 
     @Test
-    fun storageDetailsViewModelTogglesExpandedMount() = runTest {
-        turbineScope {
-            every { telemetryStateHolder.storagePools } returns MutableStateFlow(storageData)
+    fun storageDetailsViewModelTogglesTheExpandedMountAndCollapsesOneThatDisappears() = runTest {
+        viewModel // created now, so it collects what is emitted below
+        states.value = TelemetryState.Ready(data(), false)
+        runCurrent()
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
+        viewModel.onViewAction(OnToggleMount("/small"))
+        assertEquals("/small", viewModel.viewState.value.expandedMountPoint)
+        viewModel.onViewAction(OnToggleMount("/small"))
+        assertEquals(null, viewModel.viewState.value.expandedMountPoint)
 
-            viewModel.onViewAction(OnToggleMount("/data"))
-            assertEquals("/data", viewModel.viewState.value.expandedMountPoint)
-
-            viewModel.onViewAction(OnToggleMount("/zpool"))
-            assertEquals("/zpool", viewModel.viewState.value.expandedMountPoint)
-
-            viewModel.onViewAction(OnToggleMount("/zpool"))
-            assertNull(viewModel.viewState.value.expandedMountPoint)
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun storageDetailsViewModelCollapsesMountThatDisappears() = runTest {
-        turbineScope {
-            val storageFlow = MutableStateFlow(storageData)
-            every { telemetryStateHolder.storagePools } returns storageFlow
-
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-            viewModel.onViewAction(OnToggleMount("/data"))
-
-            storageFlow.value = storageData.copy(mounts = storageData.mounts.filter { it.mountPoint != "/data" })
-            runCurrent()
-
-            assertNull(viewModel.viewState.value.expandedMountPoint)
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.onViewAction(OnToggleMount("/small"))
+        states.value = TelemetryState.Ready(data().copy(fileSystems = listOf(bigFs)), false)
+        runCurrent()
+        assertEquals(null, viewModel.viewState.value.expandedMountPoint)
     }
 
     @Test
     fun storageDetailsViewStateComputesAggregates() {
-        val state = readyViewState
+        val viewState = ViewState(mounts = listOf(small, big))
 
-        assertEquals(3_000_000_000L, state.totalCapacityBytes)
-        assertEquals(2_300_000_000L, state.totalUsedBytes)
-        assertEquals(700_000_000L, state.totalFreeBytes)
-        assertEquals(StatusLevel.Critical, state.overallStatus)
+        assertEquals(1_100L, viewState.totalCapacityBytes)
+        assertEquals(590L, viewState.totalUsedBytes)
+        assertEquals(510L, viewState.totalFreeBytes)
+        assertEquals(590f / 1_100f, viewState.totalUsageRatio)
     }
 
     companion object {
-        private val rootMount = StorageMountData("/", "/dev/nvme0n1", "ext4", 500_000_000L, 100_000_000L, 400_000_000L, true)
-        private val dataMount = StorageMountData("/data", "/dev/sda1", "btrfs", 1_000_000_000L, 700_000_000L, 300_000_000L, true)
-        private val zpoolMount = StorageMountData("/zpool", "tank", "zfs", 1_500_000_000L, 1_500_000_000L, 0L, true)
-
-        private val storageData = StoragePoolsData(
-            mounts = listOf(rootMount, dataMount, zpoolMount),
-            readRateBytesPerSec = 10_000_000L,
-            writeRateBytesPerSec = 20_000_000L,
-            readHistory = listOf(1f, 2f),
-            writeHistory = listOf(3f, 4f),
-        )
-
-        private val initialViewState = ViewState()
-        private val readyViewState = ViewState(
-            mounts = storageData.mounts.map(StorageMountUi::from),
-            readRateBytesPerSec = 10_000_000L,
-            writeRateBytesPerSec = 20_000_000L,
-            readHistory = listOf(1f, 2f),
-            writeHistory = listOf(3f, 4f),
-            widgetState = WidgetState.Ready,
-        )
+        private val smallFs = FileSystemUsage("/small", null, null, 100, 90, 10, null)
+        private val bigFs = FileSystemUsage("/big", "dev", "btrfs", 1_000, 500, 500, "rw")
+        private val small = StorageMountUi("/small", "", "", 100, 90, 10)
+        private val big = StorageMountUi("/big", "dev", "btrfs", 1_000, 500, 500, "rw")
+        private fun data() = Data(listOf(smallFs, bigFs), emptyList(), 100, 50, listOf(1f, 2f), listOf(3f))
     }
 }

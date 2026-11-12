@@ -165,7 +165,6 @@
     <string name="details_storage_field_filesystem">FILESYSTEM</string>
     <string name="details_storage_field_options">OPTIONS</string>
     <string name="details_storage_field_free">FREE</string>
-    <string name="details_storage_field_inodes">INODES</string>
     <string name="details_storage_no_mounts">NO STORAGE MOUNTS DETECTED</string>
 
     <!-- CPU details -->
@@ -241,16 +240,10 @@
     <string name="details_network_link_down">DOWN</string>
     <string name="details_network_peak_format">PEAK %1$s</string>
     <string name="details_network_link_utilization">LINK UTILIZATION</string>
-    <string name="details_network_field_ip">ADDRESS</string>
-    <string name="details_network_field_mac">MAC</string>
-    <string name="details_network_field_mtu">MTU</string>
     <string name="details_network_field_link_speed">LINK SPEED</string>
-    <string name="details_network_field_errors">ERRORS RX / TX</string>
     <string name="details_network_field_total_rx">TOTAL RX</string>
     <string name="details_network_field_total_tx">TOTAL TX</string>
     <string name="details_network_link_speed_format">%1$d Mbps</string>
-    <string name="details_network_errors_format">%1$d / %2$d</string>
-    <string name="details_network_errors_tag">%1$d ERRORS</string>
     <string name="details_network_unknown_speed">UNKNOWN</string>
 
     <!-- Sensors details -->
