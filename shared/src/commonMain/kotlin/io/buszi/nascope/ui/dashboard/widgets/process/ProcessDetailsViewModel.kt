@@ -3,11 +3,14 @@ package io.buszi.nascope.ui.dashboard.widgets.process
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.ProcessStateUi
 import io.buszi.nascope.ui.common.model.ProcessUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
+import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnNextPage
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnPrevPage
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnQueryChange
@@ -28,7 +31,8 @@ import org.koin.core.annotation.KoinViewModel
  */
 @KoinViewModel
 class ProcessDetailsViewModel(
-    private val telemetryStateHolder: TelemetryStateHolder,
+    private val observeProcesses: ObserveProcessesUseCase,
+    private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -66,14 +70,21 @@ class ProcessDetailsViewModel(
     }
 
     private fun observeTelemetry() {
-        telemetryStateHolder.processList.onEach { data ->
+        observeProcesses().onEach { state ->
             mutableViewState.update { current ->
-                val updated = current.copy(
-                    processes = data.processes.map(ProcessUi::from),
-                    totalProcessCount = data.totalProcessCount,
-                    runningProcessCount = data.runningProcessCount,
-                    widgetState = WidgetState.Ready,
-                )
+                val updated = when (state) {
+                    is TelemetryState.Ready -> current.copy(
+                        processes = state.data.processes.map(ProcessUi::from),
+                        totalProcessCount = state.data.count?.total,
+                        runningProcessCount = state.data.count?.running,
+                    )
+                    TelemetryState.Loading -> current.copy(
+                        processes = emptyList(),
+                        totalProcessCount = null,
+                        runningProcessCount = null,
+                    )
+                    is TelemetryState.Failed -> current
+                }.copy(widgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke))
                 updated.copy(
                     page = updated.page.coerceIn(0, updated.pageCount - 1),
                     expandedPid = updated.expandedPid?.takeIf { pid -> updated.processes.any { it.pid == pid } },
@@ -92,8 +103,9 @@ class ProcessDetailsViewModel(
     @Stable
     data class ViewState(
         val processes: List<ProcessUi> = emptyList(),
-        val totalProcessCount: Int = 0,
-        val runningProcessCount: Int = 0,
+        /** `null` when the host has no `processcount` data. */
+        val totalProcessCount: Int? = null,
+        val runningProcessCount: Int? = null,
         val query: String = "",
         val sortField: SortField = SortField.Cpu,
         val sortDescending: Boolean = true,

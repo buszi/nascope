@@ -102,18 +102,15 @@ fun ProcessListWidget(
         val isWide = maxWidth >= 480.dp
         val isFixedHeight = constraints.hasBoundedHeight
 
-        val subtitleText = if (isWide) {
-            stringResource(
-                Res.string.widget_processes_subtitle,
-                viewState.runningProcessCount,
-                viewState.totalProcessCount,
-            )
+        // The counts come from the processcount plugin and are left out when the host has none
+        val running = viewState.runningProcessCount
+        val total = viewState.totalProcessCount
+        val subtitleText = if (running == null || total == null) {
+            null
+        } else if (isWide) {
+            stringResource(Res.string.widget_processes_subtitle, running, total)
         } else {
-            stringResource(
-                Res.string.widget_processes_subtitle_compact,
-                viewState.runningProcessCount,
-                viewState.totalProcessCount,
-            )
+            stringResource(Res.string.widget_processes_subtitle_compact, running, total)
         }
 
         val sortLabel = when (viewState.sortBy) {
@@ -678,9 +675,9 @@ private fun ProcessSwipeCard(
                     color = AppTheme.colors.textMuted,
                 )
 
-                if (process.memoryRssBytes > 0L) {
+                if ((process.memoryRssBytes ?: 0L) > 0L) {
                     Text(
-                        text = "RSS: ${formatProcessMemory(process.memoryRssBytes)}",
+                        text = "RSS: ${formatProcessMemory(process.memoryRssBytes ?: 0L)}",
                         style = AppTheme.typography.labelCode,
                         color = AppTheme.colors.textMuted,
                     )

@@ -32,8 +32,6 @@ import io.buszi.nascope.resources.details_containers_field_uptime
 import io.buszi.nascope.resources.details_containers_filter_all
 import io.buszi.nascope.resources.details_containers_filter_format
 import io.buszi.nascope.resources.details_containers_list
-import io.buszi.nascope.resources.details_containers_logs
-import io.buszi.nascope.resources.details_containers_no_logs
 import io.buszi.nascope.resources.details_containers_no_match
 import io.buszi.nascope.resources.details_containers_overview
 import io.buszi.nascope.resources.details_containers_stat_cpu_total
@@ -60,7 +58,7 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersDetailsViewModel.ViewState
 import io.buszi.nascope.ui.details.components.DetailsKeyValueRow
-import io.buszi.nascope.ui.details.components.DetailsLoadingPlaceholder
+import io.buszi.nascope.ui.details.components.DetailsStatePlaceholder
 import io.buszi.nascope.ui.details.components.DetailsScaffold
 import io.buszi.nascope.ui.details.components.DetailsSection
 import io.buszi.nascope.ui.details.components.DetailsStat
@@ -95,6 +93,7 @@ fun ContainersDetailsScreen(
         onClose = onClose,
         testTag = TestTags.details(DashboardBrickId.Containers),
         modifier = modifier,
+        widgetState = viewState.widgetState,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(
                 Res.string.details_containers_subtitle,
@@ -121,7 +120,7 @@ fun ContainersDetailsScreen(
         },
     ) {
         if (!viewState.widgetState.isReady) {
-            DetailsLoadingPlaceholder()
+            DetailsStatePlaceholder(viewState.widgetState)
         } else if (viewState.containers.isEmpty()) {
             Text(
                 text = stringResource(Res.string.widget_containers_empty),
@@ -162,9 +161,9 @@ private fun OverviewSection(
                     modifier = Modifier.weight(1f),
                 )
                 DetailsStat(
-                    label = ContainerStateUi.Stopped.label(),
-                    value = viewState.countOf(ContainerStateUi.Stopped).toString(),
-                    valueColor = ContainerStateUi.Stopped.accentColor(),
+                    label = ContainerStateUi.Exited.label(),
+                    value = viewState.countOf(ContainerStateUi.Exited).toString(),
+                    valueColor = ContainerStateUi.Exited.accentColor(),
                     modifier = Modifier.weight(1f),
                 )
                 DetailsStat(
@@ -220,7 +219,8 @@ private fun ContainersSection(
                 onClick = { onViewAction(ViewAction.OnSelectFilter(null)) },
                 modifier = Modifier.testTag(TestTags.containersFilter(null)),
             )
-            ContainerStateUi.entries.forEach { state ->
+            // Only the states that exist (or the selected one), so the chips stay few
+            ContainerStateUi.entries.filter { viewState.countOf(it) > 0 || viewState.stateFilter == it }.forEach { state ->
                 SelectableChip(
                     text = stringResource(
                         Res.string.details_containers_filter_format,
@@ -321,14 +321,14 @@ private fun ContainerDetailsCard(
         ) {
             ResourceGauge(
                 label = stringResource(Res.string.widget_containers_cpu_label),
-                valueText = formatCpuPercent(container.cpuPercent),
-                progress = container.cpuPercent / 100f,
+                valueText = container.cpuPercent?.let(::formatCpuPercent) ?: Placeholder,
+                progress = (container.cpuPercent ?: 0f) / 100f,
                 color = AppTheme.colors.telemetryA,
                 modifier = Modifier.weight(1f),
             )
             ResourceGauge(
                 label = stringResource(Res.string.widget_containers_mem_label),
-                valueText = formatContainerMemory(container.memoryUsageBytes),
+                valueText = container.memoryUsageBytes?.let(::formatContainerMemory) ?: Placeholder,
                 progress = container.memoryRatio ?: 0f,
                 color = AppTheme.colors.telemetryB,
                 modifier = Modifier.weight(1f),
@@ -340,20 +340,23 @@ private fun ContainerDetailsCard(
                 modifier = Modifier.padding(top = AppTheme.spacing.spaceXs),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
             ) {
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_containers_field_image),
-                    value = container.image,
-                )
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_containers_field_uptime),
-                    value = container.uptime,
-                )
+                if (container.image.isNotBlank()) {
+                    DetailsKeyValueRow(
+                        label = stringResource(Res.string.details_containers_field_image),
+                        value = container.image,
+                    )
+                }
+                container.uptime?.let { uptime ->
+                    DetailsKeyValueRow(
+                        label = stringResource(Res.string.details_containers_field_uptime),
+                        value = uptime,
+                    )
+                }
                 DetailsKeyValueRow(
                     label = stringResource(Res.string.details_containers_field_memory_limit),
                     value = container.memoryLimitBytes?.let(::formatContainerMemory)
                         ?: stringResource(Res.string.details_containers_unlimited),
                 )
-                LogPreview(logs = container.recentLogs)
             }
         }
     }
@@ -395,50 +398,6 @@ private fun ResourceGauge(
             warningColor = color,
             criticalColor = color,
         )
-    }
-}
-
-@Composable
-private fun LogPreview(
-    logs: List<String>,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
-    ) {
-        Text(
-            text = stringResource(Res.string.details_containers_logs),
-            style = AppTheme.typography.labelCode,
-            color = AppTheme.colors.textMuted,
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppTheme.colors.canvasBackground, AppTheme.shapes.sm)
-                .border(
-                    width = AppTheme.dimensions.hairlineBorder,
-                    color = AppTheme.colors.subtleDivider,
-                    shape = AppTheme.shapes.sm,
-                )
-                .padding(AppTheme.spacing.spaceSm),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
-        ) {
-            if (logs.isEmpty()) {
-                Text(
-                    text = stringResource(Res.string.details_containers_no_logs),
-                    style = AppTheme.typography.labelCode,
-                    color = AppTheme.colors.textMuted,
-                )
-            }
-            logs.forEach { line ->
-                Text(
-                    text = line,
-                    style = AppTheme.typography.labelCode,
-                    color = AppTheme.colors.textSecondary,
-                )
-            }
-        }
     }
 }
 

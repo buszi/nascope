@@ -126,7 +126,7 @@ fun ContainersWidget(
                 )
             },
             headerAction = {
-                TagChip(text = viewState.engine.substringBefore(" ").uppercase())
+                viewState.engine.takeIf { it.isNotBlank() }?.let { TagChip(text = it.uppercase()) }
             },
         ) {
             ContainersContent(
@@ -251,15 +251,15 @@ private fun ContainerPreviewRow(
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = formatCpuPercent(container.cpuPercent),
+            text = container.cpuPercent?.let(::formatCpuPercent) ?: Placeholder,
             style = AppTheme.typography.labelCode,
-            color = if (container.cpuPercent > 0f) AppTheme.colors.telemetryA else AppTheme.colors.textSecondary,
+            color = if ((container.cpuPercent ?: 0f) > 0f) AppTheme.colors.telemetryA else AppTheme.colors.textSecondary,
             maxLines = 1,
         )
         Text(
-            text = formatContainerMemory(container.memoryUsageBytes),
+            text = container.memoryUsageBytes?.let(::formatContainerMemory) ?: Placeholder,
             style = AppTheme.typography.labelCode,
-            color = if (container.memoryUsageBytes > 0L) AppTheme.colors.telemetryB else AppTheme.colors.textSecondary,
+            color = if ((container.memoryUsageBytes ?: 0L) > 0L) AppTheme.colors.telemetryB else AppTheme.colors.textSecondary,
             maxLines = 1,
         )
     }
@@ -456,7 +456,7 @@ private fun ContainerRowCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = container.image,
+                    text = container.image.ifBlank { Placeholder },
                     style = AppTheme.typography.labelCode,
                     color = AppTheme.colors.textMuted,
                     maxLines = 1,
@@ -467,7 +467,7 @@ private fun ContainerRowCard(
                 Spacer(modifier = Modifier.width(AppTheme.spacing.spaceSm))
 
                 Text(
-                    text = container.uptime,
+                    text = container.uptime ?: Placeholder,
                     style = AppTheme.typography.labelCode,
                     color = AppTheme.colors.textMuted,
                     maxLines = 1,
@@ -490,9 +490,9 @@ private fun ContainerRowCard(
                         color = AppTheme.colors.textMuted,
                     )
                     Text(
-                        text = formatCpuPercent(container.cpuPercent),
+                        text = container.cpuPercent?.let(::formatCpuPercent) ?: Placeholder,
                         style = AppTheme.typography.labelCode,
-                        color = if (container.cpuPercent > 0f) AppTheme.colors.telemetryA else AppTheme.colors.textSecondary,
+                        color = if ((container.cpuPercent ?: 0f) > 0f) AppTheme.colors.telemetryA else AppTheme.colors.textSecondary,
                     )
                 }
 
@@ -506,9 +506,9 @@ private fun ContainerRowCard(
                         color = AppTheme.colors.textMuted,
                     )
                     Text(
-                        text = formatContainerMemory(container.memoryUsageBytes),
+                        text = container.memoryUsageBytes?.let(::formatContainerMemory) ?: Placeholder,
                         style = AppTheme.typography.labelCode,
-                        color = if (container.memoryUsageBytes > 0L) AppTheme.colors.telemetryB else AppTheme.colors.textSecondary,
+                        color = if ((container.memoryUsageBytes ?: 0L) > 0L) AppTheme.colors.telemetryB else AppTheme.colors.textSecondary,
                     )
                 }
             }
@@ -538,6 +538,9 @@ private fun EmptyContainersPlaceholder() {
         )
     }
 }
+
+/** Shown for a value the host does not report. */
+internal const val Placeholder: String = "—"
 
 internal fun formatCpuPercent(percent: Float): String {
     val rounded = ((percent * 10).toLong() / 10.0).toString()

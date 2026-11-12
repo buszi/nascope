@@ -40,7 +40,21 @@ class ProcessListPreviewParameterProvider : PreviewParameterProvider<ViewState> 
             widgetState = WidgetState.Ready,
         ),
 
-        // 4. Loading State
+        // 4. Host without processcount data: the counts are left out
+        ViewState(
+            processes = sampleProcesses,
+            totalProcessCount = null,
+            runningProcessCount = null,
+            widgetState = WidgetState.Ready,
+        ),
+
+        // 5. Stale
+        ViewState(processes = sampleProcesses, widgetState = WidgetState.Stale),
+
+        // 6. Unavailable
+        ViewState(widgetState = WidgetState.Unavailable),
+
+        // 7. Loading State
         ViewState(
             widgetState = WidgetState.Loading,
         ),

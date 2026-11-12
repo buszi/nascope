@@ -6,7 +6,10 @@ import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.widget_containers_paused_label
 import io.buszi.nascope.resources.widget_containers_restarting_label
 import io.buszi.nascope.resources.widget_containers_running_label
-import io.buszi.nascope.resources.widget_containers_stopped_label
+import io.buszi.nascope.resources.widget_containers_created_label
+import io.buszi.nascope.resources.widget_containers_dead_label
+import io.buszi.nascope.resources.widget_containers_exited_label
+import io.buszi.nascope.resources.widget_containers_unknown_label
 import io.buszi.nascope.ui.common.model.ContainerStateUi
 import io.buszi.nascope.ui.common.theme.AppTheme
 import org.jetbrains.compose.resources.stringResource
@@ -16,8 +19,11 @@ import org.jetbrains.compose.resources.stringResource
 internal fun ContainerStateUi.accentColor(): Color = when (this) {
     ContainerStateUi.Running -> AppTheme.colors.operational
     ContainerStateUi.Paused -> AppTheme.colors.degraded
-    ContainerStateUi.Stopped -> AppTheme.colors.textMuted
     ContainerStateUi.Restarting -> AppTheme.colors.critical
+    ContainerStateUi.Dead -> AppTheme.colors.critical
+    ContainerStateUi.Exited -> AppTheme.colors.textMuted
+    ContainerStateUi.Created -> AppTheme.colors.textMuted
+    ContainerStateUi.Unknown -> AppTheme.colors.textDisabled
 }
 
 /** Uppercase label of the container state. */
@@ -25,6 +31,9 @@ internal fun ContainerStateUi.accentColor(): Color = when (this) {
 internal fun ContainerStateUi.label(): String = when (this) {
     ContainerStateUi.Running -> stringResource(Res.string.widget_containers_running_label)
     ContainerStateUi.Paused -> stringResource(Res.string.widget_containers_paused_label)
-    ContainerStateUi.Stopped -> stringResource(Res.string.widget_containers_stopped_label)
     ContainerStateUi.Restarting -> stringResource(Res.string.widget_containers_restarting_label)
+    ContainerStateUi.Exited -> stringResource(Res.string.widget_containers_exited_label)
+    ContainerStateUi.Created -> stringResource(Res.string.widget_containers_created_label)
+    ContainerStateUi.Dead -> stringResource(Res.string.widget_containers_dead_label)
+    ContainerStateUi.Unknown -> stringResource(Res.string.widget_containers_unknown_label)
 }

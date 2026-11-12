@@ -103,6 +103,10 @@
     <string name="widget_containers_paused_label">PAUSED</string>
     <string name="widget_containers_stopped_label">STOPPED</string>
     <string name="widget_containers_restarting_label">RESTARTING</string>
+    <string name="widget_containers_exited_label">EXITED</string>
+    <string name="widget_containers_created_label">CREATED</string>
+    <string name="widget_containers_dead_label">DEAD</string>
+    <string name="widget_containers_unknown_label">UNKNOWN</string>
     <string name="widget_containers_running_count">%1$d RUNNING</string>
     <string name="widget_containers_paused_count">%1$d PAUSED</string>
     <string name="widget_containers_stopped_count">%1$d STOPPED</string>
@@ -191,8 +195,6 @@
     <string name="details_containers_filter_all">ALL</string>
     <string name="details_containers_filter_format">%1$s %2$d</string>
     <string name="details_containers_no_match">NO CONTAINERS MATCH FILTER</string>
-    <string name="details_containers_logs">RECENT LOGS</string>
-    <string name="details_containers_no_logs">NO LOG OUTPUT</string>
     <string name="details_containers_field_image">IMAGE</string>
     <string name="details_containers_field_uptime">UPTIME</string>
     <string name="details_containers_field_memory_limit">MEM LIMIT</string>
@@ -218,6 +220,7 @@
     <string name="details_processes_field_rss">RSS</string>
     <string name="details_processes_state_running">RUNNING</string>
     <string name="details_processes_state_sleeping">SLEEPING</string>
+    <string name="details_processes_state_idle">IDLE</string>
     <string name="details_processes_state_disk_sleep">DISK WAIT</string>
     <string name="details_processes_state_stopped">STOPPED</string>
     <string name="details_processes_state_zombie">ZOMBIE</string>

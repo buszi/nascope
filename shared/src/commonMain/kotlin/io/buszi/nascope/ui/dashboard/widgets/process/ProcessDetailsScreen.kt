@@ -68,7 +68,7 @@ import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.Sor
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewState
 import io.buszi.nascope.ui.details.components.DetailsKeyValueRow
-import io.buszi.nascope.ui.details.components.DetailsLoadingPlaceholder
+import io.buszi.nascope.ui.details.components.DetailsStatePlaceholder
 import io.buszi.nascope.ui.details.components.DetailsPager
 import io.buszi.nascope.ui.details.components.DetailsScaffold
 import io.buszi.nascope.ui.details.components.DetailsSection
@@ -107,7 +107,8 @@ fun ProcessDetailsScreen(
         onClose = onClose,
         testTag = TestTags.details(DashboardBrickId.ProcessList),
         modifier = modifier,
-        subtitle = if (viewState.widgetState.isReady) {
+        widgetState = viewState.widgetState,
+        subtitle = if (viewState.widgetState.isReady && viewState.totalProcessCount != null) {
             stringResource(
                 Res.string.details_processes_subtitle,
                 viewState.processes.size,
@@ -133,7 +134,7 @@ fun ProcessDetailsScreen(
         },
     ) {
         if (!viewState.widgetState.isReady) {
-            DetailsLoadingPlaceholder()
+            DetailsStatePlaceholder(viewState.widgetState)
         } else if (viewState.processes.isEmpty()) {
             Text(
                 text = stringResource(Res.string.widget_processes_empty),
@@ -161,17 +162,21 @@ private fun OverviewSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
             ) {
-                DetailsStat(
-                    label = stringResource(Res.string.details_processes_stat_total),
-                    value = viewState.totalProcessCount.toString(),
-                    modifier = Modifier.weight(1f),
-                )
-                DetailsStat(
-                    label = stringResource(Res.string.details_processes_stat_running),
-                    value = viewState.runningProcessCount.toString(),
-                    valueColor = AppTheme.colors.operational,
-                    modifier = Modifier.weight(1f),
-                )
+                viewState.totalProcessCount?.let { total ->
+                    DetailsStat(
+                        label = stringResource(Res.string.details_processes_stat_total),
+                        value = total.toString(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                viewState.runningProcessCount?.let { running ->
+                    DetailsStat(
+                        label = stringResource(Res.string.details_processes_stat_running),
+                        value = running.toString(),
+                        valueColor = AppTheme.colors.operational,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -482,10 +487,12 @@ private fun ProcessDetails(
             )
             TagChip(text = process.state.label(), dotColor = process.state.accentColor())
         }
-        DetailsKeyValueRow(
-            label = stringResource(Res.string.details_processes_field_rss),
-            value = formatProcessMemory(process.memoryRssBytes),
-        )
+        process.memoryRssBytes?.let { rss ->
+            DetailsKeyValueRow(
+                label = stringResource(Res.string.details_processes_field_rss),
+                value = formatProcessMemory(rss),
+            )
+        }
         LoadGauge(
             label = stringResource(Res.string.widget_processes_col_cpu),
             percent = process.cpuPercent,

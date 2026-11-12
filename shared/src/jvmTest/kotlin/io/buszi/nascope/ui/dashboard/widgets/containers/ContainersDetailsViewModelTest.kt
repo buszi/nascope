@@ -1,12 +1,13 @@
 package io.buszi.nascope.ui.dashboard.widgets.containers
 
-import app.cash.turbine.turbineScope
-import io.buszi.nascope.data.telemetry.ContainerInfo
-import io.buszi.nascope.data.telemetry.ContainerState
-import io.buszi.nascope.data.telemetry.ContainersData
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.ContainerStatus
+import io.buszi.nascope.domain.model.telemetry.ContainerUsage
+import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveContainersUseCase
+import io.buszi.nascope.domain.telemetry.ObserveContainersUseCase.Data
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
-import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.ContainerStateUi
 import io.buszi.nascope.ui.common.model.ContainerUi
@@ -16,9 +17,9 @@ import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersDetailsViewMod
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersDetailsViewModel.ViewState
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verifySequence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -32,126 +33,94 @@ class ContainersDetailsViewModelTest {
     @get:Rule
     val coroutineRule = TestCoroutineRule()
 
-    private val telemetryStateHolder = mockk<TelemetryStateHolder>()
+    private val observeContainers = mockk<ObserveContainersUseCase>()
+    private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
+    private val states = MutableStateFlow<TelemetryState<Data>>(TelemetryState.Loading)
 
     private val viewModel by lazy {
-        ContainersDetailsViewModel(
-            telemetryStateHolder = telemetryStateHolder,
+        every { observeContainers() } returns states
+        ContainersDetailsViewModel(observeContainers = observeContainers, refreshTelemetry = refreshTelemetry)
+    }
+
+    private fun TestScope.emit(containers: List<ContainerUsage>, stale: Boolean = false) {
+        states.value = TelemetryState.Ready(Data(containers), stale)
+        runCurrent()
+    }
+
+    @Test
+    fun containersDetailsViewModelStartsLoadingThenShowsAllContainers() = runTest {
+        viewModel
+        assertEquals(ViewState(), viewModel.viewState.value)
+
+        emit(containers)
+
+        assertEquals(
+            ViewState(engine = "Docker", containers = containers.map(ContainerUi::from), widgetState = WidgetState.Ready),
+            viewModel.viewState.value,
         )
     }
 
     @Test
-    fun containersDetailsViewModelEmitsReadyStateWithTelemetryData() = runTest {
-        turbineScope {
-            every { telemetryStateHolder.containers } returns MutableStateFlow(containersData)
-
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-
-            assertEquals(
-                listOf(
-                    initialViewState,
-                    readyViewState,
-                ),
-                viewStateTurbine.cancelAndConsumeItems(),
-            )
-            verifySequence {
-                telemetryStateHolder.containers
-            }
-        }
-    }
-
-    @Test
     fun containersDetailsViewModelFiltersByState() = runTest {
-        turbineScope {
-            every { telemetryStateHolder.containers } returns MutableStateFlow(containersData)
+        viewModel
+        emit(containers)
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-
-            assertEquals(3, viewModel.viewState.value.filteredContainers.size)
-
-            viewModel.onViewAction(OnSelectFilter(ContainerStateUi.Running))
-            assertEquals(listOf("web", "db"), viewModel.viewState.value.filteredContainers.map { it.name })
-
-            viewModel.onViewAction(OnSelectFilter(ContainerStateUi.Restarting))
-            assertEquals(emptyList(), viewModel.viewState.value.filteredContainers)
-
-            viewModel.onViewAction(OnSelectFilter(null))
-            assertEquals(3, viewModel.viewState.value.filteredContainers.size)
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.onViewAction(OnSelectFilter(ContainerStateUi.Running))
+        assertEquals(listOf("a1", "b2"), viewModel.viewState.value.filteredContainers.map { it.id })
+        viewModel.onViewAction(OnSelectFilter(ContainerStateUi.Restarting))
+        assertEquals(emptyList(), viewModel.viewState.value.filteredContainers)
+        viewModel.onViewAction(OnSelectFilter(null))
+        assertEquals(3, viewModel.viewState.value.filteredContainers.size)
     }
 
     @Test
-    fun containersDetailsViewModelTogglesExpandedContainer() = runTest {
-        turbineScope {
-            every { telemetryStateHolder.containers } returns MutableStateFlow(containersData)
+    fun containersDetailsViewModelTogglesTheExpandedContainerAndCollapsesOneThatDisappears() = runTest {
+        viewModel
+        emit(containers)
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
+        viewModel.onViewAction(OnToggleContainer("a1"))
+        assertEquals("a1", viewModel.viewState.value.expandedContainerId)
+        viewModel.onViewAction(OnToggleContainer("b2"))
+        assertEquals("b2", viewModel.viewState.value.expandedContainerId)
+        viewModel.onViewAction(OnToggleContainer("b2"))
+        assertNull(viewModel.viewState.value.expandedContainerId)
 
-            viewModel.onViewAction(OnToggleContainer("a1"))
-            assertEquals("a1", viewModel.viewState.value.expandedContainerId)
-
-            viewModel.onViewAction(OnToggleContainer("b2"))
-            assertEquals("b2", viewModel.viewState.value.expandedContainerId)
-
-            viewModel.onViewAction(OnToggleContainer("b2"))
-            assertNull(viewModel.viewState.value.expandedContainerId)
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        viewModel.onViewAction(OnToggleContainer("c3"))
+        emit(containers.filter { it.id != "c3" })
+        assertNull(viewModel.viewState.value.expandedContainerId)
     }
 
     @Test
-    fun containersDetailsViewModelCollapsesContainerThatDisappears() = runTest {
-        turbineScope {
-            val containersFlow = MutableStateFlow(containersData)
-            every { telemetryStateHolder.containers } returns containersFlow
+    fun containersDetailsViewModelMarksStaleAndShowsUnavailable() = runTest {
+        viewModel
+        emit(containers, stale = true)
+        assertEquals(WidgetState.Stale, viewModel.viewState.value.widgetState)
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-            viewModel.onViewAction(OnToggleContainer("c3"))
-
-            containersFlow.value = containersData.copy(containers = containersData.containers.filter { it.id != "c3" })
-            runCurrent()
-
-            assertNull(viewModel.viewState.value.expandedContainerId)
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        states.value = TelemetryState.Failed(TelemetryFailure.PluginUnavailable)
+        runCurrent()
+        assertEquals(WidgetState.Unavailable, viewModel.viewState.value.widgetState)
+        assertEquals(3, viewModel.viewState.value.containers.size)
     }
 
     @Test
-    fun containersDetailsViewStateComputesAggregates() {
-        val state = readyViewState
+    fun containersDetailsViewStateComputesAggregatesIgnoringMissingMetrics() {
+        val state = ViewState(
+            containers = containers.map(ContainerUi::from) + ContainerUi("d4", "x", "", ContainerStateUi.Running, null, null),
+        )
 
-        assertEquals(2, state.countOf(ContainerStateUi.Running))
-        assertEquals(1, state.countOf(ContainerStateUi.Stopped))
+        assertEquals(3, state.countOf(ContainerStateUi.Running))
+        assertEquals(1, state.countOf(ContainerStateUi.Exited))
         assertEquals(0, state.countOf(ContainerStateUi.Paused))
         assertEquals(5.0f, state.totalCpuPercent, absoluteTolerance = 0.001f)
         assertEquals(300L, state.totalMemoryBytes)
         assertEquals(StatusLevel.Degraded, state.overallStatus)
     }
 
-    companion object {
-        private val containersData = ContainersData(
-            engine = "Docker 27.0.3",
-            containers = listOf(
-                ContainerInfo("a1", "web", "nginx", ContainerState.Running, 3.0f, 100L, 200L, "Up 1 day", listOf("log a")),
-                ContainerInfo("b2", "db", "postgres", ContainerState.Running, 2.0f, 200L, null, "Up 2 days"),
-                ContainerInfo("c3", "job", "borg", ContainerState.Stopped, 0.0f, 0L, 50L, "Exited (0)"),
-            ),
-        )
-
-        private val initialViewState = ViewState()
-
-        private val readyViewState = ViewState(
-            engine = "Docker 27.0.3",
-            containers = containersData.containers.map(ContainerUi::from),
-            widgetState = WidgetState.Ready,
+    private companion object {
+        val containers = listOf(
+            ContainerUsage("a1", "web", "nginx", "docker", ContainerStatus.Running, 3.0f, 100L, 200L, "Up 1 day"),
+            ContainerUsage("b2", "db", "postgres", "docker", ContainerStatus.Running, 2.0f, 200L, null, "Up 2 days"),
+            ContainerUsage("c3", "job", "borg", "docker", ContainerStatus.Exited, null, null, 50L, null),
         )
     }
 }

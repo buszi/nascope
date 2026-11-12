@@ -1,11 +1,15 @@
 package io.buszi.nascope.ui.dashboard.widgets.process
 
 import app.cash.turbine.turbineScope
-import io.buszi.nascope.data.telemetry.ProcessInfo
-import io.buszi.nascope.data.telemetry.ProcessListData
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
+import io.buszi.nascope.domain.model.telemetry.ProcessCount
+import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase
+import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase.Data
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
-import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.ProcessUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
@@ -18,13 +22,15 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verifySequence
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProcessListViewModelTest {
@@ -32,162 +38,113 @@ class ProcessListViewModelTest {
     @get:Rule
     val coroutineRule = TestCoroutineRule()
 
-    private val telemetryStateHolder = mockk<TelemetryStateHolder>()
+    private val observeProcesses = mockk<ObserveProcessesUseCase>()
+    private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
+    private val states = MutableStateFlow<TelemetryState<Data>>(TelemetryState.Loading)
 
     private val viewModel by lazy {
-        ProcessListViewModel(
-            telemetryStateHolder = telemetryStateHolder,
+        every { observeProcesses() } returns states
+        ProcessListViewModel(observeProcesses = observeProcesses, refreshTelemetry = refreshTelemetry)
+    }
+
+    @Test
+    fun processListViewModelStartsLoadingThenShowsProcessesSortedByCpuWithCounts() = runTest {
+        viewModel
+        assertEquals(ViewState(), viewModel.viewState.value)
+
+        states.value = ready(listOf(low, high))
+        runCurrent()
+
+        assertEquals(
+            ViewState(
+                processes = listOf(high, low).map(ProcessUi::from),
+                totalProcessCount = 184,
+                runningProcessCount = 3,
+                sortBy = ProcessSortBy.Cpu,
+                overallStatus = StatusLevel.Operational,
+                widgetState = WidgetState.Ready,
+            ),
+            viewModel.viewState.value,
         )
     }
 
     @Test
-    fun processListViewModelEmitsReadyStateWithTelemetry() = runTest {
-        turbineScope {
-            val processFlow = MutableStateFlow(testProcessData)
-            every { telemetryStateHolder.processList } returns processFlow
+    fun processListViewModelResortsTheLatestProcessesWhenTheSortChanges() = runTest {
+        viewModel
+        states.value = ready(listOf(low, high))
+        runCurrent()
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
+        viewModel.onViewAction(SelectSortBy(ProcessSortBy.Memory))
+        assertEquals(listOf(low.pid, high.pid), viewModel.viewState.value.processes.map { it.pid })
+        viewModel.onViewAction(ToggleSortBy)
+        assertEquals(ProcessSortBy.Cpu, viewModel.viewState.value.sortBy)
+        assertEquals(listOf(high.pid, low.pid), viewModel.viewState.value.processes.map { it.pid })
 
-            assertEquals(
-                listOf(
-                    initialViewState,
-                    readyViewStateCpu,
-                ),
-                viewStateTurbine.cancelAndConsumeItems(),
-            )
-            verifySequence {
-                telemetryStateHolder.processList
-            }
-        }
+        // a poll keeps the chosen sort order
+        viewModel.onViewAction(SelectSortBy(ProcessSortBy.Memory))
+        states.value = ready(listOf(high, low))
+        runCurrent()
+        assertEquals(listOf(low.pid, high.pid), viewModel.viewState.value.processes.map { it.pid })
     }
 
     @Test
-    fun selectSortBySwitchesSortingOrder() = runTest {
-        turbineScope {
-            val processFlow = MutableStateFlow(testProcessData)
-            every { telemetryStateHolder.processList } returns processFlow
+    fun processListViewModelLeavesOutCountsWithoutProcessCountData() = runTest {
+        viewModel
+        states.value = TelemetryState.Ready(Data(listOf(high), null), isStale = false)
+        runCurrent()
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-
-            assertEquals(ProcessSortBy.Cpu, viewModel.viewState.value.sortBy)
-            assertEquals("qemu-system-x86", viewModel.viewState.value.processes.first().name)
-
-            viewModel.onViewAction(SelectSortBy(ProcessSortBy.Memory))
-            runCurrent()
-
-            assertEquals(ProcessSortBy.Memory, viewModel.viewState.value.sortBy)
-            assertEquals("postgres", viewModel.viewState.value.processes.first().name)
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        assertNull(viewModel.viewState.value.totalProcessCount)
+        assertNull(viewModel.viewState.value.runningProcessCount)
+        assertEquals(WidgetState.Ready, viewModel.viewState.value.widgetState)
     }
 
     @Test
-    fun toggleSortBySwitchesBetweenCpuAndMemory() = runTest {
-        turbineScope {
-            val processFlow = MutableStateFlow(testProcessData)
-            every { telemetryStateHolder.processList } returns processFlow
+    fun processListViewModelReportsCriticalWhenAProcessIsAbove80Percent() = runTest {
+        viewModel
+        states.value = ready(listOf(high.copy(cpuPercent = 95f)))
+        runCurrent()
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-
-            viewModel.onViewAction(ToggleSortBy)
-            runCurrent()
-            assertEquals(ProcessSortBy.Memory, viewModel.viewState.value.sortBy)
-
-            viewModel.onViewAction(ToggleSortBy)
-            runCurrent()
-            assertEquals(ProcessSortBy.Cpu, viewModel.viewState.value.sortBy)
-
-            viewStateTurbine.cancelAndIgnoreRemainingEvents()
-        }
+        assertEquals(StatusLevel.Critical, viewModel.viewState.value.overallStatus)
     }
 
     @Test
-    fun criticalProcessResourceTriggersCriticalStatus() = runTest {
-        turbineScope {
-            val criticalData = testProcessData.copy(
-                processes = listOf(
-                    testProcess1.copy(cpuPercent = 95.0f),
-                ),
-            )
-            val processFlow = MutableStateFlow(criticalData)
-            every { telemetryStateHolder.processList } returns processFlow
+    fun processListViewModelMarksStaleKeepsRowsAndMapsFailures() = runTest {
+        viewModel
+        states.value = ready(listOf(high), isStale = true)
+        runCurrent()
+        assertEquals(WidgetState.Stale, viewModel.viewState.value.widgetState)
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
+        states.value = TelemetryState.Failed(TelemetryFailure.PluginUnavailable)
+        runCurrent()
+        assertEquals(WidgetState.Unavailable, viewModel.viewState.value.widgetState)
+        assertEquals(1, viewModel.viewState.value.processes.size)
 
-            val states = viewStateTurbine.cancelAndConsumeItems()
-            assertEquals(StatusLevel.Critical, states.last().overallStatus)
-        }
+        states.value = TelemetryState.Failed(TelemetryFailure.Connection(ConnectionFailure.Timeout))
+        runCurrent()
+        assertIs<WidgetState.Offline>(viewModel.viewState.value.widgetState)
+
+        states.value = TelemetryState.Loading
+        runCurrent()
+        assertEquals(ViewState(), viewModel.viewState.value)
     }
 
     @Test
-    fun retryInvokesStateHolderRefresh() = runTest {
-        turbineScope {
-            val processFlow = MutableStateFlow(testProcessData)
-            every { telemetryStateHolder.processList } returns processFlow
-            every { telemetryStateHolder.refresh() } just runs
+    fun processListViewModelRetryRefreshesTelemetry() = runTest {
+        every { refreshTelemetry() } just runs
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
+        viewModel.onViewAction(OnRetry)
 
-            viewModel.onViewAction(OnRetry)
-            runCurrent()
-
-            assertEquals(
-                listOf(
-                    initialViewState,
-                    readyViewStateCpu,
-                    readyViewStateCpu.copy(widgetState = WidgetState.Loading),
-                ),
-                viewStateTurbine.cancelAndConsumeItems(),
-            )
-            verifySequence {
-                telemetryStateHolder.processList
-                telemetryStateHolder.refresh()
-            }
+        verifySequence {
+            observeProcesses()
+            refreshTelemetry()
         }
     }
 
     private companion object {
-        val testProcess1 = ProcessInfo(
-            pid = 1042,
-            name = "qemu-system-x86",
-            user = "libvirt",
-            cpuPercent = 28.4f,
-            memoryPercent = 4.2f,
-            memoryRssBytes = 1_400_000_000L,
-            status = "R",
-        )
+        val high = ProcessUsage(1042, "qemu-system-x86", "libvirt", 28.4f, 4.2f, 1_400_000_000L, "R", null)
+        val low = ProcessUsage(3410, "postgres", "postgres", 4.5f, 15.8f, 2_000_000_000L, "S", null)
 
-        val testProcess2 = ProcessInfo(
-            pid = 3410,
-            name = "postgres",
-            user = "postgres",
-            cpuPercent = 4.5f,
-            memoryPercent = 15.8f,
-            memoryRssBytes = 2_000_000_000L,
-            status = "S",
-        )
-
-        val testProcessData = ProcessListData(
-            processes = listOf(testProcess1, testProcess2),
-            totalProcessCount = 184,
-            runningProcessCount = 3,
-        )
-
-        val initialViewState = ViewState()
-
-        val readyViewStateCpu = ViewState(
-            processes = listOf(testProcess1, testProcess2).map(ProcessUi::from),
-            totalProcessCount = 184,
-            runningProcessCount = 3,
-            sortBy = ProcessSortBy.Cpu,
-            overallStatus = StatusLevel.Operational,
-            widgetState = WidgetState.Ready,
-        )
+        fun ready(processes: List<ProcessUsage>, isStale: Boolean = false): TelemetryState<Data> =
+            TelemetryState.Ready(Data(processes, ProcessCount(184, 3, 150, 600)), isStale)
     }
 }

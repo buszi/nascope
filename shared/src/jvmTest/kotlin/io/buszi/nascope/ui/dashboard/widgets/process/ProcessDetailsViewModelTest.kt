@@ -1,9 +1,14 @@
 package io.buszi.nascope.ui.dashboard.widgets.process
 
 import app.cash.turbine.turbineScope
-import io.buszi.nascope.data.telemetry.ProcessInfo
-import io.buszi.nascope.data.telemetry.ProcessListData
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
+import io.buszi.nascope.domain.model.telemetry.ProcessCount
+import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase
+import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase.Data
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
@@ -36,18 +41,20 @@ class ProcessDetailsViewModelTest {
     @get:Rule
     val coroutineRule = TestCoroutineRule()
 
-    private val telemetryStateHolder = mockk<TelemetryStateHolder>()
+    private val observeProcesses = mockk<ObserveProcessesUseCase>()
+    private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
 
     private val viewModel by lazy {
         ProcessDetailsViewModel(
-            telemetryStateHolder = telemetryStateHolder,
+            observeProcesses = observeProcesses,
+            refreshTelemetry = refreshTelemetry,
         )
     }
 
     @Test
     fun processDetailsViewModelEmitsReadyStateWithTelemetryData() = runTest {
         turbineScope {
-            every { telemetryStateHolder.processList } returns MutableStateFlow(processData)
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -60,7 +67,7 @@ class ProcessDetailsViewModelTest {
                 viewStateTurbine.cancelAndConsumeItems(),
             )
             verifySequence {
-                telemetryStateHolder.processList
+                observeProcesses()
             }
         }
     }
@@ -68,7 +75,7 @@ class ProcessDetailsViewModelTest {
     @Test
     fun processDetailsViewModelSortsByCpuDescendingByDefault() = runTest {
         turbineScope {
-            every { telemetryStateHolder.processList } returns MutableStateFlow(processData)
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -85,7 +92,7 @@ class ProcessDetailsViewModelTest {
     @Test
     fun processDetailsViewModelTogglesSortDirectionOnSameField() = runTest {
         turbineScope {
-            every { telemetryStateHolder.processList } returns MutableStateFlow(processData)
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -104,7 +111,7 @@ class ProcessDetailsViewModelTest {
     @Test
     fun processDetailsViewModelUsesDefaultDirectionWhenSwitchingField() = runTest {
         turbineScope {
-            every { telemetryStateHolder.processList } returns MutableStateFlow(processData)
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -126,7 +133,7 @@ class ProcessDetailsViewModelTest {
     @Test
     fun processDetailsViewModelSearchesNameUserAndPid() = runTest {
         turbineScope {
-            every { telemetryStateHolder.processList } returns MutableStateFlow(processData)
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -150,7 +157,7 @@ class ProcessDetailsViewModelTest {
     @Test
     fun processDetailsViewModelFiltersByState() = runTest {
         turbineScope {
-            every { telemetryStateHolder.processList } returns MutableStateFlow(processData)
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -173,7 +180,7 @@ class ProcessDetailsViewModelTest {
     @Test
     fun processDetailsViewModelPaginatesAndResetsPageOnQueryChange() = runTest {
         turbineScope {
-            every { telemetryStateHolder.processList } returns MutableStateFlow(processData)
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -204,14 +211,14 @@ class ProcessDetailsViewModelTest {
     @Test
     fun processDetailsViewModelClampsPageWhenProcessesShrink() = runTest {
         turbineScope {
-            val processFlow = MutableStateFlow(processData)
-            every { telemetryStateHolder.processList } returns processFlow
+            val processFlow = MutableStateFlow<TelemetryState<Data>>(processData)
+            every { observeProcesses() } returns processFlow
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
             viewModel.onViewAction(OnNextPage)
 
-            processFlow.value = processData.copy(processes = processData.processes.take(3))
+            processFlow.value = ready(processUsages.take(3))
             runCurrent()
 
             assertEquals(0, viewModel.viewState.value.page)
@@ -223,8 +230,8 @@ class ProcessDetailsViewModelTest {
     @Test
     fun processDetailsViewModelTogglesExpandedProcess() = runTest {
         turbineScope {
-            val processFlow = MutableStateFlow(processData)
-            every { telemetryStateHolder.processList } returns processFlow
+            val processFlow = MutableStateFlow<TelemetryState<Data>>(processData)
+            every { observeProcesses() } returns processFlow
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -236,10 +243,57 @@ class ProcessDetailsViewModelTest {
             assertNull(viewModel.viewState.value.expandedPid)
 
             viewModel.onViewAction(OnToggleProcess(102))
-            processFlow.value = processData.copy(processes = processData.processes.filter { it.pid != 102 })
+            processFlow.value = ready(processUsages.filter { it.pid != 102 })
             runCurrent()
             assertNull(viewModel.viewState.value.expandedPid)
 
+            viewStateTurbine.cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun processDetailsViewModelLeavesOutCountsWhenProcessCountIsMissingAndKeepsMissingFieldsNull() = runTest {
+        turbineScope {
+            val usage = processUsages.first().copy(user = null, memoryRssBytes = null, statusCode = null)
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(
+                TelemetryState.Ready(Data(listOf(usage), null), false),
+            )
+
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+
+            val state = viewModel.viewState.value
+            assertNull(state.totalProcessCount)
+            assertNull(state.runningProcessCount)
+            assertEquals(ProcessUi.MissingUser, state.processes.single().user)
+            assertNull(state.processes.single().memoryRssBytes)
+            assertEquals(ProcessStateUi.Unknown, state.processes.single().state)
+            viewStateTurbine.cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun processDetailsViewModelMarksStaleKeepsTheRowsAndMapsFailures() = runTest {
+        turbineScope {
+            val flow = MutableStateFlow<TelemetryState<Data>>(ready(processUsages, isStale = true))
+            every { observeProcesses() } returns flow
+
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            assertEquals(WidgetState.Stale, viewModel.viewState.value.widgetState)
+
+            flow.value = TelemetryState.Failed(TelemetryFailure.PluginUnavailable)
+            runCurrent()
+            assertEquals(WidgetState.Unavailable, viewModel.viewState.value.widgetState)
+            assertEquals(10, viewModel.viewState.value.processes.size)
+
+            flow.value = TelemetryState.Failed(TelemetryFailure.Connection(ConnectionFailure.Timeout))
+            runCurrent()
+            assert(viewModel.viewState.value.widgetState is WidgetState.Offline)
+
+            flow.value = TelemetryState.Loading
+            runCurrent()
+            assertEquals(ViewState(), viewModel.viewState.value)
             viewStateTurbine.cancelAndIgnoreRemainingEvents()
         }
     }
@@ -257,26 +311,28 @@ class ProcessDetailsViewModelTest {
     companion object {
         // p1..p10: cpu = index, memory = index / 10, pid = 100 + index; p3 is a zombie,
         // p1 and p2 and p5 and p7 and p9 are owned by root, the rest by app.
-        private val processData = ProcessListData(
-            processes = (1..10).map { index ->
-                ProcessInfo(
-                    pid = 100 + index,
-                    name = "p$index",
-                    user = if (index in setOf(1, 2, 5, 7, 9)) "root" else "app",
-                    cpuPercent = index.toFloat(),
-                    memoryPercent = index / 10f,
-                    memoryRssBytes = index * 1_000_000L,
-                    status = if (index == 3) "Z" else if (index % 2 == 0) "R" else "S",
-                )
-            },
-            totalProcessCount = 184,
-            runningProcessCount = 5,
-        )
+        private val processUsages = (1..10).map { index ->
+            ProcessUsage(
+                pid = 100 + index,
+                name = "p$index",
+                user = if (index in setOf(1, 2, 5, 7, 9)) "root" else "app",
+                cpuPercent = index.toFloat(),
+                memoryPercent = index / 10f,
+                memoryRssBytes = index * 1_000_000L,
+                statusCode = if (index == 3) "Z" else if (index % 2 == 0) "R" else "S",
+                commandLine = null,
+            )
+        }
+
+        private fun ready(processes: List<ProcessUsage>, isStale: Boolean = false): TelemetryState<Data> =
+            TelemetryState.Ready(Data(processes, ProcessCount(184, 5, 170, 900)), isStale)
+
+        private val processData = ready(processUsages)
 
         private val initialViewState = ViewState()
 
         private val readyViewState = ViewState(
-            processes = processData.processes.map(ProcessUi::from),
+            processes = processUsages.map(ProcessUi::from),
             totalProcessCount = 184,
             runningProcessCount = 5,
             widgetState = WidgetState.Ready,

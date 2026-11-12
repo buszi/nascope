@@ -10,32 +10,46 @@ class ContainersDetailsPreviewParameterProvider : PreviewParameterProvider<ViewS
     override val values: Sequence<ViewState> = sequenceOf(
         // 1. Mixed states, first container expanded
         ViewState(
-            engine = "Docker 27.0.3",
+            engine = "Docker",
             containers = previewContainers,
             expandedContainerId = "7f3b8a1c",
             widgetState = WidgetState.Ready,
         ),
 
-        // 2. Filtered to stopped containers
+        // 2. Filtered to exited containers
         ViewState(
-            engine = "Docker 27.0.3",
+            engine = "Docker",
             containers = previewContainers,
-            stateFilter = ContainerStateUi.Stopped,
+            stateFilter = ContainerStateUi.Exited,
             widgetState = WidgetState.Ready,
         ),
 
         // 3. Filter without matches
         ViewState(
-            engine = "Podman 5.2.0",
+            engine = "Podman",
             containers = previewContainers,
             stateFilter = ContainerStateUi.Restarting,
             widgetState = WidgetState.Ready,
         ),
 
         // 4. No containers
-        ViewState(engine = "Docker 27.0.3", widgetState = WidgetState.Ready),
+        ViewState(engine = "Docker", widgetState = WidgetState.Ready),
 
-        // 5. Loading
+        // 5. Stale
+        ViewState(engine = "Docker", containers = previewContainers, widgetState = WidgetState.Stale),
+
+        // 6. Unavailable
+        ViewState(widgetState = WidgetState.Unavailable),
+
+        // 7. Podman: no metrics for a stopped container
+        ViewState(
+            engine = "Podman",
+            containers = listOf(ContainerUi("a1", "job-runner", "", ContainerStateUi.Exited, null, null)),
+            expandedContainerId = "a1",
+            widgetState = WidgetState.Ready,
+        ),
+
+        // 8. Loading
         ViewState(widgetState = WidgetState.Loading),
     )
 
@@ -50,10 +64,6 @@ class ContainersDetailsPreviewParameterProvider : PreviewParameterProvider<ViewS
                 memoryUsageBytes = 48_500_000L,
                 memoryLimitBytes = 256_000_000L,
                 uptime = "Up 14 days",
-                recentLogs = listOf(
-                    "10:41:58 INFO  router nextcloud@docker healthy",
-                    "10:42:03 INFO  GET /dashboard/api/overview 200 4ms",
-                ),
             ),
             ContainerUi(
                 id = "92d05f3b",
@@ -79,9 +89,9 @@ class ContainersDetailsPreviewParameterProvider : PreviewParameterProvider<ViewS
                 id = "1a84f67c",
                 name = "borgmatic-backup",
                 image = "b3vis/borgmatic:latest",
-                state = ContainerStateUi.Stopped,
-                cpuPercent = 0f,
-                memoryUsageBytes = 0L,
+                state = ContainerStateUi.Exited,
+                cpuPercent = null,
+                memoryUsageBytes = null,
                 memoryLimitBytes = null,
                 uptime = "Exited (0) 6h ago",
             ),

@@ -3,11 +3,15 @@ package io.buszi.nascope.ui.dashboard.widgets.containers
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveContainersUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.ContainerStateUi
 import io.buszi.nascope.ui.common.model.ContainerUi
+import io.buszi.nascope.ui.common.model.ContainersUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
+import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersDetailsViewModel.ViewAction.OnSelectFilter
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersDetailsViewModel.ViewAction.OnToggleContainer
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,11 +24,12 @@ import org.koin.core.annotation.KoinViewModel
 
 /**
  * Drives the containers details screen: every container (no top-N cut), filterable by state,
- * with per-container resource gauges and a recent log preview on expansion.
+ * with per-container resource gauges and the container properties on expansion.
  */
 @KoinViewModel
 class ContainersDetailsViewModel(
-    private val telemetryStateHolder: TelemetryStateHolder,
+    private val observeContainers: ObserveContainersUseCase,
+    private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -50,15 +55,19 @@ class ContainersDetailsViewModel(
     }
 
     private fun observeTelemetry() {
-        telemetryStateHolder.containers.onEach { data ->
+        observeContainers().onEach { state ->
             mutableViewState.update { current ->
-                val containers = data.containers.map(ContainerUi::from)
+                val data = when (state) {
+                    is TelemetryState.Ready -> ContainersUi.from(state.data)
+                    TelemetryState.Loading -> ContainersUi()
+                    is TelemetryState.Failed -> ContainersUi(current.engine, current.containers)
+                }
                 current.copy(
                     engine = data.engine,
-                    containers = containers,
+                    containers = data.containers,
                     expandedContainerId = current.expandedContainerId
-                        ?.takeIf { expanded -> containers.any { it.id == expanded } },
-                    widgetState = WidgetState.Ready,
+                        ?.takeIf { expanded -> data.containers.any { it.id == expanded } },
+                    widgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke),
                 )
             }
         }.launchIn(viewModelScope)
@@ -80,11 +89,11 @@ class ContainersDetailsViewModel(
 
         /** Combined CPU usage of the running containers. */
         val totalCpuPercent: Float
-            get() = containers.filter { it.state == ContainerStateUi.Running }.sumOf { it.cpuPercent.toDouble() }.toFloat()
+            get() = containers.filter { it.state == ContainerStateUi.Running }.sumOf { (it.cpuPercent ?: 0f).toDouble() }.toFloat()
 
         /** Combined memory usage of all containers. */
         val totalMemoryBytes: Long
-            get() = containers.sumOf { it.memoryUsageBytes }
+            get() = containers.sumOf { it.memoryUsageBytes ?: 0L }
 
         val overallStatus: StatusLevel
             get() = containers.maxOfOrNull { it.state.status } ?: StatusLevel.Operational

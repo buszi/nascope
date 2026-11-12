@@ -1,7 +1,6 @@
 package io.buszi.nascope.ui.dashboard.widgets.containers
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.ContainerStateUi
 import io.buszi.nascope.ui.common.model.ContainerUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
@@ -11,57 +10,57 @@ class ContainersPreviewParameterProvider : PreviewParameterProvider<ViewState> {
     override val values: Sequence<ViewState> = sequenceOf(
         // 1. Ready - Compact view (Collapsed)
         ViewState(
-            engine = "Docker 27.0.3",
+            engine = "Docker",
             containers = sampleContainers,
-            runningCount = 6,
-            pausedCount = 1,
-            stoppedCount = 1,
-            totalCount = 8,
             isExpanded = false,
-            overallStatus = StatusLevel.Operational,
             widgetState = WidgetState.Ready,
         ),
 
         // 2. Ready - Expanded view
         ViewState(
-            engine = "Docker 27.0.3",
+            engine = "Docker",
             containers = sampleContainers,
-            runningCount = 6,
-            pausedCount = 1,
-            stoppedCount = 1,
-            totalCount = 8,
             isExpanded = true,
-            overallStatus = StatusLevel.Operational,
             widgetState = WidgetState.Ready,
         ),
 
         // 3. Degraded / Attention State
         ViewState(
-            engine = "Podman 5.1.0",
+            engine = "Podman",
             containers = sampleContainers.take(3).map { it.copy(state = ContainerStateUi.Paused) },
-            runningCount = 0,
-            pausedCount = 3,
-            stoppedCount = 0,
-            totalCount = 3,
             isExpanded = false,
-            overallStatus = StatusLevel.Degraded,
             widgetState = WidgetState.Ready,
         ),
 
         // 4. Empty Containers
         ViewState(
-            engine = "Docker 27.0.3",
+            engine = "Docker",
             containers = emptyList(),
-            runningCount = 0,
-            pausedCount = 0,
-            stoppedCount = 0,
-            totalCount = 0,
             isExpanded = false,
-            overallStatus = StatusLevel.Operational,
             widgetState = WidgetState.Ready,
         ),
 
-        // 5. Loading State
+        // 5. Stale
+        ViewState(
+            engine = "Docker",
+            containers = sampleContainers,
+            widgetState = WidgetState.Stale,
+        ),
+
+        // 6. Unavailable (no Docker socket mounted: the containers plugin has no data)
+        ViewState(widgetState = WidgetState.Unavailable),
+
+        // 7. Podman reporting no metrics for a stopped and a created container, no engine tag
+        ViewState(
+            containers = listOf(
+                ContainerUi("a1", "job-runner", "", ContainerStateUi.Exited, null, null),
+                ContainerUi("a2", "staging", "", ContainerStateUi.Created, null, null),
+                ContainerUi("a3", "legacy", "app:1", ContainerStateUi.Dead, null, null),
+            ),
+            widgetState = WidgetState.Ready,
+        ),
+
+        // 8. Loading State
         ViewState(
             widgetState = WidgetState.Loading,
         ),
@@ -143,7 +142,7 @@ class ContainersPreviewParameterProvider : PreviewParameterProvider<ViewState> {
                 id = "1a84f67c",
                 name = "borgmatic-backup",
                 image = "b3vis/borgmatic:latest",
-                state = ContainerStateUi.Stopped,
+                state = ContainerStateUi.Exited,
                 cpuPercent = 0.0f,
                 memoryUsageBytes = 0L,
                 memoryLimitBytes = 512_000_000L,

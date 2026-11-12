@@ -39,7 +39,20 @@ class ProcessDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
             widgetState = WidgetState.Ready,
         ),
 
-        // 4. Loading
+        // 4. Host without processcount data and without RSS / user for a process
+        ViewState(
+            processes = listOf(ProcessUi(1, "init", ProcessUi.MissingUser, 0.1f, 0.2f, null, "")),
+            expandedPid = 1,
+            widgetState = WidgetState.Ready,
+        ),
+
+        // 5. Stale
+        ViewState(processes = previewProcesses, totalProcessCount = 184, runningProcessCount = 3, widgetState = WidgetState.Stale),
+
+        // 6. Unavailable
+        ViewState(widgetState = WidgetState.Unavailable),
+
+        // 7. Loading
         ViewState(widgetState = WidgetState.Loading),
     )
 
