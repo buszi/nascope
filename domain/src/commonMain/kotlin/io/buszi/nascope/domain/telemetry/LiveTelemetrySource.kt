@@ -43,6 +43,7 @@ internal class LiveTelemetrySource(
         client.block(profile.toServerConnection(secretStore))
     }
 
+    override suspend fun fetchPlugins(): Result<Set<String>, TelemetryFailure> = call { fetchPlugins(it) }
     override suspend fun fetchSystem(): Result<SystemInfo, TelemetryFailure> = call { fetchSystem(it) }
     override suspend fun fetchUptime(): Result<Duration, TelemetryFailure> = call { fetchUptime(it) }
     override suspend fun fetchLoad(): Result<LoadAverage, TelemetryFailure> = call { fetchLoad(it) }

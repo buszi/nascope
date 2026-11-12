@@ -127,6 +127,12 @@ interface DashboardBrick {
     val height: BrickHeight get() = BrickHeight.OneUnit
     val details: BrickDetails? get() = null
 
+    /**
+     * Glances plugins this brick needs. The brick is shown only while the server offers all of them; empty (the
+     * default) means always shown. While the server's plugins are unknown, every brick is shown.
+     */
+    val requiredPlugins: Set<String> get() = emptySet()
+
     @Composable
     fun Content(modifier: Modifier)
 }

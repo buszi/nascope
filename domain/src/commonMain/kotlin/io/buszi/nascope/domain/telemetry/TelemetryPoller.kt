@@ -20,6 +20,8 @@ import kotlin.time.Duration
 
 /** One shared polling loop per Glances plugin. A loop exists only while something collects its flow. */
 internal interface TelemetryPoller {
+    /** The names of the plugins the server runs (`pluginslist`). */
+    val plugins: Flow<Polled<Set<String>>>
     val system: Flow<Polled<SystemInfo>>
     val uptime: Flow<Polled<Duration>>
     val load: Flow<Polled<LoadAverage>>

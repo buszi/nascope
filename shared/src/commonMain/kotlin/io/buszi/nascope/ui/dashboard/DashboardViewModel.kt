@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
+import io.buszi.nascope.domain.telemetry.ObserveAvailablePluginsUseCase
 import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction.OnRefresh
 import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrick
+import io.buszi.nascope.ui.dashboard.framework.visibleWith
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,14 +23,15 @@ import kotlinx.coroutines.flow.update
 import org.koin.core.annotation.KoinViewModel
 
 /**
- * The dashboard container knows the bricks, the active server and its connection status. It does not own any
+ * The dashboard container knows the bricks the server can serve, the active server and its connection status. It does not own any
  * telemetry: every brick maps its own state.
  */
 @KoinViewModel
 class DashboardViewModel(
-    brickRegistry: BrickRegistry,
+    private val brickRegistry: BrickRegistry,
     private val observeSession: ObserveSessionUseCase,
     private val observeConnectionStatus: ObserveConnectionStatusUseCase,
+    private val observeAvailablePlugins: ObserveAvailablePluginsUseCase,
     private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
@@ -43,6 +46,11 @@ class DashboardViewModel(
             alias to SessionStatusUi.from(session, status)
         }.onEach { (alias, status) ->
             mutableViewState.update { it.copy(nodeName = alias, sessionStatus = status) }
+        }.launchIn(viewModelScope)
+
+        // Unknown plugins (loading, failed, server switched) show every brick; see `visibleWith`.
+        observeAvailablePlugins().onEach { plugins ->
+            mutableViewState.update { it.copy(bricks = brickRegistry.getActiveBricks().visibleWith(plugins)) }
         }.launchIn(viewModelScope)
     }
 

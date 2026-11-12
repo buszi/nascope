@@ -63,6 +63,7 @@ Breakpoints must be evaluated using `WindowWidthClass.fromWidth(maxWidth)` rathe
       val viewState: StateFlow<ViewState> = mutableViewState.asStateFlow()
   }
   ```
+- **Plugin-driven visibility:** `DashboardBrick.requiredPlugins` (default empty = always shown) names the Glances plugins a brick needs, e.g. `GpuBrick` declares `setOf("gpu")`. `DashboardViewModel` collects `ObserveAvailablePluginsUseCase` and exposes `brickRegistry.getActiveBricks().visibleWith(plugins)`: a brick is shown when the server offers all its plugins. While the plugins are unknown (loading, failed, server switched) every brick is shown, so each brick's own widget state handles the failure. Phase 7's user toggles must compose with this: shown = available and not turned off.
 - Beyond the bricks, the dashboard level only knows the active server alias, its live connection status (`SessionStatusUi`: none / demo / server + `ConnectionStatusUi`) and a refresh action (`RefreshTelemetryUseCase`). It never owns telemetry, widget states or error banners: every brick maps its own `TelemetryState` to a `WidgetState`. The header chip and the sidebar rail dot follow the connection status, and are `DEMO` / neutral in demo mode.
 - Adding, removing, or re-ordering bricks does not require changing `DashboardScreen`.
 
@@ -91,7 +92,7 @@ interface DashboardBrick {
 - `BrickSpan.FullRow`: The brick stretches across all columns in the current row (`GridItemSpan(maxLineSpan)`).
 
 ### Zero Empty Spaces Policy
-- Most bricks take two columns, so an odd number of them leaves a gap in the last row. The last brick, Process List, therefore takes `BrickSpan.FullRow`: keep the bricks before it an even number when adding one.
+- The visible bricks vary (see "Plugin-driven visibility" below), so no brick count can be relied on. `computeBrickSpans(spans, columns)` (`framework/BrickLayout.kt`, pure, unit-tested for every subset of the registered bricks at 2, 3 and 4 columns) turns the bricks' `BrickSpan`s into cell counts and `AdaptiveDashboardGrid` uses them: a brick takes the cells its span asks for, at most what is left of its row; `BrickSpan.FullRow` is a row of its own (an unfinished row before it is completed first); a row that ends unfinished is completed by widening its bricks, starting with the last. Adding a brick needs no layout arithmetic.
 - Bricks must adapt their span to `WindowWidthClass` to avoid awkward empty cells or unbalanced gaps at the end of rows.
 - If a row has leftover space or a brick contains expansive data (e.g., storage pool breakdowns or network traffic timelines), it should report `FullRow` or an expanded cell span for wider form factors.
 

@@ -21,6 +21,8 @@ import kotlin.time.Duration
 
 /** The telemetry of one session. Same functions as `GlancesTelemetryClient`, without the server parameter. */
 internal interface TelemetrySource {
+    /** The plugins the server runs. */
+    suspend fun fetchPlugins(): Result<Set<String>, TelemetryFailure>
     suspend fun fetchSystem(): Result<SystemInfo, TelemetryFailure>
     suspend fun fetchUptime(): Result<Duration, TelemetryFailure>
     suspend fun fetchLoad(): Result<LoadAverage, TelemetryFailure>

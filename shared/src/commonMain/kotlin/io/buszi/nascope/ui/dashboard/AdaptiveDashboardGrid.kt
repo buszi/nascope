@@ -10,9 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
@@ -27,12 +28,14 @@ import io.buszi.nascope.ui.dashboard.framework.BrickInteraction
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrick
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.framework.LocalBrickInteraction
+import io.buszi.nascope.ui.dashboard.framework.computeBrickSpans
 
 /**
  * Responsive grid of dashboard [bricks].
  *
  * The column count, gutter, margin and brick height policy follow the width class of the space the grid
- * is laid out in ([DashboardGridMetrics]); bricks claim cells through their [DashboardBrick.span].
+ * is laid out in ([DashboardGridMetrics]); [computeBrickSpans] turns the bricks' [DashboardBrick.span]s into cell
+ * counts so that no row has a hole, whichever bricks are visible.
  * The class is derived from the grid's own width plus the navigation rail, so opening the details
  * inspector next to the dashboard reflows the grid to the narrower layout instead of squeezing it.
  *
@@ -61,6 +64,10 @@ fun AdaptiveDashboardGrid(
             spacing = AppTheme.spacing,
         )
 
+        val spans = remember(bricks, metrics.columns) {
+            computeBrickSpans(bricks.map { it.span }, metrics.columns)
+        }
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(metrics.columns),
             modifier = Modifier
@@ -79,11 +86,11 @@ fun AdaptiveDashboardGrid(
                 }
             }
 
-            items(
+            itemsIndexed(
                 items = bricks,
-                key = { it.id.name },
-                span = { brick -> brick.span.calculateSpan(this) },
-            ) { brick ->
+                key = { _, brick -> brick.id.name },
+                span = { index, _ -> GridItemSpan(spans.getOrElse(index) { 1 }) },
+            ) { _, brick ->
                 val baseModifier = Modifier
                     .fillMaxWidth()
                     .optionalModifier(metrics.fixedBrickHeights) {

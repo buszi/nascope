@@ -28,6 +28,7 @@ import io.buszi.nascope.network.telemetry.parseFileSystems
 import io.buszi.nascope.network.telemetry.parseGpus
 import io.buszi.nascope.network.telemetry.parseLoad
 import io.buszi.nascope.network.telemetry.parseMemory
+import io.buszi.nascope.network.telemetry.parsePlugins
 import io.buszi.nascope.network.telemetry.parseProcessCount
 import io.buszi.nascope.network.telemetry.parseSensors
 import io.buszi.nascope.network.telemetry.parseSwap
@@ -50,6 +51,9 @@ import kotlin.time.Duration
 internal class KtorGlancesTelemetryClient(
     private val client: HttpClient,
 ) : GlancesTelemetryClient {
+
+    override suspend fun fetchPlugins(server: ServerConnection): Result<Set<String>, TelemetryFailure> =
+        get(server, "pluginslist", ::parsePlugins)
 
     override suspend fun fetchSystem(server: ServerConnection): Result<SystemInfo, TelemetryFailure> =
         get(server, "system", ::parseSystem)

@@ -49,6 +49,14 @@ internal class DemoTelemetrySource(
 
     private suspend fun <T> demo(block: () -> T): Result<T, TelemetryFailure> = lock.withLock { Ok(block()) }
 
+    /** Every plugin this source implements. */
+    override suspend fun fetchPlugins(): Result<Set<String>, TelemetryFailure> = Ok(
+        setOf(
+            "system", "uptime", "load", "cpu", "percpu", "quicklook", "mem", "memswap", "fs", "diskio", "network",
+            "sensors", "containers", "gpu", "processcount", "processlist",
+        ),
+    )
+
     // region CPU
 
     private val coreUsage = DoubleArray(CORE_COUNT) { BASE_CORE_USAGE[it] }

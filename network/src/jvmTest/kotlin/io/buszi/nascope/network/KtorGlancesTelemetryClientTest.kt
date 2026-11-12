@@ -11,6 +11,7 @@ import io.buszi.nascope.domain.model.connection.ServerProtocol
 import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.network.telemetry.Fixtures
+import io.buszi.nascope.network.telemetry.assertInvalid
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -41,6 +42,7 @@ class KtorGlancesTelemetryClientTest {
     )
 
     private val calls = listOf(
+        Call("pluginslist", "pluginslist") { c, s -> c.fetchPlugins(s) },
         Call("system", "system") { c, s -> c.fetchSystem(s) },
         Call("uptime", "uptime") { c, s -> c.fetchUptime(s) },
         Call("load", "load") { c, s -> c.fetchLoad(s) },
@@ -134,6 +136,44 @@ class KtorGlancesTelemetryClientTest {
             val result = responding(HttpStatusCode.NotFound).client.fetchCpu(connection(version))
             assertEquals(TelemetryFailure.Connection(ConnectionFailure.NotGlances), result.getError())
         }
+    }
+
+    @Test
+    fun pluginsAreTheNamesInTheArray() = runTest {
+        for ((version, dir) in versions() + (GlancesApiVersion.V4 to "v4-nas")) {
+            val plugins = responding(HttpStatusCode.OK, Fixtures.read(dir, "pluginslist"))
+                .client.fetchPlugins(connection(version)).getOrElse { fail("$dir: $it") }
+            assertTrue("cpu" in plugins && "processlist" in plugins && "gpu" in plugins, dir)
+        }
+    }
+
+    @Test
+    fun pluginsSkipNonStringAndBlankElementsAndAnEmptyArrayIsAnEmptySet() = runTest {
+        val skipped = responding(HttpStatusCode.OK, """["cpu", 3, null, "", "mem", {"a": 1}, "cpu"]""")
+            .client.fetchPlugins(connection(GlancesApiVersion.V4)).getOrElse { fail("$it") }
+        assertEquals(setOf("cpu", "mem"), skipped)
+        val none = responding(HttpStatusCode.OK, "[]").client.fetchPlugins(connection(GlancesApiVersion.V4))
+            .getOrElse { fail("$it") }
+        assertTrue(none.isEmpty())
+    }
+
+    @Test
+    fun pluginsRejectABodyThatIsNotAnArray() = runTest {
+        for (body in listOf("""{"cpu": true}""", "not json", "")) {
+            responding(HttpStatusCode.OK, body).client.fetchPlugins(connection(GlancesApiVersion.V3)).assertInvalid()
+        }
+    }
+
+    @Test
+    fun pluginsNotFoundMapsToNotGlancesAndUnauthorizedToUnauthorized() = runTest {
+        assertEquals(
+            TelemetryFailure.Connection(ConnectionFailure.NotGlances),
+            responding(HttpStatusCode.NotFound).client.fetchPlugins(connection(GlancesApiVersion.V3)).getError(),
+        )
+        assertEquals(
+            TelemetryFailure.Connection(ConnectionFailure.Unauthorized),
+            responding(HttpStatusCode.Unauthorized).client.fetchPlugins(connection(GlancesApiVersion.V4)).getError(),
+        )
     }
 
     @Test

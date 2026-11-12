@@ -12,6 +12,7 @@ import io.buszi.nascope.domain.model.connection.ServerAuth
 import io.buszi.nascope.domain.model.connection.ServerProfile
 import io.buszi.nascope.domain.model.connection.ServerProfileId
 import io.buszi.nascope.domain.model.connection.ServerProtocol
+import io.buszi.nascope.domain.telemetry.ObserveAvailablePluginsUseCase
 import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
@@ -20,6 +21,7 @@ import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction.OnRefresh
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
 import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
+import io.buszi.nascope.ui.dashboard.widgets.gpu.GpuBrick
 import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewBrick
 import io.mockk.every
 import io.mockk.just
@@ -43,18 +45,22 @@ class DashboardViewModelTest {
     private val brickRegistry = mockk<BrickRegistry>()
     private val observeSession = mockk<ObserveSessionUseCase>()
     private val observeConnectionStatus = mockk<ObserveConnectionStatusUseCase>()
+    private val observeAvailablePlugins = mockk<ObserveAvailablePluginsUseCase>()
     private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
+    private val plugins = MutableStateFlow<Set<String>?>(null)
     private val session = MutableStateFlow<Session>(Session.NotConfigured)
     private val status = MutableStateFlow<Status>(Status.Idle)
 
     private val viewModel by lazy {
-        every { brickRegistry.getActiveBricks() } returns listOf(SystemOverviewBrick)
+        every { brickRegistry.getActiveBricks() } returns listOf(SystemOverviewBrick, GpuBrick)
         every { observeSession() } returns session
         every { observeConnectionStatus() } returns status
+        every { observeAvailablePlugins() } returns plugins
         DashboardViewModel(
             brickRegistry = brickRegistry,
             observeSession = observeSession,
             observeConnectionStatus = observeConnectionStatus,
+            observeAvailablePlugins = observeAvailablePlugins,
             refreshTelemetry = refreshTelemetry,
         )
     }
@@ -66,8 +72,35 @@ class DashboardViewModelTest {
             runCurrent()
 
             assertEquals(
-                listOf(ViewState(bricks = listOf(SystemOverviewBrick))),
+                listOf(ViewState(bricks = listOf(SystemOverviewBrick, GpuBrick))),
                 viewStateTurbine.cancelAndConsumeItems(),
+            )
+        }
+    }
+
+    @Test
+    fun dashboardViewModelFiltersTheBricksOnceThePluginsAreKnownAndShowsAllAgainWhenTheyAreNot() = runTest {
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            plugins.value = setOf("cpu")
+            runCurrent()
+            plugins.value = setOf("cpu", "gpu")
+            runCurrent()
+            plugins.value = null // the server was switched: unknown again
+            runCurrent()
+            plugins.value = setOf("cpu")
+            runCurrent()
+
+            val shown = viewStateTurbine.cancelAndConsumeItems().map { it.bricks }
+            assertEquals(
+                listOf(
+                    listOf(SystemOverviewBrick, GpuBrick),
+                    listOf(SystemOverviewBrick),
+                    listOf(SystemOverviewBrick, GpuBrick),
+                    listOf(SystemOverviewBrick),
+                ),
+                shown.filterIndexed { i, bricks -> i == 0 || bricks != shown[i - 1] },
             )
         }
     }
@@ -136,6 +169,7 @@ class DashboardViewModelTest {
             brickRegistry.getActiveBricks()
             observeSession()
             observeConnectionStatus()
+            observeAvailablePlugins()
             refreshTelemetry()
         }
     }

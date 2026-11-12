@@ -19,7 +19,9 @@ import io.buszi.nascope.domain.model.telemetry.SensorReading
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
@@ -188,3 +190,13 @@ internal fun containerStatusOf(status: String?): ContainerStatus = when (status?
 
 /** Glances sends `[""]` for containers whose image it cannot resolve. */
 internal fun List<String>?.firstImageOrNull(): String? = this?.firstOrNull()?.takeIf { it.isNotBlank() }
+
+/** The `pluginslist` endpoint: a JSON array of plugin names. Anything that is not a string is skipped. */
+internal fun parsePlugins(body: String): Result<Set<String>, TelemetryFailure> {
+    val root = parseRoot(body).getOrElse { return Err(it) }
+    if (root !is JsonArray) return invalid("Expected a JSON array")
+    return Ok(
+        root.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.contentOrNull?.takeIf(String::isNotBlank) }
+            .toSet(),
+    )
+}

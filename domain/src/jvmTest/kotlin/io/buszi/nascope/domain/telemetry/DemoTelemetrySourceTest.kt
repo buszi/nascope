@@ -30,6 +30,12 @@ class DemoTelemetrySourceTest {
     }
 
     @Test
+    fun listsEveryPluginItImplements() = runTest {
+        val plugins = source().fetchPlugins().ok()
+        assertTrue(plugins.containsAll(listOf("system", "cpu", "mem", "fs", "network", "containers", "gpu", "processlist")))
+    }
+
+    @Test
     fun consecutiveCallsDiffer() = runTest {
         val s = source()
         assertNotEquals(s.fetchCpu().ok().totalPercent, s.fetchCpu().ok().totalPercent)

@@ -22,6 +22,8 @@ import kotlin.time.Duration
 
 /** One function is one Glances plugin endpoint. No retries, no caching, no combining of plugins. */
 interface GlancesTelemetryClient {
+    /** `pluginslist`: the names of the plugins the server runs (served by API v3 and v4 alike). */
+    suspend fun fetchPlugins(server: ServerConnection): Result<Set<String>, TelemetryFailure>
     suspend fun fetchSystem(server: ServerConnection): Result<SystemInfo, TelemetryFailure>
     suspend fun fetchUptime(server: ServerConnection): Result<Duration, TelemetryFailure>
     suspend fun fetchLoad(server: ServerConnection): Result<LoadAverage, TelemetryFailure>

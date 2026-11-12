@@ -1,0 +1,1 @@
+["alert", "cloud", "connections", "containers", "core", "cpu", "diskio", "fs", "gpu", "help", "ip", "irq", "load", "mem", "memswap", "network", "now", "percpu", "ports", "processcount", "processlist", "programlist", "psutilversion", "quicklook", "sensors", "smart", "system", "uptime", "version", "wifi"]

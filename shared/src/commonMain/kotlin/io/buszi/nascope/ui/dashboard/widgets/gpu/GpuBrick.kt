@@ -9,12 +9,13 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 /**
  * Brick registration for the GPU widget.
  *
- * Two columns like most bricks. Nine bricks of two columns would leave a gap in the last row, so the process list,
- * which reads well wide, takes the full last row. No details: the card shows everything Glances reports.
+ * Two columns like most bricks, and shown only when the server has a GPU Glances can read (`requiredPlugins`).
+ * No details: the card shows everything Glances reports.
  */
 data object GpuBrick : DashboardBrick {
     override val id: DashboardBrickId = DashboardBrickId.Gpu
     override val span: BrickSpan = BrickSpan.Double
+    override val requiredPlugins: Set<String> = setOf("gpu")
 
     @Composable
     override fun Content(modifier: Modifier) {

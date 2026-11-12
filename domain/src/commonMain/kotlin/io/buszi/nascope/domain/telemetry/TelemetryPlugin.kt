@@ -32,4 +32,5 @@ internal enum class TelemetryPlugin(val tier: PollTier) {
     QuickLook(PollTier.Slow),
 
     System(PollTier.Static),
+    PluginsList(PollTier.Static),
 }

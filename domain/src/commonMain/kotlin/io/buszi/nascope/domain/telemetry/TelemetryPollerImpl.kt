@@ -50,6 +50,7 @@ internal class TelemetryPollerImpl(
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
 
+    override val plugins = poll(TelemetryPlugin.PluginsList) { fetchPlugins() }
     override val system = poll(TelemetryPlugin.System) { fetchSystem() }
     override val uptime = poll(TelemetryPlugin.Uptime) { fetchUptime() }
     override val load = poll(TelemetryPlugin.Load) { fetchLoad() }
