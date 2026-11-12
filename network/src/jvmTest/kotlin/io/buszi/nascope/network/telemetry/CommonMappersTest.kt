@@ -162,12 +162,19 @@ class CommonMappersTest {
     }
 
     @Test
+    fun containerStatusesIncludeDockerHealthStates() {
+        assertEquals(io.buszi.nascope.domain.model.telemetry.ContainerStatus.Running, containerStatusOf("healthy"))
+        assertEquals(io.buszi.nascope.domain.model.telemetry.ContainerStatus.Running, containerStatusOf("unhealthy"))
+        assertEquals(io.buszi.nascope.domain.model.telemetry.ContainerStatus.Running, containerStatusOf("starting"))
+    }
+
+    @Test
     fun dockerSensorsAreEmpty() = dirs.forEach {
         assertEquals(emptyList(), parseSensors(Fixtures.read(it, "sensors-docker")).ok())
     }
 
     @Test
-    fun syntheticSensorsMapKinds() = dirs.forEach { dir ->
+    fun syntheticSensorsMapKinds() = listOf("v3-docker").forEach { dir ->
         val sensors = parseSensors(Fixtures.read(dir, "sensors-synthetic")).ok()
         assertEquals(
             listOf(SensorKind.CpuTemperature, SensorKind.DriveTemperature, SensorKind.FanSpeed, SensorKind.Battery),

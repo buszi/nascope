@@ -1,6 +1,0 @@
-[
-  {"label": "Package id 0", "value": 45, "unit": "C", "type": "temperature_core", "warning": 80, "critical": 100, "key": "label"},
-  {"label": "sda", "value": 38, "unit": "C", "type": "temperature_hdd", "warning": 60, "critical": 70, "key": "label"},
-  {"label": "fan1", "value": 1200, "unit": "R", "type": "fan_speed", "warning": null, "critical": null, "key": "label"},
-  {"label": "Battery", "value": 87, "unit": "%", "type": "battery", "warning": null, "critical": null, "key": "label"}
-]

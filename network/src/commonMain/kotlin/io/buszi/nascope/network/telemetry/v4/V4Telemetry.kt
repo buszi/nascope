@@ -7,6 +7,7 @@ import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.network.telemetry.containerStatusOf
+import io.buszi.nascope.network.telemetry.firstImageOrNull
 import io.buszi.nascope.network.telemetry.parseList
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -86,7 +87,7 @@ internal fun parseV4Containers(body: String): Result<List<ContainerUsage>, Telem
         ContainerUsage(
             id = d.id ?: return@parseList null,
             name = d.name ?: return@parseList null,
-            image = d.image?.firstOrNull(),
+            image = d.image.firstImageOrNull(),
             engine = d.engine,
             status = containerStatusOf(d.status),
             cpuPercent = d.cpuPercent?.toFloat(),

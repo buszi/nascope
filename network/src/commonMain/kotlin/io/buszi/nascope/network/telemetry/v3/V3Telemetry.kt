@@ -10,6 +10,7 @@ import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.network.telemetry.containerStatusOf
+import io.buszi.nascope.network.telemetry.firstImageOrNull
 import io.buszi.nascope.network.telemetry.decodeItems
 import io.buszi.nascope.network.telemetry.invalid
 import io.buszi.nascope.network.telemetry.parseList
@@ -107,7 +108,7 @@ internal fun parseV3Containers(body: String): Result<List<ContainerUsage>, Telem
             ContainerUsage(
                 id = d.id ?: return@decodeItems null,
                 name = d.name ?: return@decodeItems null,
-                image = d.image?.firstOrNull(),
+                image = d.image.firstImageOrNull(),
                 engine = d.engine,
                 status = containerStatusOf(d.status),
                 cpuPercent = d.cpuPercent?.toFloat(),

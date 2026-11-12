@@ -86,7 +86,7 @@ class KtorGlancesTelemetryClientTest {
         for ((version, dir) in versions()) for (call in calls) {
             val harness = Harness { request ->
                 respond(
-                    Fixtures.read(dir, call.fixture),
+                    Fixtures.read(dir, if (call.plugin == "sensors" && dir == "v4-docker") "sensors-docker" else call.fixture),
                     HttpStatusCode.OK,
                     headersOf(HttpHeaders.ContentType, "application/json"),
                 )

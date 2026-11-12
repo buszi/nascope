@@ -158,7 +158,8 @@ internal fun sensorKindOf(type: String?): SensorKind = when (type) {
 }
 
 internal fun containerStatusOf(status: String?): ContainerStatus = when (status?.lowercase()) {
-    "running" -> ContainerStatus.Running
+    // "healthy" / "unhealthy" / "starting" are Docker health states of a running container.
+    "running", "healthy", "unhealthy", "starting" -> ContainerStatus.Running
     "paused" -> ContainerStatus.Paused
     "restarting" -> ContainerStatus.Restarting
     "exited" -> ContainerStatus.Exited
@@ -166,3 +167,6 @@ internal fun containerStatusOf(status: String?): ContainerStatus = when (status?
     "dead" -> ContainerStatus.Dead
     else -> ContainerStatus.Unknown
 }
+
+/** Glances sends `[""]` for containers whose image it cannot resolve. */
+internal fun List<String>?.firstImageOrNull(): String? = this?.firstOrNull()?.takeIf { it.isNotBlank() }

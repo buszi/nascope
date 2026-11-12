@@ -1,0 +1,1 @@
+{"total":11.5,"user":8.0,"nice":0.0,"system":3.2,"idle":88.4,"iowait":0.1,"irq":0.0,"softirq":0.3,"steal":0.0,"guest":0.0,"guest_nice":0.0,"time_since_update":5.785048484802246,"cpucore":4,"ctx_switches":75645,"interrupts":27963,"soft_interrupts":7678,"syscalls":0}
