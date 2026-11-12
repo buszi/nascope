@@ -25,7 +25,7 @@ data class StorageUi(
             } else {
                 null
             },
-            disks = data.disks.map(DiskUi::from).sortedByDescending { it.totalBytesPerSec },
+            disks = data.disks.map(DiskUi::from).withoutPartitionsAndVirtualDevices().sortedByDescending { it.totalBytesPerSec },
         )
     }
 }
@@ -46,6 +46,16 @@ data class DiskUi(
     val totalBytesPerSec: Long get() = readBytesPerSec + writeBytesPerSec
 
     companion object {
+        private val PartitionOrVirtual = listOf(
+            Regex("""(nvme\d+n\d+|mmcblk\d+)p\d+"""), // nvme0n1p1, mmcblk0p3
+            Regex("""(sd|hd|vd|xvd)[a-z]+\d+"""), // sda1
+            Regex("""mmcblk\d+boot\d+"""), // eMMC boot areas
+            Regex("""(loop|ram|zram|nbd)\d+"""),
+            Regex("""dm-\d+"""),
+        )
+
+        fun isPartitionOrVirtual(name: String): Boolean = PartitionOrVirtual.any { it.matches(name) }
+
         fun from(disk: ObserveStorageUseCase.Disk) = DiskUi(
             name = disk.io.diskName,
             readBytesPerSec = disk.io.readBytesPerSec,
@@ -68,3 +78,11 @@ data class DiskIoUi(
     val readHistory: List<Float>,
     val writeHistory: List<Float>,
 )
+
+/**
+ * Whole disks and the arrays and caches built on them: partitions (their traffic is the disk's again) and virtual
+ * devices (zram, loop, nbd, device mapper, boot areas of eMMC) are left out, because a NAS reports dozens of them.
+ * When that would leave nothing, every device is kept.
+ */
+internal fun List<DiskUi>.withoutPartitionsAndVirtualDevices(): List<DiskUi> =
+    filterNot { DiskUi.isPartitionOrVirtual(it.name) }.ifEmpty { this }

@@ -50,7 +50,7 @@ import io.buszi.nascope.resources.details_processes_stat_total
 import io.buszi.nascope.resources.details_processes_subtitle
 import io.buszi.nascope.resources.details_processes_table
 import io.buszi.nascope.resources.details_processes_col_count
-import io.buszi.nascope.resources.details_processes_field_processes
+import io.buszi.nascope.resources.details_processes_col_program
 import io.buszi.nascope.resources.details_processes_field_threads
 import io.buszi.nascope.resources.details_processes_mode_processes
 import io.buszi.nascope.resources.details_processes_mode_programs
@@ -87,6 +87,7 @@ import io.buszi.nascope.ui.details.components.DetailsPager
 import io.buszi.nascope.ui.details.components.DetailsScaffold
 import io.buszi.nascope.ui.details.components.DetailsSection
 import io.buszi.nascope.ui.details.components.DetailsStat
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -231,7 +232,7 @@ private fun ProcessTableSection(
         modifier = modifier,
         headerAction = {
             Text(
-                text = stringResource(Res.string.details_processes_results, viewState.resultCount),
+                text = pluralStringResource(Res.plurals.details_processes_results, viewState.resultCount, viewState.resultCount),
                 style = AppTheme.typography.labelCode,
                 color = AppTheme.colors.textMuted,
             )
@@ -503,7 +504,13 @@ private fun TableHeader(
             modifier = Modifier.width(PidColumnWidth),
         )
         HeaderCell(
-            text = stringResource(Res.string.widget_processes_col_name),
+            text = stringResource(
+                if (viewState.mode == Mode.Programs) {
+                    Res.string.details_processes_col_program
+                } else {
+                    Res.string.widget_processes_col_name
+                },
+            ),
             field = SortField.Name,
             viewState = viewState,
             onViewAction = onViewAction,
@@ -705,10 +712,6 @@ private fun ProgramRow(
 
         if (expanded) {
             Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs)) {
-                DetailsKeyValueRow(
-                    label = stringResource(Res.string.details_processes_field_processes),
-                    value = program.processCount.toString(),
-                )
                 DetailsKeyValueRow(label = stringResource(Res.string.details_processes_field_user), value = program.user)
                 program.threads?.let {
                     DetailsKeyValueRow(label = stringResource(Res.string.details_processes_field_threads), value = it.toString())
