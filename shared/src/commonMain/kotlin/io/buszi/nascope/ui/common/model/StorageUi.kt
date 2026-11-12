@@ -12,7 +12,7 @@ data class StorageUi(
 ) {
     companion object {
         fun from(data: ObserveStorageUseCase.Data): StorageUi = StorageUi(
-            mounts = data.fileSystems.map(StorageMountUi::from),
+            mounts = data.fileSystems.map(StorageMountUi::from).withoutContainerInjectedDuplicates(),
             diskIo = if (data.readBytesPerSec != null && data.writeBytesPerSec != null) {
                 DiskIoUi(
                     readBytesPerSec = data.readBytesPerSec!!,

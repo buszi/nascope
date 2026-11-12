@@ -20,10 +20,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import io.buszi.nascope.ui.common.modifier.optionalModifier
 import io.buszi.nascope.ui.common.theme.AppTheme
 
 private const val SparklineStrokeWidthPx: Float = 1.5f
@@ -42,13 +43,14 @@ private const val EndpointHaloAlpha: Float = 0.35f
  * zero composition overhead during animation.
  *
  * @param data Sequence of numerical values representing chronological telemetry samples.
- * @param modifier Root layout modifier. Defaults to full width with `AppTheme.dimensions.sparklineHeight` (36dp).
+ * @param modifier Root layout modifier. Defaults to full width with [height].
  * @param lineColor Stroke color for the sparkline path. Defaults to [AppColors.telemetryA].
  * @param gradientStartColor Top fill color for the vertical gradient. Defaults to 22% opacity of [lineColor].
  * @param gradientEndColor Bottom fill color for the vertical gradient. Defaults to 0% opacity of [lineColor].
  * @param strokeWidthPx Line stroke width in pixels. Defaults to `1.5f` px per design specifications.
  * @param minValue Optional lower bound for scaling. If omitted, derives from [data].
  * @param maxValue Optional upper bound for scaling. If omitted, derives from [data].
+ * @param height Fixed height; `null` leaves the height to [modifier] (e.g. `Modifier.weight(1f)` to fill a slot).
  * @param animateEntry Whether to animate the entry reveal when [data] first has enough samples to draw a line.
  * Later changes of [data] are drawn at once, without replaying the reveal.
  */
@@ -63,6 +65,7 @@ fun MiniSparkline(
     minValue: Float? = null,
     maxValue: Float? = null,
     animateEntry: Boolean = true,
+    height: Dp? = AppTheme.dimensions.sparklineHeight,
 ) {
     val entryProgress = remember { Animatable(if (animateEntry) 0f else 1f) }
 
@@ -87,7 +90,7 @@ fun MiniSparkline(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(AppTheme.dimensions.sparklineHeight)
+            .optionalModifier(height != null) { height(height!!) }
             .then(modifier)
             .drawWithCache {
                 if (data.size < 2) {

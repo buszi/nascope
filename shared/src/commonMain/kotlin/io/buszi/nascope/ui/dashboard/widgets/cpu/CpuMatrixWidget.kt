@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +40,7 @@ import io.buszi.nascope.ui.common.components.badges.StatusDot
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.gauges.LinearGauge
+import io.buszi.nascope.ui.common.components.gauges.MiniSparkline
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.components.metrics.TrendBadge
@@ -143,6 +145,152 @@ fun CpuMatrixWidget(
  */
 @Composable
 private fun FixedHeightCpuContent(
+    viewState: ViewState,
+    modifier: Modifier = Modifier,
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // A host with few cores in a tall slot has room to spare: use it for the history and bigger core tiles.
+        if (viewState.cpu.cores.size in 1..ROOMY_MAX_CORES && maxHeight >= ROOMY_MIN_HEIGHT) {
+            RoomyCpuContent(viewState = viewState)
+        } else {
+            DenseCpuContent(viewState = viewState)
+        }
+    }
+}
+
+private val ROOMY_MIN_HEIGHT = 120.dp
+private const val ROOMY_MAX_CORES = 8
+private const val ROOMY_CORE_COLUMNS = 4
+private const val ROOMY_MIN_SCALE = 25f
+
+/**
+ * Few cores, tall slot: the usage with its recent history filling the middle, then one tile per core.
+ */
+@Composable
+private fun RoomyCpuContent(
+    viewState: ViewState,
+    modifier: Modifier = Modifier,
+) {
+    val cpu = viewState.cpu
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MetricValue(
+                value = formatPercentValue(cpu.usagePercent),
+                unit = "%",
+                size = MetricSize.Display,
+            )
+            LinearGauge(
+                progress = (cpu.usagePercent / 100f).coerceIn(0f, 1f),
+                barHeight = AppTheme.spacing.spaceXs,
+                modifier = Modifier.weight(1f),
+                normalColor = AppTheme.colors.operational,
+                warningColor = AppTheme.colors.degraded,
+                criticalColor = AppTheme.colors.critical,
+            )
+        }
+
+        if (cpu.usageHistory.size >= 2) {
+            MiniSparkline(
+                data = cpu.usageHistory,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = AppTheme.dimensions.sparklineHeight),
+                height = null,
+                lineColor = AppTheme.colors.telemetryA,
+                minValue = 0f,
+                // Scaled to the recent peak, so a quiet host still draws a readable line.
+                maxValue = (cpu.usageHistoryPeak * 1.3f).coerceIn(ROOMY_MIN_SCALE, 100f),
+            )
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
+        }
+
+        cpu.cores.chunked(ROOMY_CORE_COLUMNS).forEachIndexed { rowIndex, rowCores ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+            ) {
+                rowCores.forEachIndexed { column, core ->
+                    CoreTile(
+                        coreIndex = rowIndex * ROOMY_CORE_COLUMNS + column,
+                        usage = core.usagePercent,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                repeat(ROOMY_CORE_COLUMNS - rowCores.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+/** A core as a tile: index and percentage on top, the usage bar below. */
+@Composable
+private fun CoreTile(
+    coreIndex: Int,
+    usage: Float,
+    modifier: Modifier = Modifier,
+) {
+    val ratio = (usage / 100f).coerceIn(0f, 1f)
+    val status = CpuCoreUi.usageStatus(usage)
+
+    Column(
+        modifier = modifier
+            .background(AppTheme.colors.inputBackground, AppTheme.shapes.sm)
+            .border(
+                width = AppTheme.dimensions.hairlineBorder,
+                color = AppTheme.colors.baseBorder,
+                shape = AppTheme.shapes.sm,
+            )
+            .padding(horizontal = AppTheme.spacing.spaceSm, vertical = AppTheme.spacing.spaceXs),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = formatCoreIndex(coreIndex),
+                style = AppTheme.typography.labelCode,
+                color = AppTheme.colors.textMuted,
+                maxLines = 1,
+                softWrap = false,
+            )
+            Text(
+                text = stringResource(Res.string.percentage_format, (ratio * 100).toInt()),
+                style = AppTheme.typography.codeBase,
+                color = when (status) {
+                    StatusLevel.Critical -> AppTheme.colors.critical
+                    StatusLevel.Degraded -> AppTheme.colors.degraded
+                    StatusLevel.Operational -> AppTheme.colors.textPrimary
+                },
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
+        LinearGauge(
+            progress = ratio,
+            barHeight = AppTheme.spacing.spaceXs,
+            modifier = Modifier.fillMaxWidth(),
+            normalColor = AppTheme.colors.operational,
+            warningColor = AppTheme.colors.degraded,
+            criticalColor = AppTheme.colors.critical,
+            shape = AppTheme.shapes.sm,
+        )
+    }
+}
+
+@Composable
+private fun DenseCpuContent(
     viewState: ViewState,
     modifier: Modifier = Modifier,
 ) {

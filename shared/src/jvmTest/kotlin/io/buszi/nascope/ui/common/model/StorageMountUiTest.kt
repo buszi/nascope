@@ -49,6 +49,22 @@ class StorageMountUiTest {
         )
     }
 
+    @Test
+    fun containerInjectedMountsAreOnlyKeptWhenTheyAreTheOnlyMountOfTheDevice() {
+        val injected = listOf("/etc/hosts", "/etc/hostname", "/etc/resolv.conf")
+            .map { StorageMountUi(it, "/dev/bcache0", "btrfs", 100L, 65L, 35L) }
+        val data = StorageMountUi("/mnt/data", "/dev/bcache0", "btrfs", 100L, 65L, 35L)
+        val boot = StorageMountUi("/etc/hosts", "/dev/sda1", "ext4", 10L, 1L, 9L)
+
+        // Only injected mounts of a device: one stays, shown under the device name.
+        assertEquals(listOf(injected.first()), injected.withoutContainerInjectedDuplicates())
+        assertEquals("/dev/bcache0", injected.first().displayName)
+        // A real mount of the same device makes them redundant; other devices keep theirs.
+        assertEquals(listOf(data, boot), (injected + data + boot).withoutContainerInjectedDuplicates())
+        assertEquals("/mnt/data", data.displayName)
+        assertEquals("/etc/hosts", boot.copy(deviceName = "").displayName)
+    }
+
     private fun mount(total: Long, used: Long) = StorageMountUi(
         mountPoint = "/",
         deviceName = "/dev/sda1",

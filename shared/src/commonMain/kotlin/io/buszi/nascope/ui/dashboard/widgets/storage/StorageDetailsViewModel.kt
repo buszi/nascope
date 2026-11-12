@@ -88,7 +88,7 @@ class StorageDetailsViewModel(
         val sortedMounts: List<StorageMountUi>
             get() = when (sortOrder) {
                 SortOrder.Usage -> mounts.sortedByDescending { it.usageRatio }
-                SortOrder.Name -> mounts.sortedBy { it.mountPoint }
+                SortOrder.Name -> mounts.sortedBy { it.displayName }
                 SortOrder.Size -> mounts.sortedByDescending { it.totalBytes }
             }
 

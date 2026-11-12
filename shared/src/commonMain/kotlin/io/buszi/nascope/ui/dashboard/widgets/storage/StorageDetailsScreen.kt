@@ -69,6 +69,7 @@ import io.buszi.nascope.ui.details.components.DetailsKeyValueRow
 import io.buszi.nascope.ui.details.components.DetailsStatePlaceholder
 import io.buszi.nascope.ui.details.components.DetailsScaffold
 import io.buszi.nascope.ui.details.components.DetailsSection
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -102,8 +103,9 @@ fun StorageDetailsScreen(
         modifier = modifier,
         widgetState = viewState.widgetState,
         subtitle = if (viewState.widgetState.isReady) {
-            stringResource(
-                Res.string.details_storage_subtitle,
+            pluralStringResource(
+                Res.plurals.details_storage_subtitle,
+                viewState.mounts.size,
                 viewState.mounts.size,
                 formatCapacity(viewState.totalCapacityBytes),
             )
@@ -240,7 +242,7 @@ private fun DistributionSection(
                             .background(colors[index % colors.size], AppTheme.shapes.full),
                     )
                     Text(
-                        text = mount.mountPoint,
+                        text = mount.displayName,
                         style = AppTheme.typography.codeBase,
                         color = AppTheme.colors.textPrimary,
                         maxLines = 1,
@@ -415,7 +417,7 @@ private fun MountDetailsCard(
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
             ) {
                 Text(
-                    text = mount.mountPoint,
+                    text = mount.displayName,
                     style = AppTheme.typography.codeBase,
                     color = AppTheme.colors.textPrimary,
                     maxLines = 1,
@@ -464,7 +466,7 @@ private fun MountDetailsCard(
                 modifier = Modifier.padding(top = AppTheme.spacing.spaceXs),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
             ) {
-                if (mount.deviceName.isNotBlank()) {
+                if (mount.deviceName.isNotBlank() && mount.deviceName != mount.displayName) {
                     DetailsKeyValueRow(
                         label = stringResource(Res.string.details_storage_field_device),
                         value = mount.deviceName,

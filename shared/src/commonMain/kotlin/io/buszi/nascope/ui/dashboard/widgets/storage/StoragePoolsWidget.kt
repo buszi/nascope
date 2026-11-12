@@ -60,6 +60,7 @@ import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.storage.StoragePoolsViewModel.ViewState
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -123,9 +124,9 @@ fun StoragePoolsWidget(
                 {
                     TagChip(
                         text = if (isWide) {
-                            stringResource(Res.string.widget_storage_mounts_summary, viewState.mounts.size)
+                            pluralStringResource(Res.plurals.widget_storage_mounts_summary, viewState.mounts.size, viewState.mounts.size)
                         } else {
-                            stringResource(Res.string.widget_storage_mounts_summary_compact, viewState.mounts.size)
+                            pluralStringResource(Res.plurals.widget_storage_mounts_summary_compact, viewState.mounts.size, viewState.mounts.size)
                         },
                     )
                 }
@@ -458,7 +459,7 @@ private fun MountPointCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = mount.mountPoint,
+                    text = mount.displayName,
                     style = if (isWide) AppTheme.typography.headlineSm else AppTheme.typography.codeBase,
                     color = AppTheme.colors.textPrimary,
                     maxLines = 1,
@@ -474,7 +475,7 @@ private fun MountPointCard(
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (mount.deviceName.isNotBlank()) {
+                if (mount.deviceName.isNotBlank() && mount.deviceName != mount.displayName) {
                     Text(
                         text = mount.deviceName,
                         style = AppTheme.typography.labelCode,

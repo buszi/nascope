@@ -53,8 +53,14 @@
     <string name="widget_storage_io_write">WRITE</string>
     <string name="widget_storage_io_rate_format">%1$s MB/s</string>
     <string name="widget_storage_used_of_total">%1$s / %2$s</string>
-    <string name="widget_storage_mounts_summary">%1$d MOUNTS ACTIVE</string>
-    <string name="widget_storage_mounts_summary_compact">%1$d MOUNTS</string>
+    <plurals name="widget_storage_mounts_summary">
+        <item quantity="one">%1$d MOUNT ACTIVE</item>
+        <item quantity="other">%1$d MOUNTS ACTIVE</item>
+    </plurals>
+    <plurals name="widget_storage_mounts_summary_compact">
+        <item quantity="one">%1$d MOUNT</item>
+        <item quantity="other">%1$d MOUNTS</item>
+    </plurals>
     <string name="widget_storage_page_indicator">%1$d / %2$d</string>
     <string name="widget_storage_no_mounts">NO STORAGE MOUNTS DETECTED</string>
     <string name="widget_storage_pools_label">POOLS &amp; MOUNT POINTS</string>
@@ -155,7 +161,10 @@
 
     <!-- Storage details -->
     <string name="details_storage_title">STORAGE // DETAILS</string>
-    <string name="details_storage_subtitle">%1$d MOUNTS // %2$s TOTAL</string>
+    <plurals name="details_storage_subtitle">
+        <item quantity="one">%1$d MOUNT // %2$s TOTAL</item>
+        <item quantity="other">%1$d MOUNTS // %2$s TOTAL</item>
+    </plurals>
     <string name="details_storage_overview">CAPACITY OVERVIEW</string>
     <string name="details_storage_free_format">%1$s FREE</string>
     <string name="details_storage_distribution">USAGE DISTRIBUTION</string>

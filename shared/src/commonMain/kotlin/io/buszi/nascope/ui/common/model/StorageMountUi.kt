@@ -20,6 +20,14 @@ data class StorageMountUi(
     val freeBytes: Long,
     val mountOptions: String = "",
 ) {
+    /** Docker bind-mounts these files of the container into it, so they only echo the host's filesystem. */
+    val isContainerInjected: Boolean
+        get() = mountPoint in ContainerInjectedMountPoints
+
+    /** What to call the mount: its path, or its device when the path is a container-injected file. */
+    val displayName: String
+        get() = if (isContainerInjected && deviceName.isNotEmpty()) deviceName else mountPoint
+
     /** Fraction of the capacity that is in use, in `[0.0, 1.0]`. */
     val usageRatio: Float
         get() = if (totalBytes > 0L) (usedBytes.toFloat() / totalBytes).coerceIn(0f, 1f) else 0f
@@ -33,6 +41,8 @@ data class StorageMountUi(
         }
 
     companion object {
+        private val ContainerInjectedMountPoints = setOf("/etc/hosts", "/etc/hostname", "/etc/resolv.conf")
+
         const val WarningThreshold: Float = 0.80f
         const val CriticalThreshold: Float = 0.90f
 
@@ -63,3 +73,15 @@ val List<StorageMountUi>.overallStatus: StatusLevel
  */
 val List<StorageMountUi>.distinctDevices: List<StorageMountUi>
     get() = distinctBy { it.deviceName.ifEmpty { it.mountPoint } }
+
+/**
+ * Leaves out the container-injected mounts (`/etc/hosts` and friends) that a real mount of the same device already
+ * covers. When a device only has such mounts, as on a Glances container without a data volume, one of them stays,
+ * so the host's storage is still listed (under its device name, see [StorageMountUi.displayName]).
+ */
+fun List<StorageMountUi>.withoutContainerInjectedDuplicates(): List<StorageMountUi> {
+    val realDevices = filterNot { it.isContainerInjected }.map { it.deviceName }.toSet()
+    val keptInjected = filter { it.isContainerInjected && it.deviceName !in realDevices }
+        .distinctBy { it.deviceName.ifEmpty { it.mountPoint } }
+    return filter { !it.isContainerInjected || it in keptInjected }
+}
