@@ -12,6 +12,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.domainModel)
+            api(libs.kotlin.result)
 
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
