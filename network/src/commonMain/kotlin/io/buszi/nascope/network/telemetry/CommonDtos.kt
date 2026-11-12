@@ -73,6 +73,16 @@ internal data class FileSystemDto(
 )
 
 @Serializable
+internal data class GpuDto(
+    @SerialName("gpu_id") val gpuId: String? = null,
+    val name: String? = null,
+    @SerialName("proc") val utilization: Double? = null,
+    @SerialName("mem") val memory: Double? = null,
+    val temperature: Double? = null,
+    @SerialName("fan_speed") val fanSpeed: Double? = null,
+)
+
+@Serializable
 internal data class ProcessCountDto(
     val total: Int? = null,
     val running: Int? = null,

@@ -6,6 +6,7 @@ import io.buszi.nascope.resources.widget_containers_title
 import io.buszi.nascope.resources.widget_containers_title_compact
 import io.buszi.nascope.resources.widget_cpu_matrix_title
 import io.buszi.nascope.resources.widget_cpu_matrix_title_compact
+import io.buszi.nascope.resources.widget_gpu_title
 import io.buszi.nascope.resources.widget_memory_swap_title
 import io.buszi.nascope.resources.widget_memory_swap_title_compact
 import io.buszi.nascope.resources.widget_network_title
@@ -30,6 +31,7 @@ fun DashboardBrickId.title(compact: Boolean = false): String = stringResource(
         DashboardBrickId.SystemOverview -> Res.string.widget_system_overview_title
         DashboardBrickId.CpuMatrix ->
             if (compact) Res.string.widget_cpu_matrix_title_compact else Res.string.widget_cpu_matrix_title
+        DashboardBrickId.Gpu -> Res.string.widget_gpu_title
         DashboardBrickId.MemorySwap ->
             if (compact) Res.string.widget_memory_swap_title_compact else Res.string.widget_memory_swap_title
         DashboardBrickId.StoragePools ->

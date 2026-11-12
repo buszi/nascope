@@ -25,6 +25,17 @@
     <string name="widget_cpu_matrix_core_matrix_compact">CORES</string>
     <string name="widget_cpu_matrix_cores_active">%1$d CORES ACTIVE</string>
     <string name="widget_cpu_matrix_cores_compact">%1$dC</string>
+    <string name="widget_gpu_title">GPU</string>
+    <string name="widget_gpu_status_nominal">NOMINAL</string>
+    <string name="widget_gpu_status_elevated">ELEVATED</string>
+    <string name="widget_gpu_status_critical">CRITICAL</string>
+    <plurals name="widget_gpu_subtitle_count">
+        <item quantity="one">%1$d GPU</item>
+        <item quantity="other">%1$d GPUS</item>
+    </plurals>
+    <string name="widget_gpu_memory">MEM %1$d%</string>
+    <string name="widget_gpu_fan">FAN %1$d%</string>
+    <string name="widget_gpu_no_gpu">NO GPU DETECTED</string>
     <string name="widget_memory_swap_title">MEMORY &amp; SWAP</string>
     <string name="widget_memory_swap_title_compact">MEMORY</string>
     <string name="widget_memory_swap_status_nominal">NOMINAL</string>

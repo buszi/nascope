@@ -16,6 +16,7 @@ import io.buszi.nascope.domain.settings.SetRefreshIntervalUseCase
 import io.buszi.nascope.domain.telemetry.ObserveContainersUseCase
 import io.buszi.nascope.domain.telemetry.ObserveCpuUseCase
 import io.buszi.nascope.domain.telemetry.ObserveNetworkUseCase
+import io.buszi.nascope.domain.telemetry.ObserveGpuUseCase
 import io.buszi.nascope.domain.telemetry.ObserveSensorsUseCase
 import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase
 import io.buszi.nascope.domain.telemetry.ObserveMemoryUseCase
@@ -67,5 +68,6 @@ class KoinGraphTest {
         assertNotNull(koin.get<ObserveStorageUseCase>())
         assertNotNull(koin.get<ObserveNetworkUseCase>())
         assertNotNull(koin.get<ObserveSensorsUseCase>())
+        assertNotNull(koin.get<ObserveGpuUseCase>())
     }
 }

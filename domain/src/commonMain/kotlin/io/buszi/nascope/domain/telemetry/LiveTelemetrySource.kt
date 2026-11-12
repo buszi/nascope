@@ -10,6 +10,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
@@ -58,6 +59,7 @@ internal class LiveTelemetrySource(
     override suspend fun fetchSensors(): Result<List<SensorReading>, TelemetryFailure> = call { fetchSensors(it) }
     override suspend fun fetchContainers(): Result<List<ContainerUsage>, TelemetryFailure> =
         call { fetchContainers(it) }
+    override suspend fun fetchGpus(): Result<List<GpuUsage>, TelemetryFailure> = call { fetchGpus(it) }
     override suspend fun fetchProcessCount(): Result<ProcessCount, TelemetryFailure> = call { fetchProcessCount(it) }
     override suspend fun fetchProcesses(): Result<List<ProcessUsage>, TelemetryFailure> = call { fetchProcesses(it) }
 }

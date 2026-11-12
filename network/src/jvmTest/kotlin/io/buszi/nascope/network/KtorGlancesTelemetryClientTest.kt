@@ -8,6 +8,7 @@ import io.buszi.nascope.domain.model.connection.ServerAddress
 import io.buszi.nascope.domain.model.connection.ServerConnection
 import io.buszi.nascope.domain.model.connection.ServerCredentials
 import io.buszi.nascope.domain.model.connection.ServerProtocol
+import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.network.telemetry.Fixtures
 import io.ktor.client.HttpClient
@@ -133,6 +134,52 @@ class KtorGlancesTelemetryClientTest {
             val result = responding(HttpStatusCode.NotFound).client.fetchCpu(connection(version))
             assertEquals(TelemetryFailure.Connection(ConnectionFailure.NotGlances), result.getError())
         }
+    }
+
+    @Test
+    fun gpuParsesWhatAnIntegratedGpuReportsAndLeavesTheRestNull() = runTest {
+        val body = """[{"key": "gpu_id", "gpu_id": "intel0", "name": "Intel GPU", "mem": null, "proc": 12.5,""" +
+            """ "temperature": null, "fan_speed": null}]"""
+        for ((version, _) in versions()) {
+            val gpus = responding(HttpStatusCode.OK, body).client.fetchGpus(connection(version)).getOrElse { fail("$it") }
+
+            assertEquals(
+                listOf(GpuUsage("intel0", "Intel GPU", 12.5f, null, null, null)),
+                gpus,
+            )
+        }
+    }
+
+    @Test
+    fun gpuParsesADiscreteGpuAndFallsBackToTheIdWithoutAName() = runTest {
+        val body = """[{"gpu_id": "nvidia0", "name": "RTX 3060", "mem": 40.0, "proc": 7, "temperature": 51, "fan_speed": 30},""" +
+            """ {"gpu_id": "amd1", "proc": 1}, {"name": ""}, 5]"""
+        val gpus = responding(HttpStatusCode.OK, body).client.fetchGpus(connection(GlancesApiVersion.V4))
+            .getOrElse { fail("$it") }
+
+        assertEquals(
+            listOf(
+                GpuUsage("nvidia0", "RTX 3060", 7f, 40f, 51f, 30f),
+                GpuUsage("amd1", "amd1", 1f, null, null, null),
+            ),
+            gpus,
+        )
+    }
+
+    @Test
+    fun gpuIsAnEmptyListWhenTheHostHasNoGpu() = runTest {
+        for (body in listOf("[]", "{}")) {
+            val gpus = responding(HttpStatusCode.OK, body).client.fetchGpus(connection(GlancesApiVersion.V4))
+                .getOrElse { fail("$it") }
+            assertEquals(emptyList(), gpus)
+        }
+    }
+
+    @Test
+    fun gpuIsUnavailableWhenTheHostDoesNotKnowThePlugin() = runTest {
+        val result = responding(HttpStatusCode.BadRequest).client.fetchGpus(connection(GlancesApiVersion.V4))
+
+        assertEquals(TelemetryFailure.PluginUnavailable, result.getError())
     }
 
     @Test

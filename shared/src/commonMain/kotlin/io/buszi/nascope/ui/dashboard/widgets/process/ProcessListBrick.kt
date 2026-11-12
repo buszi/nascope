@@ -10,13 +10,12 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 /**
  * Brick registration for the Top Processes widget.
  *
- * Configured with [BrickSpan.Double] to span 2 columns on 2-column mobile grids,
- * or 2 columns on 4-column desktop grids, pairing cleanly with other 2-cell bricks
- * while adhering to the Zero Empty Spaces policy.
+ * Configured with [BrickSpan.FullRow]: the table reads well wide, and as the last brick it fills the final row, so
+ * the two-column bricks before it (an even number of them) leave no gap, adhering to the Zero Empty Spaces policy.
  */
 data object ProcessListBrick : DashboardBrick {
     override val id: DashboardBrickId = DashboardBrickId.ProcessList
-    override val span: BrickSpan = BrickSpan.Double
+    override val span: BrickSpan = BrickSpan.FullRow
 
     override val details: BrickDetails = BrickDetails { onClose, modifier ->
         ProcessDetailsScreen(onClose = onClose, modifier = modifier)

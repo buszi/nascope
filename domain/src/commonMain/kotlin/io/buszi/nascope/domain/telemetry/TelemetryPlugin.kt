@@ -20,6 +20,7 @@ internal enum class TelemetryPlugin(val tier: PollTier) {
     MemSwap(PollTier.Fast),
     Load(PollTier.Fast),
     Network(PollTier.Fast),
+    Gpu(PollTier.Fast),
     DiskIo(PollTier.Fast),
 
     Fs(PollTier.Slow),

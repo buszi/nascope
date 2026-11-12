@@ -2,6 +2,7 @@ package io.buszi.nascope.network.telemetry
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.getOrElse
 import io.buszi.nascope.domain.model.telemetry.ContainerStatus
@@ -9,6 +10,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuCoreUsage
 import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessCount
@@ -125,6 +127,22 @@ internal fun parseFileSystems(body: String): Result<List<FileSystemUsage>, Telem
             options = d.options,
         )
     }
+
+/** An empty object is what a host without GPU may answer instead of an empty list. */
+internal fun parseGpus(body: String): Result<List<GpuUsage>, TelemetryFailure> {
+    if (body.trim() == "{}") return Ok(emptyList())
+    return parseList(body, GpuDto.serializer()) { d ->
+        val name = d.name?.takeIf { it.isNotBlank() } ?: d.gpuId ?: return@parseList null
+        GpuUsage(
+            id = d.gpuId ?: name,
+            name = name,
+            utilizationPercent = d.utilization?.toFloat(),
+            memoryPercent = d.memory?.toFloat(),
+            temperatureC = d.temperature?.toFloat(),
+            fanSpeedPercent = d.fanSpeed?.toFloat(),
+        )
+    }
+}
 
 internal fun parseProcessCount(body: String): Result<ProcessCount, TelemetryFailure> =
     parseObject(body, ProcessCountDto.serializer()) { d ->

@@ -2,6 +2,7 @@ package io.buszi.nascope.ui.dashboard.framework
 
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersBrick
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixBrick
+import io.buszi.nascope.ui.dashboard.widgets.gpu.GpuBrick
 import io.buszi.nascope.ui.dashboard.widgets.memory.MemorySwapBrick
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoBrick
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessListBrick
@@ -21,6 +22,7 @@ class BrickRegistry {
     private val bricks: List<DashboardBrick> = listOf(
         SystemOverviewBrick,
         CpuMatrixBrick,
+        GpuBrick,
         MemorySwapBrick,
         StoragePoolsBrick,
         NetworkIoBrick,

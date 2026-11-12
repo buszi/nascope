@@ -63,6 +63,7 @@ internal class TelemetryPollerImpl(
     override val networkInterfaces = poll(TelemetryPlugin.Network) { fetchNetworkInterfaces() }
     override val sensors = poll(TelemetryPlugin.Sensors) { fetchSensors() }
     override val containers = poll(TelemetryPlugin.Containers) { fetchContainers() }
+    override val gpus = poll(TelemetryPlugin.Gpu) { fetchGpus() }
     override val processCount = poll(TelemetryPlugin.ProcessCount) { fetchProcessCount() }
     override val processes = poll(TelemetryPlugin.ProcessList) { fetchProcesses() }
 

@@ -6,6 +6,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
@@ -32,6 +33,7 @@ internal interface TelemetryPoller {
     val networkInterfaces: Flow<Polled<List<NetworkInterfaceUsage>>>
     val sensors: Flow<Polled<List<SensorReading>>>
     val containers: Flow<Polled<List<ContainerUsage>>>
+    val gpus: Flow<Polled<List<GpuUsage>>>
     val processCount: Flow<Polled<ProcessCount>>
     val processes: Flow<Polled<List<ProcessUsage>>>
 

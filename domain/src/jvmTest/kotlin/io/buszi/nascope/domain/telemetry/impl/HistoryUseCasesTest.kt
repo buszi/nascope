@@ -7,6 +7,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuCoreUsage
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.SensorKind
 import io.buszi.nascope.domain.model.telemetry.SensorReading
@@ -15,6 +16,7 @@ import io.buszi.nascope.domain.model.telemetry.TelemetryState
 import io.buszi.nascope.domain.settings.ObserveRefreshIntervalUseCase
 import io.buszi.nascope.domain.telemetry.DemoTelemetrySource
 import io.buszi.nascope.domain.telemetry.ObserveCpuUseCase
+import io.buszi.nascope.domain.telemetry.ObserveGpuUseCase
 import io.buszi.nascope.domain.telemetry.ObserveNetworkUseCase
 import io.buszi.nascope.domain.telemetry.ObserveSensorsUseCase
 import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase
@@ -58,6 +60,7 @@ class HistoryUseCasesTest {
     private val fileSystems = MutableStateFlow<Polled<List<FileSystemUsage>>>(Polled.Loading)
     private val diskIo = MutableStateFlow<Polled<List<DiskIoRate>>>(Polled.Loading)
     private val network = MutableStateFlow<Polled<List<NetworkInterfaceUsage>>>(Polled.Loading)
+    private val gpus = MutableStateFlow<Polled<List<GpuUsage>>>(Polled.Loading)
 
     init {
         every { poller.cpu } returns cpu
@@ -67,6 +70,7 @@ class HistoryUseCasesTest {
         every { poller.fileSystems } returns fileSystems
         every { poller.diskIo } returns diskIo
         every { poller.networkInterfaces } returns network
+        every { poller.gpus } returns gpus
     }
 
     @After
@@ -77,6 +81,7 @@ class HistoryUseCasesTest {
     private val cpuUseCase by lazy { ObserveCpuUseCaseImpl(poller, applicationScope, coroutineRule.dispatcher) }
     private val storageUseCase by lazy { ObserveStorageUseCaseImpl(poller, applicationScope, coroutineRule.dispatcher) }
     private val networkUseCase by lazy { ObserveNetworkUseCaseImpl(poller, applicationScope, coroutineRule.dispatcher) }
+    private val gpuUseCase by lazy { ObserveGpuUseCaseImpl(poller, applicationScope, coroutineRule.dispatcher) }
     private val sensorsUseCase by lazy { ObserveSensorsUseCaseImpl(poller, applicationScope, coroutineRule.dispatcher) }
 
     private fun TestScope.fresh(percent: Float) {
@@ -252,6 +257,35 @@ class HistoryUseCasesTest {
                 .filterIsInstance<TelemetryState.Ready<ObserveNetworkUseCase.Data>>().last().data
             assertEquals(listOf(1f, 2f, 3f), last.interfaces.first { it.usage.name == "eth0" }.rxHistory)
             assertEquals(listOf(101f), last.interfaces.first { it.usage.name == "eth1" }.rxHistory)
+        }
+    }
+
+    // GPU
+
+    @Test
+    fun gpuKeepsUtilizationHistoryPerGpuAndNoneWhenTheDriverReportsNoUtilization() = runTest {
+        turbineScope {
+            val turbine = gpuUseCase().testIn(this)
+            runCurrent()
+            fun gpu(id: String, load: Float?) = GpuUsage(id, id, load, null, null, null)
+            gpus.value = Polled.Value(listOf(gpu("a", 10f), gpu("b", null)), isStale = false)
+            runCurrent()
+            gpus.value = Polled.Value(listOf(gpu("a", 20f), gpu("b", null)), isStale = false)
+            runCurrent()
+            gpus.value = Polled.Value(listOf(gpu("a", 20f)), isStale = true)
+            runCurrent()
+            gpus.value = Polled.Value(emptyList(), isStale = false)
+            runCurrent()
+            gpus.value = Polled.Value(listOf(gpu("a", 5f)), isStale = false)
+            runCurrent()
+
+            val data = turbine.cancelAndConsumeItems()
+                .filterIsInstance<TelemetryState.Ready<ObserveGpuUseCase.Data>>().map { it.data }
+            assertEquals(listOf(10f, 20f), data[1].gpus.first { it.usage.id == "a" }.utilizationHistory)
+            assertEquals(emptyList(), data[1].gpus.first { it.usage.id == "b" }.utilizationHistory)
+            assertEquals(listOf(10f, 20f), data[2].gpus.single().utilizationHistory) // stale: not appended
+            assertEquals(emptyList(), data[3].gpus) // no GPU: ready and empty
+            assertEquals(listOf(5f), data[4].gpus.single().utilizationHistory) // vanished: starts over
         }
     }
 

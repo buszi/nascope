@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.Dp
 enum class DashboardBrickId {
     SystemOverview,
     CpuMatrix,
+    Gpu,
     MemorySwap,
     StoragePools,
     NetworkIo,

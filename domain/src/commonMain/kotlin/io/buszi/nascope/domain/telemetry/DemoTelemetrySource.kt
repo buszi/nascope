@@ -9,6 +9,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
@@ -194,6 +195,19 @@ internal class DemoTelemetrySource(
             NetworkInterfaceUsage("eth1", null, true, 100_000_000, eth1Rx, eth1Tx, eth1TotalRx, eth1TotalTx),
             NetworkInterfaceUsage("wlan0", null, false, null, 0, 0, 1_200_000_000, 450_000_000),
         )
+    }
+
+    // endregion
+
+    // region GPU
+
+    private var gpuLoad = 18.0
+    private var gpuTemp = 47.0
+
+    override suspend fun fetchGpus(): Result<List<GpuUsage>, TelemetryFailure> = demo {
+        gpuLoad = walk(gpuLoad, 9.0, 0.0, 85.0)
+        gpuTemp = walk(gpuTemp, 0.8, 40.0, 68.0)
+        listOf(GpuUsage("intel0", "Intel UHD Graphics", gpuLoad.toFloat(), null, gpuTemp.toFloat(), null))
     }
 
     // endregion

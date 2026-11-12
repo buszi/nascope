@@ -11,6 +11,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
@@ -24,6 +25,7 @@ import io.buszi.nascope.network.telemetry.parseCpu
 import io.buszi.nascope.network.telemetry.parseCpuCores
 import io.buszi.nascope.network.telemetry.parseCpuInfo
 import io.buszi.nascope.network.telemetry.parseFileSystems
+import io.buszi.nascope.network.telemetry.parseGpus
 import io.buszi.nascope.network.telemetry.parseLoad
 import io.buszi.nascope.network.telemetry.parseMemory
 import io.buszi.nascope.network.telemetry.parseProcessCount
@@ -89,6 +91,9 @@ internal class KtorGlancesTelemetryClient(
 
     override suspend fun fetchContainers(server: ServerConnection): Result<List<ContainerUsage>, TelemetryFailure> =
         get(server, "containers", versioned(server, ::parseV3Containers, ::parseV4Containers))
+
+    override suspend fun fetchGpus(server: ServerConnection): Result<List<GpuUsage>, TelemetryFailure> =
+        get(server, "gpu", ::parseGpus)
 
     override suspend fun fetchProcessCount(server: ServerConnection): Result<ProcessCount, TelemetryFailure> =
         get(server, "processcount", ::parseProcessCount)

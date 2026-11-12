@@ -91,6 +91,7 @@ interface DashboardBrick {
 - `BrickSpan.FullRow`: The brick stretches across all columns in the current row (`GridItemSpan(maxLineSpan)`).
 
 ### Zero Empty Spaces Policy
+- Most bricks take two columns, so an odd number of them leaves a gap in the last row. The last brick, Process List, therefore takes `BrickSpan.FullRow`: keep the bricks before it an even number when adding one.
 - Bricks must adapt their span to `WindowWidthClass` to avoid awkward empty cells or unbalanced gaps at the end of rows.
 - If a row has leftover space or a brick contains expansive data (e.g., storage pool breakdowns or network traffic timelines), it should report `FullRow` or an expanded cell span for wider form factors.
 
@@ -115,6 +116,6 @@ override val details: BrickDetails = BrickDetails { onClose, modifier ->
 - `DetailsScaffold`: shared frame (header with title/subtitle/status tag/close action, scrollable body). The close action is hidden on Compact, where the top bar provides back navigation.
 - `DetailsSection`: titled `TelemetryCard` grouping one aspect of the details; `DetailsKeyValueRow` for property readouts; `DetailsStat` for label-over-value metric readouts; `DetailsPager` for paginated lists; `DetailsLoadingPlaceholder` for the loading state.
 - `SelectableChip` (`ui/common/components/inputs`): single-choice toggle for sort orders and filters.
-- Bricks with details: CPU Matrix, Containers, Process List, Storage Pools, Network I/O and Sensors & Thermals. System Overview and Memory & Swap have none because their cards already show all their data. Add details to a brick only when they show more than the card does.
+- Bricks with details: CPU Matrix, Containers, Process List, Storage Pools, Network I/O and Sensors & Thermals. System Overview, Memory & Swap and GPU have none because their cards already show all their data. The GPU brick (`gpu` plugin) shows an empty-state message on a host without a GPU Glances can read, and "unavailable" when the plugin is missing. Add details to a brick only when they show more than the card does.
 - If a `Details` route points at a brick without details (e.g. restored state), `NascopeAppScaffold` pops it immediately.
 - A details ViewModel follows the same MVI rules as widget ViewModels and owns its own UI state (sort, filter, expanded rows); data comes from the same `Observe<Feature>UseCase` as the brick, so the brick and its details screen show one set of values and one history.

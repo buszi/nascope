@@ -8,6 +8,7 @@ import io.buszi.nascope.domain.model.telemetry.CpuInfo
 import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
+import io.buszi.nascope.domain.model.telemetry.GpuUsage
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
@@ -34,6 +35,8 @@ interface GlancesTelemetryClient {
     suspend fun fetchNetworkInterfaces(server: ServerConnection): Result<List<NetworkInterfaceUsage>, TelemetryFailure>
     suspend fun fetchSensors(server: ServerConnection): Result<List<SensorReading>, TelemetryFailure>
     suspend fun fetchContainers(server: ServerConnection): Result<List<ContainerUsage>, TelemetryFailure>
+    /** The `gpu` plugin: an empty list when the host has no GPU Glances can read. */
+    suspend fun fetchGpus(server: ServerConnection): Result<List<GpuUsage>, TelemetryFailure>
     suspend fun fetchProcessCount(server: ServerConnection): Result<ProcessCount, TelemetryFailure>
     suspend fun fetchProcesses(server: ServerConnection): Result<List<ProcessUsage>, TelemetryFailure>
 }
