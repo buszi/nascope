@@ -21,7 +21,9 @@ import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.Vie
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnQueryChange
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnSelectSort
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnSelectStateFilter
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnTogglePin
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnToggleProcess
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.Pin
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewState
 import io.mockk.every
 import io.mockk.mockk
@@ -295,6 +297,65 @@ class ProcessDetailsViewModelTest {
             runCurrent()
             assertEquals(ViewState(), viewModel.viewState.value)
             viewStateTurbine.cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun processDetailsViewModelPinsAndUnpinsAProcessAndKeepsItOutsideTheFilters() = runTest {
+        turbineScope {
+            val states = MutableStateFlow<TelemetryState<Data>>(processData)
+            every { observeProcesses() } returns states
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+
+            viewModel.onViewAction(OnTogglePin(105))
+            viewModel.onViewAction(OnQueryChange("no-such-process"))
+            runCurrent()
+            val pinnedWhileSearching = viewModel.viewState.value
+            assertEquals(Pin(105, "p5"), pinnedWhileSearching.pins.single())
+            assertEquals(0, pinnedWhileSearching.results.size)
+            assertEquals(105, pinnedWhileSearching.pinned.single().process?.pid)
+            assertEquals(true, pinnedWhileSearching.isPinned(105))
+
+            viewModel.onViewAction(OnTogglePin(105))
+            runCurrent()
+            assertEquals(emptyList(), viewModel.viewState.value.pins)
+            viewStateTurbine.cancelAndConsumeItems()
+        }
+    }
+
+    @Test
+    fun processDetailsViewModelKeepsAPinnedProcessAsEndedWhenItDisappears() = runTest {
+        turbineScope {
+            val states = MutableStateFlow<TelemetryState<Data>>(processData)
+            every { observeProcesses() } returns states
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            viewModel.onViewAction(OnTogglePin(105))
+            runCurrent()
+
+            states.value = ready(processUsages.filterNot { it.pid == 105 })
+            runCurrent()
+
+            val pinned = viewModel.viewState.value.pinned.single()
+            assertEquals(Pin(105, "p5"), pinned.pin)
+            assertNull(pinned.process)
+            viewStateTurbine.cancelAndConsumeItems()
+        }
+    }
+
+    @Test
+    fun processDetailsViewModelIgnoresPinningAProcessItDoesNotKnow() = runTest {
+        turbineScope {
+            every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+
+            viewModel.onViewAction(OnTogglePin(9999))
+            runCurrent()
+
+            assertEquals(emptyList(), viewModel.viewState.value.pins)
+            viewStateTurbine.cancelAndConsumeItems()
         }
     }
 

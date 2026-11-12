@@ -90,6 +90,9 @@ object TestTags {
     fun processFilter(stateName: String?): String = "process_filter_${stateName?.snake() ?: "all"}"
     fun processSort(fieldName: String): String = "process_sort_${fieldName.snake()}"
     fun processRow(pid: Int): String = "process_row_$pid"
+    fun processPin(pid: Int): String = "process_pin_$pid"
+    fun processPinned(pid: Int): String = "process_pinned_$pid"
+    fun processUnpin(pid: Int): String = "process_unpin_$pid"
 
     // Network details
     fun networkInterface(name: String): String = "network_interface_${name.slug()}"

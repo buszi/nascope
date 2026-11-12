@@ -15,6 +15,7 @@ import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.Vie
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnPrevPage
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnQueryChange
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnSelectSort
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnTogglePin
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnSelectStateFilter
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnToggleProcess
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,6 +51,7 @@ class ProcessDetailsViewModel(
             OnNextPage -> mutableViewState.update { it.copy(page = (it.page + 1).coerceAtMost(it.pageCount - 1)) }
             OnPrevPage -> mutableViewState.update { it.copy(page = (it.page - 1).coerceAtLeast(0)) }
             is OnToggleProcess -> toggleProcess(action.pid)
+            is OnTogglePin -> togglePin(action.pid)
         }
     }
 
@@ -66,6 +68,17 @@ class ProcessDetailsViewModel(
     private fun toggleProcess(pid: Int) {
         mutableViewState.update { state ->
             state.copy(expandedPid = if (state.expandedPid == pid) null else pid)
+        }
+    }
+
+    private fun togglePin(pid: Int) {
+        mutableViewState.update { state ->
+            if (state.pins.any { it.pid == pid }) {
+                state.copy(pins = state.pins.filterNot { it.pid == pid })
+            } else {
+                val name = state.processes.firstOrNull { it.pid == pid }?.name ?: return@update state
+                state.copy(pins = state.pins + Pin(pid, name))
+            }
         }
     }
 
@@ -114,6 +127,8 @@ class ProcessDetailsViewModel(
         /** Zero-based index of the visible page of [results]. */
         val page: Int = 0,
         val expandedPid: Int? = null,
+        /** Processes the user pinned, in pin order. Kept for the session and matched by PID. */
+        val pins: List<Pin> = emptyList(),
         val widgetState: WidgetState = WidgetState.Loading,
     ) {
         /** Processes matching [query] and [stateFilter], ordered by [sortField]. */
@@ -137,6 +152,12 @@ class ProcessDetailsViewModel(
         /** The rows of the visible [page]. */
         val pageProcesses: List<ProcessUi>
             get() = results.drop(page * PageSize).take(PageSize)
+
+        /** The pins with their current process; `process` is `null` once the process has ended. */
+        val pinned: List<PinnedProcess>
+            get() = pins.map { pin -> PinnedProcess(pin, processes.firstOrNull { it.pid == pin.pid }) }
+
+        fun isPinned(pid: Int): Boolean = pins.any { it.pid == pid }
 
         /** States present among the tracked processes, for the filter chips. */
         val availableStates: List<ProcessStateUi>
@@ -163,6 +184,11 @@ class ProcessDetailsViewModel(
         }
     }
 
+    /** A pinned process: its PID and the name it had when pinned, to still label it after it ended. */
+    data class Pin(val pid: Int, val name: String)
+
+    data class PinnedProcess(val pin: Pin, val process: ProcessUi?)
+
     sealed interface ViewAction {
         data class OnQueryChange(val query: String) : ViewAction
         data class OnSelectSort(val field: SortField) : ViewAction
@@ -170,5 +196,6 @@ class ProcessDetailsViewModel(
         data object OnNextPage : ViewAction
         data object OnPrevPage : ViewAction
         data class OnToggleProcess(val pid: Int) : ViewAction
+        data class OnTogglePin(val pid: Int) : ViewAction
     }
 }

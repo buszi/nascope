@@ -218,6 +218,10 @@
     <string name="details_processes_stat_cpu_sum">CPU SUM</string>
     <string name="details_processes_stat_mem_sum">MEM SUM</string>
     <string name="details_processes_table">PROCESS TABLE</string>
+    <string name="details_processes_pinned">PINNED</string>
+    <string name="details_processes_pin">PIN</string>
+    <string name="details_processes_unpin">UNPIN</string>
+    <string name="details_processes_pin_ended">ENDED</string>
     <string name="details_processes_results">%1$d RESULTS</string>
     <string name="details_processes_search_placeholder">Search name, user or PID</string>
     <string name="details_processes_clear_search">Clear search</string>

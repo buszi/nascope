@@ -37,7 +37,11 @@ import io.buszi.nascope.resources.details_processes_filter_all
 import io.buszi.nascope.resources.details_processes_filter_format
 import io.buszi.nascope.resources.details_processes_no_match
 import io.buszi.nascope.resources.details_processes_overview
+import io.buszi.nascope.resources.details_processes_pin
+import io.buszi.nascope.resources.details_processes_pin_ended
+import io.buszi.nascope.resources.details_processes_pinned
 import io.buszi.nascope.resources.details_processes_results
+import io.buszi.nascope.resources.details_processes_unpin
 import io.buszi.nascope.resources.details_processes_search_placeholder
 import io.buszi.nascope.resources.details_processes_stat_cpu_sum
 import io.buszi.nascope.resources.details_processes_stat_mem_sum
@@ -76,7 +80,7 @@ import io.buszi.nascope.ui.details.components.DetailsStat
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-private val PidColumnWidth = 48.dp
+private val PidColumnWidth = 64.dp
 private val LoadColumnWidth = 44.dp
 
 @Composable
@@ -144,6 +148,9 @@ fun ProcessDetailsScreen(
             )
         } else {
             OverviewSection(viewState = viewState)
+            if (viewState.pins.isNotEmpty()) {
+                PinnedSection(viewState = viewState, onViewAction = onViewAction)
+            }
             ProcessTableSection(viewState = viewState, onViewAction = onViewAction)
         }
     }
@@ -292,7 +299,9 @@ private fun ProcessTableSection(
                     ProcessRow(
                         process = process,
                         expanded = viewState.expandedPid == process.pid,
+                        pinned = viewState.isPinned(process.pid),
                         onToggle = { onViewAction(ViewAction.OnToggleProcess(process.pid)) },
+                        onTogglePin = { onViewAction(ViewAction.OnTogglePin(process.pid)) },
                     )
                 }
             }
@@ -306,6 +315,110 @@ private fun ProcessTableSection(
                 )
             }
         }
+    }
+}
+
+/** The pinned processes, always visible whatever the search, filter or page of the table below. */
+@Composable
+private fun PinnedSection(
+    viewState: ViewState,
+    onViewAction: (ViewAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DetailsSection(
+        title = stringResource(Res.string.details_processes_pinned),
+        modifier = modifier,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs)) {
+            viewState.pinned.forEach { (pin, process) ->
+                PinnedRow(
+                    pin = pin,
+                    process = process,
+                    onUnpin = { onViewAction(ViewAction.OnTogglePin(pin.pid)) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PinnedRow(
+    pin: ProcessDetailsViewModel.Pin,
+    process: ProcessUi?,
+    onUnpin: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = AppTheme.shapes.sm
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(AppTheme.colors.inputBackground, shape)
+            .border(
+                width = AppTheme.dimensions.hairlineBorder,
+                color = AppTheme.colors.telemetryA,
+                shape = shape,
+            )
+            .testTag(TestTags.processPinned(pin.pid))
+            .padding(horizontal = AppTheme.spacing.spaceSm, vertical = AppTheme.spacing.spaceXs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = pin.pid.toString(),
+            style = AppTheme.typography.labelCode,
+            color = AppTheme.colors.textMuted,
+            maxLines = 1,
+            modifier = Modifier.width(PidColumnWidth),
+        )
+        Text(
+            text = pin.name,
+            style = AppTheme.typography.codeBase,
+            color = if (process == null) AppTheme.colors.textMuted else AppTheme.colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (process == null) {
+            Text(
+                text = stringResource(Res.string.details_processes_pin_ended),
+                style = AppTheme.typography.labelCode,
+                color = AppTheme.colors.degraded,
+                maxLines = 1,
+            )
+        } else {
+            Text(
+                text = formatPercentNumber(process.cpuPercent),
+                style = AppTheme.typography.labelCode,
+                color = if (process.cpuPercent > 0f) AppTheme.colors.telemetryA else AppTheme.colors.textSecondary,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                modifier = Modifier.width(LoadColumnWidth),
+            )
+            Text(
+                text = formatPercentNumber(process.memoryPercent),
+                style = AppTheme.typography.labelCode,
+                color = if (process.memoryPercent > 0f) AppTheme.colors.telemetryB else AppTheme.colors.textSecondary,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                modifier = Modifier.width(LoadColumnWidth),
+            )
+        }
+        Text(
+            text = "×",
+            style = AppTheme.typography.codeBase,
+            color = AppTheme.colors.textSecondary,
+            modifier = Modifier
+                .padding(start = AppTheme.spacing.spaceXs)
+                .clip(AppTheme.shapes.sm)
+                .testTag(TestTags.processUnpin(pin.pid))
+                .clickable(
+                    onClickLabel = stringResource(Res.string.details_processes_unpin),
+                    role = Role.Button,
+                    onClick = onUnpin,
+                )
+                .padding(horizontal = AppTheme.spacing.spaceXs),
+        )
     }
 }
 
@@ -386,7 +499,9 @@ private fun HeaderCell(
 private fun ProcessRow(
     process: ProcessUi,
     expanded: Boolean,
+    pinned: Boolean,
     onToggle: () -> Unit,
+    onTogglePin: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shape = AppTheme.shapes.sm
@@ -399,7 +514,11 @@ private fun ProcessRow(
             .background(AppTheme.colors.inputBackground, shape)
             .border(
                 width = AppTheme.dimensions.hairlineBorder,
-                color = if (expanded) AppTheme.colors.focusHighlight else AppTheme.colors.baseBorder,
+                color = when {
+                    expanded -> AppTheme.colors.focusHighlight
+                    pinned -> AppTheme.colors.telemetryA
+                    else -> AppTheme.colors.baseBorder
+                },
                 shape = shape,
             )
             .testTag(TestTags.processRow(process.pid))
@@ -458,7 +577,7 @@ private fun ProcessRow(
         }
 
         if (expanded) {
-            ProcessDetails(process = process)
+            ProcessDetails(process = process, pinned = pinned, onTogglePin = onTogglePin)
         }
     }
 }
@@ -466,12 +585,29 @@ private fun ProcessRow(
 @Composable
 private fun ProcessDetails(
     process: ProcessUi,
+    pinned: Boolean,
+    onTogglePin: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
     ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.End)
+                .clip(AppTheme.shapes.sm)
+                .testTag(TestTags.processPin(process.pid))
+                .clickable(role = Role.Button, onClick = onTogglePin),
+        ) {
+            TagChip(
+                text = stringResource(
+                    if (pinned) Res.string.details_processes_unpin else Res.string.details_processes_pin,
+                ),
+                textColor = if (pinned) AppTheme.colors.telemetryA else AppTheme.colors.textSecondary,
+                borderColor = if (pinned) AppTheme.colors.telemetryA else AppTheme.colors.baseBorder,
+            )
+        }
         DetailsKeyValueRow(
             label = stringResource(Res.string.details_processes_field_user),
             value = process.user,
