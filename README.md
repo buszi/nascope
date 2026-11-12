@@ -86,8 +86,8 @@ AppTheme {
 ### Glances Telemetry Backend
 Nascope connects to hosts running the [Glances](https://github.com/nicolargo/glances) monitoring service via its REST API (default port `61208`).
 - **Connection Lifecycle**: First-launch onboarding captures base URL, port, protocol, and optional authentication secret. A pre-flight handshake validates DNS resolution, HTTP status, and Glances API status before entering the live dashboard.
-- **Telemetry Collection**: Data is collected through periodic interval polling (e.g., 2-3s active foreground, throttled when minimized or backgrounded) rather than persistent WebSockets, matching Glances REST capabilities.
-- **Offline & Mock-First Strategy**: The data layer is decoupled behind a repository interface. A synthetic data generator simulates live fluctuations and subsystem alerts, enabling rapid UI development and offline testing without requiring a live NAS connected.
+- **Telemetry Collection**: One shared polling loop per Glances plugin in `:domain`, paced by a global refresh interval setting (fast plugins at the setting, slower ones at 5x, at most every 30 s) and paused while the app is in the background. A failed poll keeps the last value as stale before the brick goes offline. Charts use in-memory history (60 samples).
+- **Demo Mode**: A built-in demo source produces moving values without a server, so the app can be explored and tested without a NAS.
 
 ### Adaptivity & Screen Form Factor Strategy
 Nascope is designed as a premier showcase of Compose Multiplatform adaptivity, presenting an optimal layout across all screen factors without platform-branching UI logic:

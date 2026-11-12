@@ -38,7 +38,6 @@ See [`module-architecture.md`](./module-architecture.md) for responsibilities an
 | `.../ui/dashboard/framework/` | Dashboard brick contracts (`DashboardBrick`, `BrickSpan`, `BrickRegistry`). |
 | `.../ui/dashboard/widgets/<name>/` | Dashboard "bricks" built from common components (e.g., `system/`, `storage/`). |
 | `.../ui/details/`, `.../ui/nodes/`, `.../ui/settings/` | Destination screens for brick details/inspector, cluster node management, and application settings. |
-| `.../data/` | Data layer, repositories, telemetry contracts, and state holders (`telemetry/`). |
 | `shared/src/androidMain/`, `shared/src/jvmMain/` | Platform-specific code only, via `expect`/`actual` or platform-specific interfaces. |
 | `<module>/src/jvmTest/kotlin/` | Unit tests of that module (`shared`: ViewModels, state holders, utilities; `domain`: use cases; ...). |
 | `resources/src/commonMain/composeResources/` | Shared drawables, strings, fonts. Access via `io.buszi.nascope.resources.Res`. |

@@ -79,7 +79,7 @@ class NascopeTopBarViewModel(
         /** Demo mode: a `DEMO` chip instead of a connection status. */
         Demo,
 
-        /** A real server: its name, live status and a `SAMPLE DATA` tag while the bricks are still hardcoded. */
+        /** A real server: its name and live connection status. */
         Server,
     }
 

@@ -1,47 +1,152 @@
 package io.buszi.nascope.ui.dashboard
 
 import app.cash.turbine.turbineScope
+import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
+import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
+import io.buszi.nascope.domain.connection.ObserveSessionUseCase
+import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
+import io.buszi.nascope.domain.model.connection.GlancesApiVersion
+import io.buszi.nascope.domain.model.connection.ServerAddress
+import io.buszi.nascope.domain.model.connection.ServerAuth
+import io.buszi.nascope.domain.model.connection.ServerProfile
+import io.buszi.nascope.domain.model.connection.ServerProfileId
+import io.buszi.nascope.domain.model.connection.ServerProtocol
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
+import io.buszi.nascope.ui.common.model.ConnectionStatusUi
+import io.buszi.nascope.ui.common.model.SessionStatusUi
+import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction.OnRefresh
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
 import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
 import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewBrick
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
 import io.mockk.verifySequence
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
 
     @get:Rule
     val coroutineRule = TestCoroutineRule()
 
     private val brickRegistry = mockk<BrickRegistry>()
+    private val observeSession = mockk<ObserveSessionUseCase>()
+    private val observeConnectionStatus = mockk<ObserveConnectionStatusUseCase>()
+    private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
+    private val session = MutableStateFlow<Session>(Session.NotConfigured)
+    private val status = MutableStateFlow<Status>(Status.Idle)
 
     private val viewModel by lazy {
+        every { brickRegistry.getActiveBricks() } returns listOf(SystemOverviewBrick)
+        every { observeSession() } returns session
+        every { observeConnectionStatus() } returns status
         DashboardViewModel(
             brickRegistry = brickRegistry,
+            observeSession = observeSession,
+            observeConnectionStatus = observeConnectionStatus,
+            refreshTelemetry = refreshTelemetry,
         )
     }
 
     @Test
-    fun dashboardViewModelExposesActiveBricksFromRegistry() = runTest {
+    fun dashboardViewModelExposesActiveBricksFromRegistryWithoutASession() = runTest {
         turbineScope {
-            every { brickRegistry.getActiveBricks() } returns listOf(SystemOverviewBrick)
             val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
 
             assertEquals(
-                listOf(
-                    ViewState(bricks = listOf(SystemOverviewBrick))
-                ),
+                listOf(ViewState(bricks = listOf(SystemOverviewBrick))),
                 viewStateTurbine.cancelAndConsumeItems(),
             )
-            verifySequence {
-                brickRegistry.getActiveBricks()
-            }
         }
+    }
+
+    @Test
+    fun dashboardViewModelShowsTheActiveAliasAndFollowsTheConnectionStatus() = runTest {
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            session.value = Session.Connected(profile)
+            status.value = Status.Connecting
+            runCurrent()
+            status.value = Status.Online
+            runCurrent()
+            status.value = Status.Offline(ConnectionFailure.Timeout)
+            runCurrent()
+
+            val states = viewStateTurbine.cancelAndConsumeItems()
+            assertEquals("Alpha", states.last().nodeName)
+            assertEquals(
+                listOf(
+                    SessionStatusUi.None,
+                    SessionStatusUi.Server(ConnectionStatusUi.Connecting),
+                    SessionStatusUi.Server(ConnectionStatusUi.Online),
+                    SessionStatusUi.Server(ConnectionStatusUi.Offline),
+                ),
+                states.map { it.sessionStatus }.distinct(),
+            )
+        }
+    }
+
+    @Test
+    fun dashboardViewModelShowsADemoStatusWithoutAnAlias() = runTest {
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            session.value = Session.Demo
+            runCurrent()
+
+            val last = viewStateTurbine.cancelAndConsumeItems().last()
+            assertEquals("", last.nodeName)
+            assertEquals(SessionStatusUi.Demo, last.sessionStatus)
+        }
+    }
+
+    @Test
+    fun dashboardViewModelSwitchingServersShowsTheNewAlias() = runTest {
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            session.value = Session.Connected(profile)
+            runCurrent()
+            session.value = Session.Connected(profile.copy(id = ServerProfileId("beta"), alias = "Beta"))
+            runCurrent()
+
+            assertEquals("Beta", viewStateTurbine.cancelAndConsumeItems().last().nodeName)
+        }
+    }
+
+    @Test
+    fun dashboardViewModelRefreshActionRefreshesTelemetry() = runTest {
+        every { refreshTelemetry() } just runs
+
+        viewModel.onViewAction(OnRefresh)
+
+        verifySequence {
+            brickRegistry.getActiveBricks()
+            observeSession()
+            observeConnectionStatus()
+            refreshTelemetry()
+        }
+    }
+
+    companion object {
+        private val profile = ServerProfile(
+            id = ServerProfileId("alpha"),
+            alias = "Alpha",
+            address = ServerAddress(ServerProtocol.Http, "alpha.local", 61208),
+            apiVersion = GlancesApiVersion.V4,
+            auth = ServerAuth.None,
+        )
     }
 }

@@ -31,7 +31,6 @@ import io.buszi.nascope.resources.nav_breadcrumb_details
 import io.buszi.nascope.resources.nav_breadcrumb_nodes
 import io.buszi.nascope.resources.nav_breadcrumb_settings
 import io.buszi.nascope.resources.nav_mode_demo
-import io.buszi.nascope.resources.nav_tag_sample_data
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.testing.TestTags
@@ -152,10 +151,6 @@ fun NascopeTopBarContent(
                                 onManageNodes = onManageNodes,
                             )
                         }
-                        TagChip(
-                            text = stringResource(Res.string.nav_tag_sample_data),
-                            modifier = Modifier.testTag(TestTags.TopBarSampleData),
-                        )
                         StatusChip(
                             text = stringResource(viewState.connectionStatus.labelRes),
                             status = viewState.connectionStatus.level,

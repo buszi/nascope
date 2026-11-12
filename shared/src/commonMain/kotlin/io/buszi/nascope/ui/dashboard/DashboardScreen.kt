@@ -13,13 +13,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.dashboard_header_demo_node
+import io.buszi.nascope.resources.dashboard_header_label
+import io.buszi.nascope.resources.dashboard_refresh
+import io.buszi.nascope.resources.nav_mode_demo
 import io.buszi.nascope.ui.common.components.badges.StatusChip
-import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import io.buszi.nascope.ui.common.components.badges.TagChip
+import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
+import io.buszi.nascope.ui.common.model.ConnectionStatusUi
+import io.buszi.nascope.ui.common.model.SessionStatusUi
+import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -36,6 +48,7 @@ fun DashboardScreen(
         modifier = modifier,
         selectedBrickId = selectedBrickId,
         onOpenDetails = onOpenDetails,
+        onViewAction = viewModel::onViewAction,
     )
 }
 
@@ -45,6 +58,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
     selectedBrickId: DashboardBrickId? = null,
     onOpenDetails: (DashboardBrickId) -> Unit = {},
+    onViewAction: (ViewAction) -> Unit = {},
 ) {
     AdaptiveDashboardGrid(
         bricks = viewState.bricks,
@@ -55,10 +69,13 @@ fun DashboardScreen(
         onOpenDetails = onOpenDetails,
         header = {
             DashboardHeader(
-                systemLabel = "SYSTEM MONITOR // OBSIDIAN TELEMETRY",
-                nodeName = "Node Cluster alpha-01",
-                status = StatusLevel.Operational,
-                statusText = "ONLINE",
+                nodeName = if (viewState.sessionStatus == SessionStatusUi.Demo) {
+                    stringResource(Res.string.dashboard_header_demo_node)
+                } else {
+                    viewState.nodeName
+                },
+                status = viewState.sessionStatus,
+                onRefresh = { onViewAction(ViewAction.OnRefresh) },
             )
         },
     )
@@ -66,10 +83,9 @@ fun DashboardScreen(
 
 @Composable
 private fun DashboardHeader(
-    systemLabel: String,
     nodeName: String,
-    status: StatusLevel,
-    statusText: String,
+    status: SessionStatusUi,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -77,9 +93,9 @@ private fun DashboardHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = systemLabel,
+                text = stringResource(Res.string.dashboard_header_label),
                 style = AppTheme.typography.labelUi,
                 color = AppTheme.colors.textSecondary,
             )
@@ -91,11 +107,26 @@ private fun DashboardHeader(
             )
         }
 
-        StatusChip(
-            text = statusText,
-            status = status,
-            pulsing = true,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            when (status) {
+                SessionStatusUi.None -> Unit
+                SessionStatusUi.Demo -> TagChip(text = stringResource(Res.string.nav_mode_demo))
+                is SessionStatusUi.Server -> StatusChip(
+                    text = stringResource(status.connection.labelRes),
+                    status = status.connection.level,
+                    pulsing = status.connection.pulsing,
+                    modifier = Modifier.testTag(TestTags.DashboardStatus),
+                )
+            }
+            SecondaryButton(
+                text = stringResource(Res.string.dashboard_refresh),
+                onClick = onRefresh,
+                modifier = Modifier.testTag(TestTags.DashboardRefresh),
+            )
+        }
     }
 }
 
@@ -106,6 +137,8 @@ private fun DashboardScreenPreview() {
         DashboardScreen(
             viewState = ViewState(
                 bricks = emptyList(),
+                nodeName = "nas-01",
+                sessionStatus = SessionStatusUi.Server(ConnectionStatusUi.Online),
             ),
         )
     }

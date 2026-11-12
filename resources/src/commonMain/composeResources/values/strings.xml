@@ -147,7 +147,9 @@
     <string name="nav_connection_online">ONLINE</string>
     <string name="nav_connection_offline">OFFLINE</string>
     <string name="nav_mode_demo">DEMO</string>
-    <string name="nav_tag_sample_data">SAMPLE DATA</string>
+    <string name="dashboard_header_label">SYSTEM MONITOR</string>
+    <string name="dashboard_header_demo_node">Demo server</string>
+    <string name="dashboard_refresh">REFRESH</string>
     <string name="screen_settings_header">SYSTEM // SETTINGS</string>
     <string name="settings_refresh_interval_title">Refresh interval</string>
     <string name="settings_refresh_interval_helper">How often live metrics such as CPU, memory and network refresh. Slower metrics such as storage, sensors and containers refresh at 5 x this interval, at most every 30 seconds.</string>

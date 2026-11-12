@@ -27,7 +27,13 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.ui.common.components.badges.StatusDot
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.testTag
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.buszi.nascope.ui.common.model.ConnectionStatusUi
+import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.common.testing.TestTags
+import org.koin.compose.viewmodel.koinViewModel
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.navigation.TopLevelDestination
 import org.jetbrains.compose.resources.stringResource
@@ -37,16 +43,36 @@ import org.jetbrains.compose.resources.stringResource
  * ([AppTheme.dimensions.sidebarTabletWidth]).
  *
  * Renders the top brand mark, centered destination icon toggles ([TopLevelDestination]),
- * and a bottom operational health indicator dot on Layer 1 `subSurface`.
+ * and a bottom health dot on Layer 1 `subSurface` that follows the live connection status
+ * (neutral in demo mode).
  *
  * @param activeDestination Currently selected [TopLevelDestination].
  * @param onSelectDestination Callback invoked when a rail icon is clicked.
+ * @param sessionStatus What the health dot shows; the stateful overload reads it from the connection status.
  * @param modifier Root layout modifier applied to the rail container.
  */
 @Composable
 fun NascopeSidebarRail(
     activeDestination: TopLevelDestination,
     onSelectDestination: (TopLevelDestination) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val viewModel = koinViewModel<NascopeSidebarRailViewModel>()
+    val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+
+    NascopeSidebarRail(
+        activeDestination = activeDestination,
+        onSelectDestination = onSelectDestination,
+        sessionStatus = viewState.sessionStatus,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun NascopeSidebarRail(
+    activeDestination: TopLevelDestination,
+    onSelectDestination: (TopLevelDestination) -> Unit,
+    sessionStatus: SessionStatusUi,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -100,11 +126,18 @@ fun NascopeSidebarRail(
                 }
             }
 
-            StatusDot(
-                color = AppTheme.colors.operational,
-                haloColor = AppTheme.colors.operationalHalo,
-                pulsing = true,
-            )
+            when (sessionStatus) {
+                SessionStatusUi.None -> Unit
+                SessionStatusUi.Demo -> StatusDot(
+                    color = AppTheme.colors.textMuted,
+                    modifier = Modifier.testTag(TestTags.NavRailStatus),
+                )
+                is SessionStatusUi.Server -> StatusDot(
+                    status = sessionStatus.connection.level,
+                    pulsing = sessionStatus.connection.pulsing,
+                    modifier = Modifier.testTag(TestTags.NavRailStatus),
+                )
+            }
         }
 
         Box(
@@ -176,6 +209,7 @@ private fun NascopeSidebarRailPreview() {
             NascopeSidebarRail(
                 activeDestination = TopLevelDestination.Dashboard,
                 onSelectDestination = {},
+                sessionStatus = SessionStatusUi.Server(ConnectionStatusUi.Online),
             )
         }
     }

@@ -17,7 +17,7 @@ object TestTags {
     const val TopBarNode: String = "top_bar_node"
     const val TopBarStatus: String = "top_bar_status"
     const val TopBarDemo: String = "top_bar_demo"
-    const val TopBarSampleData: String = "top_bar_sample_data"
+    const val NavRailStatus: String = "nav_rail_status"
     fun topBarNodeOption(id: String): String = "top_bar_node_option_${id.slug()}"
     const val TopBarManageNodes: String = "top_bar_manage_nodes"
 
@@ -59,6 +59,8 @@ object TestTags {
 
     // Dashboard
     const val DashboardGrid: String = "dashboard_grid"
+    const val DashboardStatus: String = "dashboard_status"
+    const val DashboardRefresh: String = "dashboard_refresh"
     fun brick(id: DashboardBrickId): String = "brick_${id.name.snake()}"
 
     // Shared details frame

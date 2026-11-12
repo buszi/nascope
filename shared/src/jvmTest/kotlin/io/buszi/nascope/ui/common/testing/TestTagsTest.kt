@@ -46,7 +46,9 @@ class TestTagsTest {
         assertEquals("top_bar_node", TestTags.TopBarNode)
         assertEquals("top_bar_status", TestTags.TopBarStatus)
         assertEquals("top_bar_demo", TestTags.TopBarDemo)
-        assertEquals("top_bar_sample_data", TestTags.TopBarSampleData)
+        assertEquals("nav_rail_status", TestTags.NavRailStatus)
+        assertEquals("dashboard_status", TestTags.DashboardStatus)
+        assertEquals("dashboard_refresh", TestTags.DashboardRefresh)
     }
 
     @Test
