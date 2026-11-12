@@ -54,6 +54,7 @@ import io.buszi.nascope.ui.dashboard.widgets.DashboardWidget
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewAction.OnSelectInterface
 import io.buszi.nascope.ui.dashboard.widgets.network.NetworkIoViewModel.ViewState
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -98,9 +99,9 @@ fun NetworkIoWidget(
         )
 
         val headerActionText = if (isWide) {
-            stringResource(Res.string.widget_network_active_count, viewState.activeInterfacesCount)
+            pluralStringResource(Res.plurals.widget_network_active_count, viewState.activeInterfacesCount, viewState.activeInterfacesCount)
         } else {
-            stringResource(Res.string.widget_network_active_count_compact, viewState.activeInterfacesCount)
+            pluralStringResource(Res.plurals.widget_network_active_count_compact, viewState.activeInterfacesCount, viewState.activeInterfacesCount)
         }
 
         DashboardWidget(

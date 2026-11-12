@@ -112,7 +112,8 @@ fun ProcessDetailsScreen(
             stringResource(
                 Res.string.details_processes_subtitle,
                 viewState.processes.size,
-                viewState.totalProcessCount,
+                // The list and the count are polled apart: never report more tracked than total.
+                maxOf(viewState.totalProcessCount, viewState.processes.size),
             )
         } else {
             null

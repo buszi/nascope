@@ -75,9 +75,14 @@
     <string name="widget_network_interfaces_label">INTERFACES</string>
     <string name="widget_network_throughput_label">THROUGHPUT HISTORY</string>
     <string name="widget_network_no_interfaces">NO NETWORK INTERFACES DETECTED</string>
-    <string name="widget_network_active_count">%1$d IFACES ACTIVE</string>
-    <string name="widget_network_active_count_compact">%1$d IFACES</string>
-    <string name="widget_network_ip_label">IP: %1$s</string>
+    <plurals name="widget_network_active_count">
+        <item quantity="one">%1$d IFACE ACTIVE</item>
+        <item quantity="other">%1$d IFACES ACTIVE</item>
+    </plurals>
+    <plurals name="widget_network_active_count_compact">
+        <item quantity="one">%1$d IFACE</item>
+        <item quantity="other">%1$d IFACES</item>
+    </plurals>
     <string name="widget_sensors_title">SENSORS &amp; THERMALS</string>
     <string name="widget_sensors_title_compact">SENSORS</string>
     <string name="widget_sensors_status_nominal">NOMINAL</string>
@@ -85,7 +90,6 @@
     <string name="widget_sensors_status_critical">CRITICAL</string>
     <string name="widget_sensors_cooling_active">%1$d FANS ACTIVE</string>
     <string name="widget_sensors_cooling_active_compact">%1$d FANS</string>
-    <string name="widget_sensors_no_fans">PASSIVE COOLING</string>
     <string name="widget_sensors_subtitle">%1$s CPU  •  %2$d DRIVES</string>
     <string name="widget_sensors_temperatures_label">TEMPERATURE SENSORS</string>
     <string name="widget_sensors_cooling_label">COOLING &amp; FAN CONTROL</string>
@@ -107,16 +111,10 @@
     <string name="widget_containers_created_label">CREATED</string>
     <string name="widget_containers_dead_label">DEAD</string>
     <string name="widget_containers_unknown_label">UNKNOWN</string>
-    <string name="widget_containers_running_count">%1$d RUNNING</string>
-    <string name="widget_containers_paused_count">%1$d PAUSED</string>
-    <string name="widget_containers_stopped_count">%1$d STOPPED</string>
     <string name="widget_overflow_more">+%1$d MORE</string>
     <string name="widget_containers_expand_all">EXPAND ALL (%1$d)</string>
     <string name="widget_containers_collapse">COLLAPSE</string>
-    <string name="widget_containers_header_expand">EXPAND</string>
-    <string name="widget_containers_header_collapse">COLLAPSE</string>
     <string name="widget_containers_empty">NO CONTAINERS RUNNING</string>
-    <string name="widget_containers_engine_label">ENGINE</string>
     <string name="widget_containers_cpu_label">CPU</string>
     <string name="widget_containers_mem_label">MEM</string>
     <string name="widget_processes_title">TOP PROCESSES</string>
@@ -150,7 +148,7 @@
     <string name="dashboard_header_label">SYSTEM MONITOR</string>
     <string name="dashboard_header_demo_node">Demo server</string>
     <string name="dashboard_refresh">REFRESH</string>
-    <string name="screen_settings_header">SYSTEM // SETTINGS</string>
+    <string name="screen_settings_header">LIVE TELEMETRY</string>
     <string name="settings_refresh_interval_title">Refresh interval</string>
     <string name="settings_refresh_interval_helper">How often live metrics such as CPU, memory and network refresh. Slower metrics such as storage, sensors and containers refresh at 5 x this interval, at most every 30 seconds.</string>
     <string name="screen_details_close">Close Details</string>

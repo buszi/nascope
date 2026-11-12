@@ -28,6 +28,7 @@ import io.buszi.nascope.ui.common.model.ConnectionStatusUi
 import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
@@ -111,13 +112,15 @@ private fun DashboardHeader(
             horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            when (status) {
+            // On Compact the top bar is right above and already shows the status.
+            val visibleStatus = if (AppTheme.windowWidthClass == WindowWidthClass.Compact) SessionStatusUi.None else status
+            when (visibleStatus) {
                 SessionStatusUi.None -> Unit
                 SessionStatusUi.Demo -> TagChip(text = stringResource(Res.string.nav_mode_demo))
                 is SessionStatusUi.Server -> StatusChip(
-                    text = stringResource(status.connection.labelRes),
-                    status = status.connection.level,
-                    pulsing = status.connection.pulsing,
+                    text = stringResource(visibleStatus.connection.labelRes),
+                    status = visibleStatus.connection.level,
+                    pulsing = visibleStatus.connection.pulsing,
                     modifier = Modifier.testTag(TestTags.DashboardStatus),
                 )
             }

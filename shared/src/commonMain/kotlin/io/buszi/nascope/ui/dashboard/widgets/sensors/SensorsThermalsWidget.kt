@@ -28,7 +28,6 @@ import io.buszi.nascope.resources.widget_sensors_cooling_active
 import io.buszi.nascope.resources.widget_sensors_cooling_active_compact
 import io.buszi.nascope.resources.widget_sensors_cooling_label
 import io.buszi.nascope.resources.details_sensors_fan_stalled
-import io.buszi.nascope.resources.widget_sensors_no_fans
 import io.buszi.nascope.resources.widget_sensors_no_sensors
 import io.buszi.nascope.resources.widget_sensors_rpm_format
 import io.buszi.nascope.resources.widget_sensors_status_critical
@@ -99,8 +98,9 @@ fun SensorsThermalsWidget(
             viewState.sensors.drives.size,
         )
 
+        // No fan sensors says nothing about the cooling (Docker hosts and VMs report none), so no tag then.
         val headerActionText = when {
-            viewState.sensors.fans.isEmpty() -> stringResource(Res.string.widget_sensors_no_fans)
+            viewState.sensors.fans.isEmpty() -> null
             isWide -> stringResource(Res.string.widget_sensors_cooling_active, viewState.sensors.activeFansCount)
             else -> stringResource(Res.string.widget_sensors_cooling_active_compact, viewState.sensors.activeFansCount)
         }
@@ -123,7 +123,7 @@ fun SensorsThermalsWidget(
                     )
                 }
             } else null,
-            headerAction = if (viewState.widgetState.isReady) {
+            headerAction = if (viewState.widgetState.isReady && headerActionText != null) {
                 {
                     TagChip(text = headerActionText)
                 }
@@ -241,10 +241,15 @@ private fun CpuTemperatureCard(
                     valueColor = tempStatus.color,
                 )
 
+                val warning = cpu.warningThresholdC.roundToInt()
+                val critical = cpu.criticalThresholdC.roundToInt()
                 Text(
-                    text = "WARN: ${cpu.warningThresholdC.roundToInt()}°C  CRIT: ${cpu.criticalThresholdC.roundToInt()}°C",
+                    // Glances often reports one limit for both: say it once.
+                    text = if (warning == critical) "CRIT: $critical°C" else "WARN: $warning°C  CRIT: $critical°C",
                     style = AppTheme.typography.labelCode,
                     color = AppTheme.colors.textMuted,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
 
