@@ -41,15 +41,24 @@ data class ProcessUi(
     val memoryRssBytes: Long? = null,
     /** psutil status letter; empty when unknown. */
     val status: String = "",
+    /** Logical cores of the host, to turn the per-core [cpuPercent] into a share of the machine. */
+    val logicalCores: Int = 1,
 ) {
+    /**
+     * [cpuPercent] as a share of the whole machine in `[0, 100]`. Glances reports it per core (a process on two
+     * cores of four shows 200%), so a busy multi-threaded process is not mistaken for a saturated host.
+     */
+    val cpuMachinePercent: Float
+        get() = (cpuPercent / logicalCores.coerceAtLeast(1)).coerceIn(0f, 100f)
+
     /** Scheduling state parsed from [status]. */
     val state: ProcessStateUi
         get() = ProcessStateUi.fromCode(status)
 
-    /** Load level of this process: critical from 80% and degraded from 50% CPU or memory. */
+    /** Load level of this process: critical from 80% and degraded from 50% of the machine's CPU or memory. */
     val loadStatus: StatusLevel
         get() = maxOf(
-            loadStatusOf(cpuPercent),
+            loadStatusOf(cpuMachinePercent),
             loadStatusOf(memoryPercent),
         )
 
@@ -65,7 +74,9 @@ data class ProcessUi(
 
         const val MissingUser: String = "—"
 
-        fun from(data: ProcessUsage) = ProcessUi(
+        fun from(data: ProcessUsage) = from(data, logicalCores = null)
+
+        fun from(data: ProcessUsage, logicalCores: Int?) = ProcessUi(
             pid = data.pid,
             name = data.name,
             user = data.user ?: MissingUser,
@@ -73,6 +84,7 @@ data class ProcessUi(
             memoryPercent = data.memoryPercent,
             memoryRssBytes = data.memoryRssBytes,
             status = data.statusCode.orEmpty(),
+            logicalCores = logicalCores ?: 1,
         )
     }
 }

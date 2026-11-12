@@ -58,7 +58,7 @@ class ProcessListViewModel(
                 mutableViewState.update { current ->
                     when (state) {
                         is TelemetryState.Ready -> {
-                            rawProcesses = state.data.processes.map(ProcessUi::from)
+                            rawProcesses = state.data.processes.map { ProcessUi.from(it, state.data.logicalCores) }
                             current.copy(
                                 totalProcessCount = state.data.count?.total,
                                 runningProcessCount = state.data.count?.running,

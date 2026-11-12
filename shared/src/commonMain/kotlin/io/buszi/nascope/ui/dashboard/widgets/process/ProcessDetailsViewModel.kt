@@ -74,7 +74,7 @@ class ProcessDetailsViewModel(
             mutableViewState.update { current ->
                 val updated = when (state) {
                     is TelemetryState.Ready -> current.copy(
-                        processes = state.data.processes.map(ProcessUi::from),
+                        processes = state.data.processes.map { ProcessUi.from(it, state.data.logicalCores) },
                         totalProcessCount = state.data.count?.total,
                         runningProcessCount = state.data.count?.running,
                     )

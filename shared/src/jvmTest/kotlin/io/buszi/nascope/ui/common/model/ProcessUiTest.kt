@@ -34,6 +34,24 @@ class ProcessUiTest {
     }
 
     @Test
+    fun cpuIsJudgedAsAShareOfTheMachineNotOfOneCore() {
+        val multiThreaded = process(cpu = 151.8f, memory = 1f)
+
+        assertEquals(StatusLevel.Critical, multiThreaded.loadStatus)
+        assertEquals(StatusLevel.Operational, multiThreaded.copy(logicalCores = 4).loadStatus)
+        assertEquals(StatusLevel.Degraded, process(cpu = 240f, memory = 1f).copy(logicalCores = 4).loadStatus)
+        assertEquals(37.95f, multiThreaded.copy(logicalCores = 4).cpuMachinePercent, 0.001f)
+    }
+
+    @Test
+    fun fromTakesTheCoreCountOfTheHost() {
+        val usage = ProcessUsage(7, "nginx", "www", 200f, 2.5f, 1024L, "S", listOf("nginx"))
+
+        assertEquals(4, ProcessUi.from(usage, logicalCores = 4).logicalCores)
+        assertEquals(1, ProcessUi.from(usage, logicalCores = null).logicalCores)
+    }
+
+    @Test
     fun fromMapsAFullProcessAndFillsInWhatTheHostDoesNotReport() {
         assertEquals(
             ProcessUi(7, "nginx", "www", 1.5f, 2.5f, 1024L, "S"),

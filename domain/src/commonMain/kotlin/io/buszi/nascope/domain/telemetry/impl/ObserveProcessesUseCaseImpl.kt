@@ -12,5 +12,7 @@ import org.koin.core.annotation.Factory
 internal class ObserveProcessesUseCaseImpl(
     private val poller: TelemetryPoller,
 ) : ObserveProcessesUseCase {
-    override fun invoke(): Flow<TelemetryState<Data>> = poller.processes.toTelemetryState(poller.processCount, ::Data)
+    override fun invoke(): Flow<TelemetryState<Data>> = poller.processes.toTelemetryState(poller.processCount, poller.cpu) { processes, count, cpu ->
+        Data(processes, count, cpu?.logicalCores)
+    }
 }

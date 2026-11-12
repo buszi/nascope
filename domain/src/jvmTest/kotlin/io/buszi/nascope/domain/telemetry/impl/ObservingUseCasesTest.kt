@@ -6,6 +6,7 @@ import io.buszi.nascope.domain.model.telemetry.ContainerUsage
 import io.buszi.nascope.domain.model.telemetry.ContainerStatus
 import io.buszi.nascope.domain.model.telemetry.LoadAverage
 import io.buszi.nascope.domain.model.telemetry.MemoryUsage
+import io.buszi.nascope.domain.model.telemetry.CpuUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessCount
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
@@ -49,6 +50,7 @@ class ObservingUseCasesTest {
     private val containers = MutableStateFlow<Polled<List<ContainerUsage>>>(Polled.Loading)
     private val processes = MutableStateFlow<Polled<List<ProcessUsage>>>(Polled.Loading)
     private val processCount = MutableStateFlow<Polled<ProcessCount>>(Polled.Loading)
+    private val processCpu = MutableStateFlow<Polled<CpuUsage>>(Polled.Loading)
 
     init {
         every { poller.system } returns system
@@ -59,6 +61,7 @@ class ObservingUseCasesTest {
         every { poller.containers } returns containers
         every { poller.processes } returns processes
         every { poller.processCount } returns processCount
+        every { poller.cpu } returns processCpu
     }
 
     /** Drives [primary] through loading, fresh, stale and failed and returns what the use case reported. */
@@ -208,6 +211,25 @@ class ObservingUseCasesTest {
             ),
             states,
         )
+    }
+
+    @Test
+    fun processesCarryTheLogicalCoresOfTheHost() = runTest {
+        turbineScope {
+            processes.value = Polled.Value(listOf(process), isStale = false)
+            val turbine = ObserveProcessesUseCaseImpl(poller)().testIn(this)
+            runCurrent()
+            processCpu.value = Polled.Value(CpuUsage(10f, null, null, null, null, 4), isStale = false)
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    TelemetryState.Ready(ObserveProcessesUseCase.Data(listOf(process), null, null), false),
+                    TelemetryState.Ready(ObserveProcessesUseCase.Data(listOf(process), null, 4), false),
+                ),
+                turbine.cancelAndConsumeItems(),
+            )
+        }
     }
 
     @Test
