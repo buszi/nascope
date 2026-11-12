@@ -55,3 +55,11 @@ val List<StorageMountUi>.overallStatus: StatusLevel
         any { it.status == StatusLevel.Degraded } -> StatusLevel.Degraded
         else -> StatusLevel.Operational
     }
+
+/**
+ * One mount per backing device: bind mounts such as `/etc/hosts` and `/etc/hostname` in a container all report
+ * the same device, so summing every mount would count its capacity several times. Mounts without a device name
+ * are kept as they are.
+ */
+val List<StorageMountUi>.distinctDevices: List<StorageMountUi>
+    get() = distinctBy { it.deviceName.ifEmpty { it.mountPoint } }

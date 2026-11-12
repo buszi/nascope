@@ -10,6 +10,7 @@ import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.DiskIoUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.common.model.StorageUi
+import io.buszi.nascope.ui.common.model.distinctDevices
 import io.buszi.nascope.ui.common.model.overallStatus
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
@@ -92,13 +93,13 @@ class StorageDetailsViewModel(
             }
 
         val totalCapacityBytes: Long
-            get() = mounts.sumOf { it.totalBytes }
+            get() = mounts.distinctDevices.sumOf { it.totalBytes }
 
         val totalUsedBytes: Long
-            get() = mounts.sumOf { it.usedBytes }
+            get() = mounts.distinctDevices.sumOf { it.usedBytes }
 
         val totalFreeBytes: Long
-            get() = mounts.sumOf { it.freeBytes }
+            get() = mounts.distinctDevices.sumOf { it.freeBytes }
 
         val totalUsageRatio: Float
             get() = if (totalCapacityBytes > 0L) {

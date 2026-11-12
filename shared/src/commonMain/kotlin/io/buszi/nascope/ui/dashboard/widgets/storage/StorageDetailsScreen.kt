@@ -58,6 +58,7 @@ import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.model.DiskIoUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
+import io.buszi.nascope.ui.common.model.distinctDevices
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
@@ -199,7 +200,7 @@ private fun DistributionSection(
     modifier: Modifier = Modifier,
 ) {
     val colors = distributionColors()
-    val mounts = viewState.mounts.filter { it.usedBytes > 0L }
+    val mounts = viewState.mounts.distinctDevices.filter { it.usedBytes > 0L }
     val totalUsed = viewState.totalUsedBytes
 
     DetailsSection(

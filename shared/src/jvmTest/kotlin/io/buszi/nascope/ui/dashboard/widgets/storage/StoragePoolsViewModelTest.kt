@@ -145,6 +145,16 @@ class StoragePoolsViewModelTest {
         assertEquals(StatusLevel.Critical, viewState.overallStatus)
     }
 
+    @Test
+    fun storagePoolsViewStateCountsADeviceOnceWhenSeveralMountsShareIt() {
+        val shared = listOf("/etc/hosts", "/etc/hostname", "/etc/resolv.conf")
+            .map { StorageMountUi(it, "/dev/bcache0", "btrfs", 100, 65, 35) }
+        val viewState = ViewState(mounts = shared + mount(1))
+
+        assertEquals(200L, viewState.totalCapacityBytes)
+        assertEquals(105L, viewState.totalUsedBytes)
+    }
+
     companion object {
         private fun fileSystem(index: Int) = FileSystemUsage("/m$index", "dev$index", "ext4", 100, 40, 60, null)
         private fun mount(index: Int, used: Long = 40) = StorageMountUi("/m$index", "dev$index", "ext4", 100, used, 100 - used)
