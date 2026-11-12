@@ -16,6 +16,7 @@ kotlin {
             implementation(projects.network)
             implementation(projects.storage)
 
+            implementation(libs.kotlin.result)
             implementation(libs.koin.core)
             implementation(libs.koin.annotations)
         }

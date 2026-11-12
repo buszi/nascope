@@ -13,7 +13,7 @@ See [`module-architecture.md`](./module-architecture.md) for responsibilities an
 | `domain-model/` | Shared domain models (`io.buszi.nascope.domain.model`), `domain/model/connection/` and `domain/model/telemetry/`. Data only, no dependencies. |
 | `storage/` | Local persistence (`io.buszi.nascope.storage`): public `ServerProfileStore`, `AppPreferencesStore`, `SecretStore`; internal DataStore, Keystore (`androidMain`) and keyring (`jvmMain`) implementations. |
 | `network/` | Remote data access (`io.buszi.nascope.network`): public `GlancesConnectionClient` and `GlancesTelemetryClient`; internal Ktor/OkHttp implementation, URL building and error mapping. |
-| `domain/` | Business logic (`io.buszi.nascope.domain`): use cases in `connection/` (public `fun interface` with nested result models); `internal` `@Factory` implementations in `connection/impl/`, one file each, taking the injected `CoroutineDispatcher`. |
+| `domain/` | Business logic (`io.buszi.nascope.domain`): use cases in `connection/` (public `fun interface` with nested result models); `internal` `@Factory` implementations in `connection/impl/`, one file each, taking the injected `CoroutineDispatcher`; internal telemetry sources in `telemetry/`. |
 | `test-utils/` | Shared JVM test helpers (`io.buszi.nascope.test`): `TestCoroutineRule`, Turbine extensions. Added as a `jvmTest` dependency only. |
 | `resources/` | Compose resources (strings, drawables, fonts). |
 | `shared/` | UI, ViewModels, navigation, design system, Koin application root. |

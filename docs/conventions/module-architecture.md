@@ -86,6 +86,8 @@ If the code and this document disagree after a review correction, fix this docum
 
 ### Other domain classes
 
+- `domain/telemetry/` holds the internal telemetry source layer: `TelemetrySource` (one session's telemetry), `LiveTelemetrySource` (delegates to `GlancesTelemetryClient`, building the `ServerConnection` on every call via `ServerProfile.toServerConnection`), `DemoTelemetrySource` (seeded random walk, never fails) and `TelemetrySourceProvider` (a new source per session change). Nothing there is public; observing use cases build on it in Phase 6. `:domain` depends on `kotlin-result` as `implementation`.
+
 - Supporting classes that make sense on their own (validators, policies, calculators, shared state holders) are allowed. Same rule: public interface only if `:shared` needs it, otherwise `internal`.
 
 ### Where a model goes

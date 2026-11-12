@@ -4,8 +4,7 @@ import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
-import io.buszi.nascope.domain.model.connection.ServerAuth
-import io.buszi.nascope.domain.model.connection.ServerCredentials
+import io.buszi.nascope.domain.connection.toServerConnection
 import io.buszi.nascope.domain.model.connection.ServerProfile
 import io.buszi.nascope.network.GlancesConnectionClient
 import io.buszi.nascope.storage.SecretStore
@@ -60,18 +59,12 @@ internal class ObserveConnectionStatusUseCaseImpl(
     private fun poll(profile: ServerProfile): Flow<Status> = flow {
         emit(Status.Connecting)
         while (true) {
-            val failure = client.verifyAccess(profile.address, profile.apiVersion, credentialsOf(profile))
+            val connection = profile.toServerConnection(secretStore)
+            val failure = client.verifyAccess(connection.address, connection.apiVersion, connection.credentials)
             emit(if (failure == null) Status.Online else Status.Offline(failure))
             delay(PollIntervalMillis)
         }
     }
-
-    /** Read on every check, so a changed password is picked up without restarting the loop. */
-    private suspend fun credentialsOf(profile: ServerProfile): ServerCredentials? =
-        when (val auth = profile.auth) {
-            ServerAuth.None -> null
-            is ServerAuth.Basic -> ServerCredentials(auth.username, secretStore.get(profile.id).orEmpty())
-        }
 
     private companion object {
         const val PollIntervalMillis = 5_000L
