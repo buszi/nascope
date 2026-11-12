@@ -17,6 +17,7 @@ import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessCount
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.ProgramUsage
 import io.buszi.nascope.domain.model.telemetry.SensorReading
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
@@ -67,4 +68,5 @@ internal class LiveTelemetrySource(
     override suspend fun fetchServerTime(): Result<Instant, TelemetryFailure> = call { fetchServerTime(it) }
     override suspend fun fetchProcessCount(): Result<ProcessCount, TelemetryFailure> = call { fetchProcessCount(it) }
     override suspend fun fetchProcesses(): Result<List<ProcessUsage>, TelemetryFailure> = call { fetchProcesses(it) }
+    override suspend fun fetchPrograms(): Result<List<ProgramUsage>, TelemetryFailure> = call { fetchPrograms(it) }
 }

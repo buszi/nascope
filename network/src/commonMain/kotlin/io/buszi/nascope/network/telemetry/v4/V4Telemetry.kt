@@ -5,6 +5,7 @@ import io.buszi.nascope.domain.model.telemetry.ContainerUsage
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.ProgramUsage
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.network.telemetry.containerStatusOf
 import io.buszi.nascope.network.telemetry.firstImageOrNull
@@ -116,5 +117,33 @@ internal fun parseV4Processes(body: String): Result<List<ProcessUsage>, Telemetr
             memoryRssBytes = d.memoryInfo?.rss,
             statusCode = d.status,
             commandLine = d.cmdline,
+        )
+    }
+
+@Serializable
+internal data class V4ProgramDto(
+    val name: String? = null,
+    val nprocs: Int? = null,
+    @SerialName("cpu_percent") val cpuPercent: Double? = null,
+    @SerialName("memory_percent") val memoryPercent: Double? = null,
+    @SerialName("memory_info") val memoryInfo: V4MemoryInfoDto? = null,
+    @SerialName("num_threads") val threads: Int? = null,
+    val username: String? = null,
+    val status: String? = null,
+)
+
+/** The `programlist` plugin (Glances 4 only). An element without a name is skipped. */
+internal fun parsePrograms(body: String): Result<List<ProgramUsage>, TelemetryFailure> =
+    parseList(body, V4ProgramDto.serializer()) { d ->
+        ProgramUsage(
+            name = d.name?.takeIf { it.isNotBlank() } ?: return@parseList null,
+            processCount = d.nprocs ?: 1,
+            cpuPercent = d.cpuPercent?.toFloat() ?: 0f,
+            memoryPercent = d.memoryPercent?.toFloat() ?: 0f,
+            memoryRssBytes = d.memoryInfo?.rss,
+            threads = d.threads,
+            // Glances answers "_" when the processes of a program run as different users.
+            user = d.username?.takeIf { it.isNotBlank() && it != "_" },
+            statusCode = d.status,
         )
     }

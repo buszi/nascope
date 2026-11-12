@@ -13,6 +13,7 @@ import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessCount
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.ProgramUsage
 import io.buszi.nascope.domain.model.telemetry.SensorReading
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
@@ -42,6 +43,7 @@ internal interface TelemetryPoller {
     val serverTime: Flow<Polled<Instant>>
     val processCount: Flow<Polled<ProcessCount>>
     val processes: Flow<Polled<List<ProcessUsage>>>
+    val programs: Flow<Polled<List<ProgramUsage>>>
 
     /** Makes every running loop poll now instead of waiting for its period. */
     fun refresh()

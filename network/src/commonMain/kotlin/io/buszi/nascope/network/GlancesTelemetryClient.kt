@@ -15,6 +15,7 @@ import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessCount
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.ProgramUsage
 import io.buszi.nascope.domain.model.telemetry.SensorReading
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
@@ -47,4 +48,6 @@ interface GlancesTelemetryClient {
     suspend fun fetchServerTime(server: ServerConnection): Result<Instant, TelemetryFailure>
     suspend fun fetchProcessCount(server: ServerConnection): Result<ProcessCount, TelemetryFailure>
     suspend fun fetchProcesses(server: ServerConnection): Result<List<ProcessUsage>, TelemetryFailure>
+    /** The `programlist` plugin: processes grouped by program. Glances 4 only; `PluginUnavailable` elsewhere. */
+    suspend fun fetchPrograms(server: ServerConnection): Result<List<ProgramUsage>, TelemetryFailure>
 }

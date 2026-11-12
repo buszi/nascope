@@ -69,6 +69,7 @@ internal class TelemetryPollerImpl(
     override val serverTime = poll(TelemetryPlugin.Now) { fetchServerTime() }
     override val processCount = poll(TelemetryPlugin.ProcessCount) { fetchProcessCount() }
     override val processes = poll(TelemetryPlugin.ProcessList) { fetchProcesses() }
+    override val programs = poll(TelemetryPlugin.ProgramList) { fetchPrograms() }
 
     override fun refresh() {
         refreshRequests.tryEmit(Unit)

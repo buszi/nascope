@@ -246,6 +246,14 @@
     <string name="details_processes_stat_cpu_sum">CPU SUM</string>
     <string name="details_processes_stat_mem_sum">MEM SUM</string>
     <string name="details_processes_table">PROCESS TABLE</string>
+    <string name="details_processes_mode_processes">PROCESSES</string>
+    <string name="details_processes_mode_programs">PROGRAMS</string>
+    <string name="details_processes_table_programs">PROGRAM TABLE</string>
+    <string name="details_processes_search_placeholder_programs">Search program or user</string>
+    <string name="details_processes_no_match_programs">NO PROGRAMS MATCH</string>
+    <string name="details_processes_col_count">PROCS</string>
+    <string name="details_processes_field_processes">PROCESSES</string>
+    <string name="details_processes_field_threads">THREADS</string>
     <string name="details_processes_pinned">PINNED</string>
     <string name="details_processes_pin">PIN</string>
     <string name="details_processes_unpin">UNPIN</string>

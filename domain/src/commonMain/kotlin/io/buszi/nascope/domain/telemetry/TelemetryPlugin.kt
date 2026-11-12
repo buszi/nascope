@@ -30,6 +30,7 @@ internal enum class TelemetryPlugin(val tier: PollTier) {
     Now(PollTier.Slow),
     ProcessCount(PollTier.Slow),
     ProcessList(PollTier.Slow),
+    ProgramList(PollTier.Slow),
     Uptime(PollTier.Slow),
     QuickLook(PollTier.Slow),
 

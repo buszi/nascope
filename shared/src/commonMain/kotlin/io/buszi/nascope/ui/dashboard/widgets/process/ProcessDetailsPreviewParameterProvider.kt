@@ -3,6 +3,8 @@ package io.buszi.nascope.ui.dashboard.widgets.process
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.buszi.nascope.ui.common.model.ProcessStateUi
 import io.buszi.nascope.ui.common.model.ProcessUi
+import io.buszi.nascope.ui.common.model.ProgramUi
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.Mode
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.SortField
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewState
@@ -15,6 +17,33 @@ class ProcessDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
             totalProcessCount = 184,
             runningProcessCount = 3,
             expandedPid = 1042,
+            widgetState = WidgetState.Ready,
+        ),
+
+        // 1b. PROGRAMS mode, one program expanded
+        ViewState(
+            processes = previewProcesses,
+            totalProcessCount = 184,
+            runningProcessCount = 3,
+            mode = Mode.Programs,
+            programsAvailable = true,
+            programs = listOf(
+                ProgramUi("php-fpm", 12, 38.5f, 6.2f, 640_000_000, 24, "www-data", 4),
+                ProgramUi("postgres", 32, 9.1f, 14.8f, 3_200_000_000, 64, "postgres", 4),
+                ProgramUi("sshd", 2, 0.1f, 0.2f, 12_000_000, 2),
+            ),
+            programsWidgetState = WidgetState.Ready,
+            expandedProgram = "php-fpm",
+            sortField = SortField.Count,
+            widgetState = WidgetState.Ready,
+        ),
+
+        // 1c. PROGRAMS mode still loading
+        ViewState(
+            processes = previewProcesses,
+            totalProcessCount = 184,
+            mode = Mode.Programs,
+            programsAvailable = true,
             widgetState = WidgetState.Ready,
         ),
 

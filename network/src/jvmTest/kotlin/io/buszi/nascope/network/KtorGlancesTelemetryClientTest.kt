@@ -264,6 +264,42 @@ class KtorGlancesTelemetryClientTest {
         assertEquals(null, disk.writeLatencyMs)
     }
 
+    private fun programsOf(body: String) = kotlinx.coroutines.runBlocking {
+        responding(HttpStatusCode.OK, body).client.fetchPrograms(connection(GlancesApiVersion.V4))
+    }.getOrElse { fail("$it") }
+
+    @Test
+    fun programsParseTheNasPayloadWithGroupedWorkers() {
+        val programs = programsOf(Fixtures.read("v4-nas", "programlist"))
+        val postgres = programs.first { it.name == "postgres" }
+        assertEquals(32, postgres.processCount)
+        assertTrue(postgres.memoryRssBytes!! > 0)
+        assertTrue(postgres.threads!! >= 32)
+        // Glances sends "_" for the user when the workers run as several users; that is no user.
+        assertTrue(programs.none { it.user == "_" })
+        assertTrue(programs.all { it.processCount >= 1 })
+    }
+
+    @Test
+    fun programsWithMissingOptionalFieldsGetDefaultsAndNamelessOnesAreSkipped() {
+        val programs = programsOf("""[{"name": "a"}, {"nprocs": 3}, {"name": ""}, {"name": "b", "nprocs": 2, "cpu_percent": 1.5}]""")
+        assertEquals(listOf("a", "b"), programs.map { it.name })
+        assertEquals(1, programs[0].processCount)
+        assertEquals(0f, programs[0].cpuPercent)
+        assertEquals(null, programs[0].memoryRssBytes)
+        assertEquals(null, programs[0].user)
+        assertEquals(1.5f, programs[1].cpuPercent)
+        assertEquals(emptyList(), programsOf("[]"))
+    }
+
+    @Test
+    fun programsAreUnavailableWhereThePluginIsUnknown() = runTest {
+        assertEquals(
+            TelemetryFailure.PluginUnavailable,
+            responding(HttpStatusCode.BadRequest).client.fetchPrograms(connection(GlancesApiVersion.V3)).getError(),
+        )
+    }
+
     @Test
     fun serverTimeIsReadFromTheIsoField() = runTest {
         val time = responding(HttpStatusCode.OK, Fixtures.read("v4-nas", "now"))

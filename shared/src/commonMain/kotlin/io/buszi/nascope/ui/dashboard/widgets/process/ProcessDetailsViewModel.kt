@@ -4,35 +4,52 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveAvailablePluginsUseCase
 import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase
+import io.buszi.nascope.domain.telemetry.ObserveProgramsUseCase
 import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.ProcessStateUi
 import io.buszi.nascope.ui.common.model.ProcessUi
+import io.buszi.nascope.ui.common.model.ProgramUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnNextPage
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnPrevPage
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnQueryChange
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnSelectMode
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnSelectSort
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnTogglePin
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnSelectStateFilter
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnToggleProcess
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnToggleProgram
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import org.koin.core.annotation.KoinViewModel
 
 /**
  * Drives the process details screen: a searchable, sortable, state-filterable and paginated
- * process table with expandable per-process properties.
+ * process table with expandable per-process properties, and, on servers that group processes by program
+ * (`programlist`), the same table by program.
+ *
+ * The programs are collected only while PROGRAMS is selected, so the extra plugin is not polled otherwise.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class ProcessDetailsViewModel(
     private val observeProcesses: ObserveProcessesUseCase,
+    private val observePrograms: ObserveProgramsUseCase,
+    private val observeAvailablePlugins: ObserveAvailablePluginsUseCase,
     private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
@@ -41,6 +58,8 @@ class ProcessDetailsViewModel(
 
     init {
         observeTelemetry()
+        observeProgramsWhileSelected()
+        observeProgramsAvailability()
     }
 
     fun onViewAction(action: ViewAction) {
@@ -52,7 +71,74 @@ class ProcessDetailsViewModel(
             OnPrevPage -> mutableViewState.update { it.copy(page = (it.page - 1).coerceAtLeast(0)) }
             is OnToggleProcess -> toggleProcess(action.pid)
             is OnTogglePin -> togglePin(action.pid)
+            is OnSelectMode -> selectMode(action.mode)
+            is OnToggleProgram -> mutableViewState.update {
+                it.copy(expandedProgram = if (it.expandedProgram == action.name) null else action.name)
+            }
         }
+    }
+
+    private fun selectMode(mode: Mode) {
+        mutableViewState.update { state ->
+            if (mode == state.mode || (mode == Mode.Programs && !state.programsAvailable)) {
+                state
+            } else {
+                // The search text stays; the sort falls back when its column does not exist in the new mode.
+                val keepsSort = state.sortField in mode.sortFields
+                state.copy(
+                    mode = mode,
+                    page = 0,
+                    sortField = if (keepsSort) state.sortField else SortField.Cpu,
+                    sortDescending = if (keepsSort) state.sortDescending else true,
+                )
+            }
+        }
+    }
+
+    private fun observeProgramsWhileSelected() {
+        mutableViewState
+            .map { it.mode }
+            .distinctUntilChanged()
+            .flatMapLatest { mode ->
+                if (mode == Mode.Programs) {
+                    observePrograms().onStart {
+                        mutableViewState.update { it.copy(programs = emptyList(), programsWidgetState = WidgetState.Loading) }
+                    }
+                } else {
+                    emptyFlow()
+                }
+            }
+            .onEach { state ->
+                mutableViewState.update { current ->
+                    val updated = when (state) {
+                        is TelemetryState.Ready -> current.copy(
+                            programs = state.data.programs.map { ProgramUi.from(it, state.data.logicalCores) },
+                        )
+                        TelemetryState.Loading -> current.copy(programs = emptyList())
+                        is TelemetryState.Failed -> current
+                    }.copy(programsWidgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke))
+                    updated.copy(
+                        page = updated.page.coerceIn(0, updated.pageCount - 1),
+                        expandedProgram = updated.expandedProgram?.takeIf { name -> updated.programs.any { it.name == name } },
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    /** The toggle needs a server that lists `programlist` (Glances 4); while that is unknown it stays hidden. */
+    private fun observeProgramsAvailability() {
+        observeAvailablePlugins().onEach { plugins ->
+            val available = plugins?.contains(ProgramsPlugin) == true
+            mutableViewState.update { state ->
+                if (!available && state.mode == Mode.Programs) {
+                    state.copy(programsAvailable = false, mode = Mode.Processes, page = 0,
+                        sortField = if (state.sortField in Mode.Processes.sortFields) state.sortField else SortField.Cpu)
+                } else {
+                    state.copy(programsAvailable = available)
+                }
+            }
+        }.launchIn(viewModelScope)
     }
 
     private fun selectSort(field: SortField) {
@@ -111,6 +197,15 @@ class ProcessDetailsViewModel(
         Name(defaultDescending = false),
         Cpu(defaultDescending = true),
         Memory(defaultDescending = true),
+
+        /** Processes of a program: only sortable in PROGRAMS mode. */
+        Count(defaultDescending = true),
+    }
+
+    /** What the table lists. [sortFields] are the columns that exist in the mode. */
+    enum class Mode(val sortFields: Set<SortField>) {
+        Processes(setOf(SortField.Pid, SortField.Name, SortField.Cpu, SortField.Memory)),
+        Programs(setOf(SortField.Count, SortField.Name, SortField.Cpu, SortField.Memory)),
     }
 
     @Stable
@@ -130,7 +225,37 @@ class ProcessDetailsViewModel(
         /** Processes the user pinned, in pin order. Kept for the session and matched by PID. */
         val pins: List<Pin> = emptyList(),
         val widgetState: WidgetState = WidgetState.Loading,
+        val mode: Mode = Mode.Processes,
+        /** The server lists `programlist`: the PROCESSES / PROGRAMS toggle is shown. */
+        val programsAvailable: Boolean = false,
+        val programs: List<ProgramUi> = emptyList(),
+        val programsWidgetState: WidgetState = WidgetState.Loading,
+        /** Name of the expanded program row. */
+        val expandedProgram: String? = null,
     ) {
+        /** Programs matching [query], ordered by [sortField]. */
+        val programResults: List<ProgramUi> by lazy(LazyThreadSafetyMode.NONE) {
+            val needle = query.trim().lowercase()
+            val comparator = when (sortField) {
+                SortField.Count -> compareBy<ProgramUi> { it.processCount }.thenBy { it.name.lowercase() }
+                SortField.Cpu -> compareBy<ProgramUi> { it.cpuPercent }.thenBy { it.name.lowercase() }
+                SortField.Memory -> compareBy<ProgramUi> { it.memoryPercent }.thenBy { it.name.lowercase() }
+                // Pid does not exist for programs: the mode switch resets it, this is only a safe fallback.
+                SortField.Name, SortField.Pid -> compareBy<ProgramUi> { it.name.lowercase() }
+            }
+            programs
+                .filter { needle.isEmpty() || it.name.lowercase().contains(needle) || it.user.lowercase().contains(needle) }
+                .sortedWith(if (sortDescending) comparator.reversed() else comparator)
+        }
+
+        /** The rows of the visible [page] in PROGRAMS mode. */
+        val pagePrograms: List<ProgramUi>
+            get() = programResults.drop(page * PageSize).take(PageSize)
+
+        /** Number of rows of the table in the current [mode]. */
+        val resultCount: Int
+            get() = if (mode == Mode.Programs) programResults.size else results.size
+
         /** Processes matching [query] and [stateFilter], ordered by [sortField]. */
         val results: List<ProcessUi> by lazy(LazyThreadSafetyMode.NONE) {
             val needle = query.trim().lowercase()
@@ -139,6 +264,8 @@ class ProcessDetailsViewModel(
                 SortField.Name -> compareBy<ProcessUi> { it.name.lowercase() }.thenBy { it.pid }
                 SortField.Cpu -> compareBy<ProcessUi> { it.cpuPercent }.thenBy { it.pid }
                 SortField.Memory -> compareBy<ProcessUi> { it.memoryPercent }.thenBy { it.pid }
+                // Count does not exist for processes: the mode switch resets it, this is only a safe fallback.
+                SortField.Count -> compareBy<ProcessUi> { it.pid }
             }
             processes
                 .filter { stateFilter == null || it.state == stateFilter }
@@ -147,7 +274,7 @@ class ProcessDetailsViewModel(
         }
 
         val pageCount: Int
-            get() = ((results.size + PageSize - 1) / PageSize).coerceAtLeast(1)
+            get() = ((resultCount + PageSize - 1) / PageSize).coerceAtLeast(1)
 
         /** The rows of the visible [page]. */
         val pageProcesses: List<ProcessUi>
@@ -197,5 +324,9 @@ class ProcessDetailsViewModel(
         data object OnPrevPage : ViewAction
         data class OnToggleProcess(val pid: Int) : ViewAction
         data class OnTogglePin(val pid: Int) : ViewAction
+        data class OnSelectMode(val mode: Mode) : ViewAction
+        data class OnToggleProgram(val name: String) : ViewAction
     }
 }
+
+private const val ProgramsPlugin = "programlist"

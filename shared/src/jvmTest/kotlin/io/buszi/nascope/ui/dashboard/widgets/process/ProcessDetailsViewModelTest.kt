@@ -6,7 +6,10 @@ import io.buszi.nascope.domain.model.telemetry.ProcessCount
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.model.telemetry.ProgramUsage
+import io.buszi.nascope.domain.telemetry.ObserveAvailablePluginsUseCase
 import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase
+import io.buszi.nascope.domain.telemetry.ObserveProgramsUseCase
 import io.buszi.nascope.domain.telemetry.ObserveProcessesUseCase.Data
 import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
@@ -15,7 +18,10 @@ import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.ProcessStateUi
 import io.buszi.nascope.ui.common.model.ProcessUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.Mode
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.SortField
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnSelectMode
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnToggleProgram
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnNextPage
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnPrevPage
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction.OnQueryChange
@@ -30,6 +36,8 @@ import io.mockk.mockk
 import io.mockk.verifySequence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
@@ -46,9 +54,15 @@ class ProcessDetailsViewModelTest {
     private val observeProcesses = mockk<ObserveProcessesUseCase>()
     private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
 
+    private val observePrograms = mockk<ObserveProgramsUseCase>()
+    private val plugins = MutableStateFlow<Set<String>?>(null)
+    private val observeAvailablePlugins = mockk<ObserveAvailablePluginsUseCase> { every { this@mockk() } returns plugins }
+
     private val viewModel by lazy {
         ProcessDetailsViewModel(
             observeProcesses = observeProcesses,
+            observePrograms = observePrograms,
+            observeAvailablePlugins = observeAvailablePlugins,
             refreshTelemetry = refreshTelemetry,
         )
     }
@@ -367,6 +381,148 @@ class ProcessDetailsViewModelTest {
         assertEquals(5.5f, state.totalMemoryPercent, absoluteTolerance = 0.01f)
         assertEquals(StatusLevel.Operational, state.overallStatus)
         assertEquals(1, state.countOf(ProcessStateUi.Zombie))
+    }
+
+    // Programs
+
+    private val phpWorkers = ProgramUsage("php-fpm", 12, 40f, 6f, 600_000_000, 24, "www-data", "S")
+    private val postgres = ProgramUsage("postgres", 3, 10f, 12f, 900_000_000, 12, null, "S")
+    private val programStates = MutableStateFlow<TelemetryState<ObserveProgramsUseCase.Data>>(TelemetryState.Loading)
+    private var programsCollectors = 0
+
+    private fun programsSetup() {
+        every { observeProcesses() } returns MutableStateFlow<TelemetryState<Data>>(processData)
+        every { observePrograms() } returns programStates.onStart { programsCollectors++ }.onCompletion { programsCollectors-- }
+    }
+
+    @Test
+    fun theProgramsToggleIsHiddenUntilTheServerListsProgramlistAndSelectingProgramsIsIgnoredBefore() = runTest {
+        programsSetup()
+        viewModel
+        runCurrent()
+        assertEquals(false, viewModel.viewState.value.programsAvailable)
+        viewModel.onViewAction(OnSelectMode(Mode.Programs))
+        runCurrent()
+        assertEquals(Mode.Processes, viewModel.viewState.value.mode)
+        assertEquals(0, programsCollectors)
+
+        plugins.value = setOf("processlist", "programlist")
+        runCurrent()
+        assertEquals(true, viewModel.viewState.value.programsAvailable)
+        plugins.value = setOf("processlist") // e.g. another server
+        runCurrent()
+        assertEquals(false, viewModel.viewState.value.programsAvailable)
+    }
+
+    @Test
+    fun programsAreCollectedOnlyWhileProgramsIsSelected() = runTest {
+        programsSetup()
+        plugins.value = setOf("programlist")
+        viewModel
+        runCurrent()
+        assertEquals(0, programsCollectors) // nothing polls programlist in PROCESSES mode
+
+        viewModel.onViewAction(OnSelectMode(Mode.Programs))
+        runCurrent()
+        assertEquals(1, programsCollectors)
+        assertEquals(WidgetState.Loading, viewModel.viewState.value.programsWidgetState)
+        programStates.value = TelemetryState.Ready(ObserveProgramsUseCase.Data(listOf(phpWorkers, postgres), 4), false)
+        runCurrent()
+        assertEquals(WidgetState.Ready, viewModel.viewState.value.programsWidgetState)
+        assertEquals(listOf("php-fpm", "postgres"), viewModel.viewState.value.programs.map { it.name })
+        assertEquals(10f, viewModel.viewState.value.programs.first().cpuMachinePercent) // 40% of 4 cores
+
+        viewModel.onViewAction(OnSelectMode(Mode.Processes))
+        runCurrent()
+        assertEquals(0, programsCollectors)
+    }
+
+    @Test
+    fun programsModeSearchSortAndPagingWorkAndTheSearchSurvivesModeSwitches() = runTest {
+        programsSetup()
+        plugins.value = setOf("programlist")
+        viewModel
+        runCurrent()
+        viewModel.onViewAction(OnSelectMode(Mode.Programs))
+        val many = (1..10).map { ProgramUsage("p$it", it, it.toFloat(), 1f, null, null, null, null) } + phpWorkers
+        programStates.value = TelemetryState.Ready(ObserveProgramsUseCase.Data(many, null), false)
+        runCurrent()
+
+        var state = viewModel.viewState.value
+        assertEquals(11, state.resultCount)
+        assertEquals(2, state.pageCount)
+        assertEquals("php-fpm", state.pagePrograms.first().name) // CPU 40 on top, descending
+        viewModel.onViewAction(OnNextPage)
+        assertEquals(3, viewModel.viewState.value.pagePrograms.size)
+
+        viewModel.onViewAction(OnSelectSort(SortField.Count))
+        assertEquals("php-fpm", viewModel.viewState.value.pagePrograms.first().name) // 12 procs
+        viewModel.onViewAction(OnSelectSort(SortField.Name))
+        assertEquals("p1", viewModel.viewState.value.pagePrograms.first().name)
+
+        viewModel.onViewAction(OnQueryChange("php"))
+        assertEquals(listOf("php-fpm"), viewModel.viewState.value.programResults.map { it.name })
+        assertEquals(0, viewModel.viewState.value.page)
+        viewModel.onViewAction(OnSelectMode(Mode.Processes))
+        assertEquals("php", viewModel.viewState.value.query)
+        viewModel.onViewAction(OnSelectMode(Mode.Programs))
+        assertEquals("php", viewModel.viewState.value.query)
+    }
+
+    @Test
+    fun theSortFallsBackToCpuWhenItsColumnDoesNotExistInTheOtherMode() = runTest {
+        programsSetup()
+        plugins.value = setOf("programlist")
+        viewModel
+        runCurrent()
+        viewModel.onViewAction(OnSelectSort(SortField.Pid))
+        viewModel.onViewAction(OnSelectMode(Mode.Programs))
+        assertEquals(SortField.Cpu, viewModel.viewState.value.sortField)
+        assertEquals(true, viewModel.viewState.value.sortDescending)
+        viewModel.onViewAction(OnSelectSort(SortField.Count))
+        viewModel.onViewAction(OnSelectMode(Mode.Processes))
+        assertEquals(SortField.Cpu, viewModel.viewState.value.sortField)
+    }
+
+    @Test
+    fun pinsAreUnaffectedByProgramsAndAUnavailableProgramlistFallsBackToProcesses() = runTest {
+        programsSetup()
+        plugins.value = setOf("programlist")
+        viewModel
+        runCurrent()
+        viewModel.onViewAction(OnTogglePin(viewModel.viewState.value.processes.first().pid))
+        val pins = viewModel.viewState.value.pins
+        assertEquals(1, pins.size)
+
+        viewModel.onViewAction(OnSelectMode(Mode.Programs))
+        programStates.value = TelemetryState.Failed(TelemetryFailure.PluginUnavailable)
+        runCurrent()
+        assertEquals(WidgetState.Unavailable, viewModel.viewState.value.programsWidgetState)
+        assertEquals(pins, viewModel.viewState.value.pins)
+
+        plugins.value = emptySet()
+        runCurrent()
+        assertEquals(Mode.Processes, viewModel.viewState.value.mode)
+        assertEquals(pins, viewModel.viewState.value.pins)
+        assertEquals(0, programsCollectors)
+    }
+
+    @Test
+    fun programRowsExpandOneAtATime() = runTest {
+        programsSetup()
+        plugins.value = setOf("programlist")
+        viewModel
+        runCurrent()
+        viewModel.onViewAction(OnSelectMode(Mode.Programs))
+        programStates.value = TelemetryState.Ready(ObserveProgramsUseCase.Data(listOf(phpWorkers, postgres), null), false)
+        runCurrent()
+        viewModel.onViewAction(OnToggleProgram("php-fpm"))
+        assertEquals("php-fpm", viewModel.viewState.value.expandedProgram)
+        viewModel.onViewAction(OnToggleProgram("postgres"))
+        assertEquals("postgres", viewModel.viewState.value.expandedProgram)
+        viewModel.onViewAction(OnToggleProgram("postgres"))
+        assertNull(viewModel.viewState.value.expandedProgram)
+        assertEquals("—", viewModel.viewState.value.programs.first { it.name == "postgres" }.user)
     }
 
     companion object {

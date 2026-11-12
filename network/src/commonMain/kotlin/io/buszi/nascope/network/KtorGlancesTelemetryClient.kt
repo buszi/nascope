@@ -18,6 +18,7 @@ import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessCount
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.ProgramUsage
 import io.buszi.nascope.domain.model.telemetry.SensorReading
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
@@ -41,6 +42,7 @@ import io.buszi.nascope.network.telemetry.v3.parseV3Containers
 import io.buszi.nascope.network.telemetry.v3.parseV3DiskIo
 import io.buszi.nascope.network.telemetry.v3.parseV3Network
 import io.buszi.nascope.network.telemetry.v3.parseV3Processes
+import io.buszi.nascope.network.telemetry.v4.parsePrograms
 import io.buszi.nascope.network.telemetry.v4.parseV4Containers
 import io.buszi.nascope.network.telemetry.v4.parseV4DiskIo
 import io.buszi.nascope.network.telemetry.v4.parseV4Network
@@ -114,6 +116,9 @@ internal class KtorGlancesTelemetryClient(
 
     override suspend fun fetchProcesses(server: ServerConnection): Result<List<ProcessUsage>, TelemetryFailure> =
         get(server, "processlist", versioned(server, ::parseV3Processes, ::parseV4Processes))
+
+    override suspend fun fetchPrograms(server: ServerConnection): Result<List<ProgramUsage>, TelemetryFailure> =
+        get(server, "programlist", ::parsePrograms)
 
     private fun <T> versioned(
         server: ServerConnection,

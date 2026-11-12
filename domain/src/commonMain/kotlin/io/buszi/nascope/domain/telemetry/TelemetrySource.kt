@@ -14,6 +14,7 @@ import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessCount
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.ProgramUsage
 import io.buszi.nascope.domain.model.telemetry.SensorReading
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
 import io.buszi.nascope.domain.model.telemetry.SystemInfo
@@ -43,4 +44,5 @@ internal interface TelemetrySource {
     suspend fun fetchServerTime(): Result<Instant, TelemetryFailure>
     suspend fun fetchProcessCount(): Result<ProcessCount, TelemetryFailure>
     suspend fun fetchProcesses(): Result<List<ProcessUsage>, TelemetryFailure>
+    suspend fun fetchPrograms(): Result<List<ProgramUsage>, TelemetryFailure>
 }

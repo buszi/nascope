@@ -17,6 +17,7 @@ import io.buszi.nascope.domain.model.telemetry.MemoryUsage
 import io.buszi.nascope.domain.model.telemetry.NetworkInterfaceUsage
 import io.buszi.nascope.domain.model.telemetry.ProcessCount
 import io.buszi.nascope.domain.model.telemetry.ProcessUsage
+import io.buszi.nascope.domain.model.telemetry.ProgramUsage
 import io.buszi.nascope.domain.model.telemetry.SensorKind
 import io.buszi.nascope.domain.model.telemetry.SensorReading
 import io.buszi.nascope.domain.model.telemetry.SwapUsage
@@ -55,7 +56,7 @@ internal class DemoTelemetrySource(
     override suspend fun fetchPlugins(): Result<Set<String>, TelemetryFailure> = Ok(
         setOf(
             "system", "uptime", "load", "cpu", "percpu", "quicklook", "mem", "memswap", "fs", "diskio", "network",
-            "sensors", "containers", "gpu", "alert", "now", "processcount", "processlist",
+            "sensors", "containers", "gpu", "alert", "now", "processcount", "processlist", "programlist",
         ),
     )
 
@@ -350,6 +351,28 @@ internal class DemoTelemetrySource(
                 pid = p.pid, name = p.name, user = p.user, cpuPercent = p.cpu.toFloat(),
                 memoryPercent = (p.rss.toDouble() / MEM_TOTAL * 100).toFloat(), memoryRssBytes = p.rss,
                 statusCode = p.status, commandLine = listOf("/usr/bin/${p.name}"),
+            )
+        }
+    }
+
+    /** The demo processes grouped by name; a few programs run several workers. */
+    override suspend fun fetchPrograms(): Result<List<ProgramUsage>, TelemetryFailure> = demo {
+        processes.groupBy { it.name }.map { (name, group) ->
+            val workers = when (name) {
+                "postgres" -> 9
+                "node" -> 4
+                "plex-media-srv" -> 3
+                else -> group.size
+            }
+            ProgramUsage(
+                name = name,
+                processCount = workers,
+                cpuPercent = (group.sumOf { it.cpu } * workers / group.size).toFloat(),
+                memoryPercent = (group.sumOf { it.rss } * workers.toDouble() / group.size / MEM_TOTAL * 100).toFloat(),
+                memoryRssBytes = group.sumOf { it.rss } * workers / group.size,
+                threads = workers * 6,
+                user = group.first().user,
+                statusCode = group.first().status,
             )
         }
     }

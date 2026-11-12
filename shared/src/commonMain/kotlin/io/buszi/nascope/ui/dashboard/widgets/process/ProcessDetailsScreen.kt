@@ -49,6 +49,14 @@ import io.buszi.nascope.resources.details_processes_stat_running
 import io.buszi.nascope.resources.details_processes_stat_total
 import io.buszi.nascope.resources.details_processes_subtitle
 import io.buszi.nascope.resources.details_processes_table
+import io.buszi.nascope.resources.details_processes_col_count
+import io.buszi.nascope.resources.details_processes_field_processes
+import io.buszi.nascope.resources.details_processes_field_threads
+import io.buszi.nascope.resources.details_processes_mode_processes
+import io.buszi.nascope.resources.details_processes_mode_programs
+import io.buszi.nascope.resources.details_processes_no_match_programs
+import io.buszi.nascope.resources.details_processes_search_placeholder_programs
+import io.buszi.nascope.resources.details_processes_table_programs
 import io.buszi.nascope.resources.details_processes_title
 import io.buszi.nascope.resources.widget_processes_col_cpu
 import io.buszi.nascope.resources.widget_processes_col_mem
@@ -65,9 +73,11 @@ import io.buszi.nascope.ui.common.components.gauges.LinearGauge
 import io.buszi.nascope.ui.common.components.inputs.SelectableChip
 import io.buszi.nascope.ui.common.components.inputs.TelemetryTextField
 import io.buszi.nascope.ui.common.model.ProcessUi
+import io.buszi.nascope.ui.common.model.ProgramUi
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
+import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.Mode
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.SortField
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.process.ProcessDetailsViewModel.ViewState
@@ -148,7 +158,7 @@ fun ProcessDetailsScreen(
             )
         } else {
             OverviewSection(viewState = viewState)
-            if (viewState.pins.isNotEmpty()) {
+            if (viewState.pins.isNotEmpty() && viewState.mode == Mode.Processes) {
                 PinnedSection(viewState = viewState, onViewAction = onViewAction)
             }
             ProcessTableSection(viewState = viewState, onViewAction = onViewAction)
@@ -215,24 +225,50 @@ private fun ProcessTableSection(
     modifier: Modifier = Modifier,
 ) {
     DetailsSection(
-        title = stringResource(Res.string.details_processes_table),
+        title = stringResource(
+            if (viewState.mode == Mode.Programs) Res.string.details_processes_table_programs else Res.string.details_processes_table,
+        ),
         modifier = modifier,
         headerAction = {
             Text(
-                text = stringResource(Res.string.details_processes_results, viewState.results.size),
+                text = stringResource(Res.string.details_processes_results, viewState.resultCount),
                 style = AppTheme.typography.labelCode,
                 color = AppTheme.colors.textMuted,
             )
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm)) {
+            if (viewState.programsAvailable) {
+                Row(horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs)) {
+                    Mode.entries.forEach { mode ->
+                        SelectableChip(
+                            text = stringResource(
+                                if (mode == Mode.Programs) {
+                                    Res.string.details_processes_mode_programs
+                                } else {
+                                    Res.string.details_processes_mode_processes
+                                },
+                            ),
+                            selected = viewState.mode == mode,
+                            onClick = { onViewAction(ViewAction.OnSelectMode(mode)) },
+                            modifier = Modifier.testTag(TestTags.processMode(mode.name)),
+                        )
+                    }
+                }
+            }
             TelemetryTextField(
                 value = viewState.query,
                 onValueChange = { onViewAction(ViewAction.OnQueryChange(it)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag(TestTags.ProcessSearch),
-                placeholder = stringResource(Res.string.details_processes_search_placeholder),
+                placeholder = stringResource(
+                    if (viewState.mode == Mode.Programs) {
+                        Res.string.details_processes_search_placeholder_programs
+                    } else {
+                        Res.string.details_processes_search_placeholder
+                    },
+                ),
                 trailingIcon = if (viewState.query.isNotEmpty()) {
                     {
                         Text(
@@ -256,7 +292,7 @@ private fun ProcessTableSection(
 
             // Extra space below the search field: its minimum touch target (48dp around a 32dp field) and the
             // chips' own targets would otherwise overlap, and the field wins taps on the top of the first chip row.
-            FlowRow(
+            if (viewState.mode == Mode.Processes) FlowRow(
                 modifier = Modifier.padding(top = AppTheme.spacing.spaceSm),
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
@@ -285,24 +321,45 @@ private fun ProcessTableSection(
                 }
             }
 
+            if (viewState.mode == Mode.Programs && !viewState.programsWidgetState.isReady) {
+                DetailsStatePlaceholder(viewState.programsWidgetState)
+                return@Column
+            }
+
             TableHeader(viewState = viewState, onViewAction = onViewAction)
 
             Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs)) {
-                if (viewState.results.isEmpty()) {
+                if (viewState.resultCount == 0) {
                     Text(
-                        text = stringResource(Res.string.details_processes_no_match),
+                        text = stringResource(
+                            if (viewState.mode == Mode.Programs) {
+                                Res.string.details_processes_no_match_programs
+                            } else {
+                                Res.string.details_processes_no_match
+                            },
+                        ),
                         style = AppTheme.typography.labelCode,
                         color = AppTheme.colors.textMuted,
                     )
                 }
-                viewState.pageProcesses.forEach { process ->
-                    ProcessRow(
-                        process = process,
-                        expanded = viewState.expandedPid == process.pid,
-                        pinned = viewState.isPinned(process.pid),
-                        onToggle = { onViewAction(ViewAction.OnToggleProcess(process.pid)) },
-                        onTogglePin = { onViewAction(ViewAction.OnTogglePin(process.pid)) },
-                    )
+                if (viewState.mode == Mode.Programs) {
+                    viewState.pagePrograms.forEach { program ->
+                        ProgramRow(
+                            program = program,
+                            expanded = viewState.expandedProgram == program.name,
+                            onToggle = { onViewAction(ViewAction.OnToggleProgram(program.name)) },
+                        )
+                    }
+                } else {
+                    viewState.pageProcesses.forEach { process ->
+                        ProcessRow(
+                            process = process,
+                            expanded = viewState.expandedPid == process.pid,
+                            pinned = viewState.isPinned(process.pid),
+                            onToggle = { onViewAction(ViewAction.OnToggleProcess(process.pid)) },
+                            onTogglePin = { onViewAction(ViewAction.OnTogglePin(process.pid)) },
+                        )
+                    }
                 }
             }
 
@@ -435,8 +492,12 @@ private fun TableHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         HeaderCell(
-            text = stringResource(Res.string.widget_processes_col_pid),
-            field = SortField.Pid,
+            text = if (viewState.mode == Mode.Programs) {
+                stringResource(Res.string.details_processes_col_count)
+            } else {
+                stringResource(Res.string.widget_processes_col_pid)
+            },
+            field = if (viewState.mode == Mode.Programs) SortField.Count else SortField.Pid,
             viewState = viewState,
             onViewAction = onViewAction,
             modifier = Modifier.width(PidColumnWidth),
@@ -578,6 +639,97 @@ private fun ProcessRow(
 
         if (expanded) {
             ProcessDetails(process = process, pinned = pinned, onTogglePin = onTogglePin)
+        }
+    }
+}
+
+/** One program: how many processes it runs, its summed CPU and memory; expanded, the user, threads and RSS. */
+@Composable
+private fun ProgramRow(
+    program: ProgramUi,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = AppTheme.shapes.sm
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(AppTheme.colors.inputBackground, shape)
+            .border(
+                width = AppTheme.dimensions.hairlineBorder,
+                color = if (expanded) AppTheme.colors.focusHighlight else AppTheme.colors.baseBorder,
+                shape = shape,
+            )
+            .testTag(TestTags.programRow(program.name))
+            .clickable(onClick = onToggle)
+            .padding(horizontal = AppTheme.spacing.spaceSm, vertical = AppTheme.spacing.spaceXs),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = program.processCount.toString(),
+                style = AppTheme.typography.labelCode,
+                color = AppTheme.colors.textMuted,
+                maxLines = 1,
+                modifier = Modifier.width(PidColumnWidth),
+            )
+            Text(
+                text = program.name,
+                style = AppTheme.typography.codeBase,
+                color = AppTheme.colors.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = formatPercentNumber(program.cpuPercent),
+                style = AppTheme.typography.labelCode,
+                color = if (program.cpuPercent > 0f) AppTheme.colors.telemetryA else AppTheme.colors.textSecondary,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                modifier = Modifier.width(LoadColumnWidth),
+            )
+            Text(
+                text = formatPercentNumber(program.memoryPercent),
+                style = AppTheme.typography.labelCode,
+                color = if (program.memoryPercent > 0f) AppTheme.colors.telemetryB else AppTheme.colors.textSecondary,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                modifier = Modifier.width(LoadColumnWidth),
+            )
+            Box(modifier = Modifier.width(AppTheme.spacing.spaceLg))
+        }
+
+        if (expanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs)) {
+                DetailsKeyValueRow(
+                    label = stringResource(Res.string.details_processes_field_processes),
+                    value = program.processCount.toString(),
+                )
+                DetailsKeyValueRow(label = stringResource(Res.string.details_processes_field_user), value = program.user)
+                program.threads?.let {
+                    DetailsKeyValueRow(label = stringResource(Res.string.details_processes_field_threads), value = it.toString())
+                }
+                program.memoryRssBytes?.let {
+                    DetailsKeyValueRow(
+                        label = stringResource(Res.string.details_processes_field_rss),
+                        value = formatProcessMemory(it),
+                    )
+                }
+                LoadGauge(
+                    label = stringResource(Res.string.widget_processes_col_cpu),
+                    percent = program.cpuPercent,
+                    color = AppTheme.colors.telemetryA,
+                )
+                LoadGauge(
+                    label = stringResource(Res.string.widget_processes_col_mem),
+                    percent = program.memoryPercent,
+                    color = AppTheme.colors.telemetryB,
+                )
+            }
         }
     }
 }
