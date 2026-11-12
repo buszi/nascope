@@ -41,6 +41,10 @@ data class AppDimensions(
     val buttonHeightDense: Dp = 32.dp,
     val buttonHeightRegular: Dp = 36.dp,
     val inputHeight: Dp = 32.dp,
+    val switchTrackWidth: Dp = 32.dp,
+    val switchTrackHeight: Dp = 18.dp,
+    val switchThumbSize: Dp = 12.dp,
+    val minTouchTarget: Dp = 48.dp,
     val tableHeaderHeight: Dp = 28.dp,
     val sparklineHeight: Dp = 36.dp,
 

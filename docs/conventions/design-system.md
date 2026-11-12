@@ -47,3 +47,20 @@ The typography system uses two strict typefaces with dedicated roles:
 
 - Semantic state must be mapped to color tokens in **exactly one place** (e.g., in `StatusLevel.color`, `StatusLevel.badgeBackgroundColor`, `StatusLevel.badgeBorderColor`).
 - Never choose status colors ad-hoc at the call site.
+
+---
+
+## 5. Form Primitives (`ui/common/components/inputs/`)
+
+Building blocks for forms such as the connection editor. All of them use tokens only, take an optional `interactionSource`, and are focusable with keyboard on desktop.
+
+| Component | Use it for | Notes |
+| :--- | :--- | :--- |
+| `FormField` | Label above any input, optional helper and error text below. | An error replaces the helper (`AppTheme.colors.critical`) and is announced as a polite live region. Wrap `TelemetryTextField`, `PasswordTextField` or `SegmentedSelector` in it. |
+| `TelemetrySwitch` | On/off setting, optionally with a label. | Same surface language as `SelectableChip` / `TelemetryTextField`: `inputBackground` track, Electric Violet when on, focus ring. The whole row is the touch target. |
+| `PasswordTextField` | Secrets. | `TelemetryTextField` with masking and a trailing show/hide action. Labels are passed in (`showLabel`, `hideLabel`) so strings stay in `strings.xml`. |
+| `SegmentedSelector` | 2-3 exclusive options (e.g. `HTTP` / `HTTPS`). | A new component: `SelectableChip`s are separate pills with gaps and do not read as one control. Use `SelectableChip` for filter/sort chips, `SegmentedSelector` for a single choice inside a form. |
+
+- **Touch targets:** on `WindowWidthClass.Compact` interactive form components grow to `AppDimensions.minTouchTarget` (48dp) through `Modifier.minimumTouchTarget()` (`ui/common/util`). Apply it before any fixed `height(...)`. `TelemetryTextField` itself stays 32dp; add `Modifier.minimumTouchTarget()` when using it directly in a form on Compact (`PasswordTextField` does it already).
+- **Focus previews:** previews use `rememberFocusedInteractionSource()` (internal to the package) to show the focused state.
+
