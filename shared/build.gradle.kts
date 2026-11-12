@@ -14,6 +14,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(projects.domain)
             implementation(projects.resources)
 
             implementation(libs.androidx.lifecycle.viewmodelCompose)
@@ -31,6 +32,10 @@ kotlin {
             implementation(libs.koin.annotations)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+        }
+
+        jvmTest.dependencies {
+            implementation(projects.testUtils)
         }
     }
 }

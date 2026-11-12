@@ -29,6 +29,6 @@ To keep documentation focused and modular, conventions are split into dedicated 
 2. **Dashboard as container**: `DashboardScreen` only arranges bricks via `LazyVerticalGrid` and delegates rendering to `brick.Content(modifier)`. It never previews or manages widget internals.
 3. **MVI Unidirectional Data Flow**: ViewModels expose immutable `StateFlow<ViewState>` and process user intents via `onViewAction(ViewAction)`.
 4. **Stateful vs Stateless UI**: Separate composables into a stateful entrypoint (Koin + lifecycle) and a pure stateless composable (`viewState` + `onViewAction`).
-5. **Unit test standard**: Place tests in `shared/src/jvmTest/kotlin/`. Use `@get:Rule val coroutineRule = TestCoroutineRule()`, test flows with Turbine, and put test data in a `companion object` at the end of the file.
+5. **Unit test standard**: Place tests in the `src/jvmTest/kotlin/` of the owning module (shared helpers come from `:test-utils`). Use `@get:Rule val coroutineRule = TestCoroutineRule()`, test flows with Turbine, mock with Mockk (no hand-written fakes), and put test data in a `companion object` at the end of the file.
 6. **No git commit**: Never run `git commit`. Leave all changes in the working tree for review.
 7. **Layered modules**: `:shared` (UI) -> `:domain` (use cases) -> `:network` / `:storage` (thin public interfaces, internal implementations) -> `:domain-model`. ViewModels inject use cases only; data modules return domain models and hold no business rules.

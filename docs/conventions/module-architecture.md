@@ -15,6 +15,7 @@ If the code and this document disagree after a review correction, fix this docum
 | `:storage` | `io.buszi.nascope.storage` | Local persistence and secure storage. | `:domain-model` |
 | `:domain` | `io.buszi.nascope.domain` | Business logic: use cases and their supporting classes. | `:domain-model` (as `api`), `:network`, `:storage` |
 | `:shared` | `io.buszi.nascope` | UI: screens, ViewModels, navigation, design system, Koin application root. | `:domain`, `:resources` |
+| `:test-utils` | `io.buszi.nascope.test` | Shared JVM test helpers. Test dependency only. | none |
 | `:resources` | `io.buszi.nascope.resources` | Strings, drawables, fonts. | none |
 
 ```
@@ -55,20 +56,24 @@ If the code and this document disagree after a review correction, fix this docum
 
 ### Use cases
 
-- One use case is one business operation, in one file:
+- One use case is one business operation. The public `fun interface` (with its nested models) lives in `domain/<feature>/`; the `internal` implementation lives in its own file in the `impl` subpackage, `domain/<feature>/impl/<Name>UseCaseImpl.kt`:
   ```kotlin
+  // domain/connection/SetActiveServerUseCase.kt
   fun interface SetActiveServerUseCase {
       suspend operator fun invoke(id: ServerProfileId)
   }
 
+  // domain/connection/impl/SetActiveServerUseCaseImpl.kt
   @Factory
   internal class SetActiveServerUseCaseImpl(
       private val profileStore: ServerProfileStore,
       private val preferencesStore: AppPreferencesStore,
+      private val dispatcher: CoroutineDispatcher,
   ) : SetActiveServerUseCase {
-      override suspend fun invoke(id: ServerProfileId) { /* ... */ }
+      override suspend fun invoke(id: ServerProfileId) = withContext(dispatcher) { /* ... */ }
   }
   ```
+- **Threading is decided here, at the use case level.** `DomainModule` provides `Dispatchers.IO` as the `CoroutineDispatcher` in the DI tree. Every use case that touches a store or the network takes `private val dispatcher: CoroutineDispatcher` and switches eagerly: `withContext(dispatcher)` in suspend use cases, `.flowOn(dispatcher)` on the returned flow. Pure computation (e.g. validation) takes no dispatcher. Data modules and ViewModels do not pick dispatchers.
 - `@Factory` by default. Use `@Single` only when the implementation holds shared state (e.g. one polling loop shared by all collectors).
 - A use case may call other use cases through their interfaces.
 - Business rules and multi-step orchestration live here, not in ViewModels and not in data modules.
@@ -112,7 +117,9 @@ Start with the nested form. Move a model to `:domain-model` only when a second c
 
 - `:network`, `:storage` and `:domain` each declare one Koin module class (`@Module @Configuration @ComponentScan("<module package>")`) and apply the Koin compiler plugin.
 - The root `@KoinApplication` lives in `:shared`. Koin is started (together with Napier's `DebugAntilog`) by `initNascope()` from `:shared`, called once by each platform entry point before any UI exists: `NascopeApplication.onCreate` on Android, the first line of `main` on desktop. `App()` does not start Koin.
-- **Cross-module discovery works without `includes`**: the Koin compiler plugin emits discovery hints for each `@Configuration` module, and `koinConfiguration<NascopeApp>()` resolved `:storage` definitions (verified in TASK-4.2). Do not wire modules with `@Module(includes = ...)`.
+- **Cross-module wiring uses `includes`** (settled in TASK-4.2 / 4.4): runtime discovery of `@Configuration` modules works, but the compile-time dependency check in `:shared` cannot see definitions of modules that are not on its compile classpath. So `DomainModule` is declared `@Module(includes = [NetworkModule::class, StorageModule::class])` and `AppModule` `@Module(includes = [DomainModule::class])`. A new data module must be added to `DomainModule`'s includes.
+- **A definition's constructor may only take public types** (or be marked `@Provided`). The cross-module check cannot read definitions whose constructor needs an `internal` type from another module: the definition silently loses its interface binding and consumers fail with `KOIN-D001 Missing dependency`. Hence no `internal` interface between a data module's definitions; platform classes take `Context` (public, `@Provided` because it is registered at runtime) instead of an internal helper type.
+- Stale Koin hints after changing definitions can produce a bogus `KOIN-D001`; re-run with `--rerun-tasks` before debugging.
 - Platform-specific definitions are annotated classes in `androidMain` / `jvmMain` (e.g. `AndroidStorageDirectory`, `JvmStorageDirectory`) implementing an `internal` common interface; the common module class consumes that interface. Where the choice depends on availability (secret store), use an `internal expect fun` returning `null` when unavailable and fall back in common code.
 - Platform objects (e.g. the Android `Context`) are registered by the platform entry point through the `platformConfiguration` parameter of `initNascope()` (a `KoinAppDeclaration`, default empty); modules receive them by constructor injection. `NascopeApplication` registers `single<Context> { applicationContext }`; `desktopApp` passes nothing.
 
@@ -121,6 +128,6 @@ Start with the nested form. Move a model to `:domain-model` only when a second c
 ## 7. Tests
 
 - Each module tests its own code in its own `src/jvmTest/kotlin`.
-- `:domain` tests use hand-written fakes of the data module interfaces; they never start Ktor or DataStore.
+- `:domain` tests follow `unit-testing.md`: `TestCoroutineRule`, Mockk mocks of the `:network` / `:storage` interfaces (never Ktor or DataStore), the rule's dispatcher passed to the use case (`dispatcher = coroutineRule.dispatcher`), Turbine for flows. One test class per implementation, in the `impl` package next to it.
 - `:network` tests use Ktor `MockEngine`; `:storage` tests use temporary files and in-memory fakes of platform services.
-- `TestCoroutineRule` exists only in `:shared`; elsewhere use `runTest` directly.
+- Shared test helpers (`TestCoroutineRule`, Turbine extensions) live in the `:test-utils` module (package `io.buszi.nascope.test`); modules add it as a `jvmTest` dependency.

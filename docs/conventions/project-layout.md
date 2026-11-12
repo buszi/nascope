@@ -13,10 +13,10 @@ See [`module-architecture.md`](./module-architecture.md) for responsibilities an
 | `domain-model/` | Shared domain models (`io.buszi.nascope.domain.model`), e.g. `domain/model/connection/`. Data only, no dependencies. |
 | `storage/` | Local persistence (`io.buszi.nascope.storage`): public `ServerProfileStore`, `AppPreferencesStore`, `SecretStore`; internal DataStore, Keystore (`androidMain`) and keyring (`jvmMain`) implementations. |
 | `network/` | Remote data access (`io.buszi.nascope.network`): public `GlancesConnectionClient`; internal Ktor/OkHttp implementation, URL building and error mapping. |
+| `domain/` | Business logic (`io.buszi.nascope.domain`): use cases in `connection/` (public `fun interface` with nested result models); `internal` `@Factory` implementations in `connection/impl/`, one file each, taking the injected `CoroutineDispatcher`. |
+| `test-utils/` | Shared JVM test helpers (`io.buszi.nascope.test`): `TestCoroutineRule`, Turbine extensions. Added as a `jvmTest` dependency only. |
 | `resources/` | Compose resources (strings, drawables, fonts). |
 | `shared/` | UI, ViewModels, navigation, design system, Koin application root. |
-
-Planned (Phase 4): `domain/`, added by its own task.
 
 ---
 
@@ -36,7 +36,7 @@ Planned (Phase 4): `domain/`, added by its own task.
 | `.../ui/details/`, `.../ui/nodes/`, `.../ui/settings/` | Destination screens for brick details/inspector, cluster node management, and application settings. |
 | `.../data/` | Data layer, repositories, telemetry contracts, and state holders (`telemetry/`). |
 | `shared/src/androidMain/`, `shared/src/jvmMain/` | Platform-specific code only, via `expect`/`actual` or platform-specific interfaces. |
-| `shared/src/jvmTest/kotlin/` | All unit tests (ViewModels, state holders, utilities). |
+| `<module>/src/jvmTest/kotlin/` | Unit tests of that module (`shared`: ViewModels, state holders, utilities; `domain`: use cases; ...). |
 | `resources/src/commonMain/composeResources/` | Shared drawables, strings, fonts. Access via `io.buszi.nascope.resources.Res`. |
 
 ---

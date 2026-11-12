@@ -16,10 +16,6 @@ class StorageModule {
     internal fun appDataStore(directory: StorageDirectory): DataStore<Preferences> =
         createAppDataStore(directory.file(APP_DATA_STORE_FILE))
 
-    @Single
-    internal fun secretStore(directory: StorageDirectory): SecretStore =
-        createPlatformSecretStore(directory) ?: InMemorySecretStore()
-
     private companion object {
         const val APP_DATA_STORE_FILE = "nascope.preferences_pb"
     }

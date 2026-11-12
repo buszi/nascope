@@ -1,5 +1,6 @@
 package io.buszi.nascope.di
 
+import io.buszi.nascope.domain.DomainModule
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.KoinApplication
@@ -8,7 +9,7 @@ import org.koin.core.annotation.Module
 /**
  * Root Koin dependency injection module scanning for annotated definitions across the shared module.
  */
-@Module
+@Module(includes = [DomainModule::class])
 @Configuration
 @ComponentScan("io.buszi.nascope")
 class AppModule

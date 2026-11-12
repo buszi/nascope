@@ -18,10 +18,13 @@ nascope/
 │       └── plugins.desktop.application  # Desktop JVM application conventions
 ├── domain-model/                 # Shared domain models (plain Kotlin, no dependencies)
 │   └── src/commonMain/kotlin/io/buszi/nascope/domain/model/
+├── domain/                       # Use cases (connection management)
+│   └── src/commonMain/kotlin/io/buszi/nascope/domain/connection/
 ├── network/                      # Glances HTTP access (Ktor + OkHttp), connection client
 │   └── src/{commonMain,androidMain,jvmMain}/kotlin/io/buszi/nascope/network/
 ├── storage/                      # Profile & preference stores (DataStore), secret store (Keystore / OS keyring)
 │   └── src/{commonMain,androidMain,jvmMain}/kotlin/io/buszi/nascope/storage/
+├── test-utils/                   # Shared JVM test helpers (TestCoroutineRule, Turbine extensions)
 ├── resources/                    # Common Compose Multiplatform assets & resources
 │   └── src/commonMain/composeResources/
 ├── shared/                       # Core shared business logic & UI components
