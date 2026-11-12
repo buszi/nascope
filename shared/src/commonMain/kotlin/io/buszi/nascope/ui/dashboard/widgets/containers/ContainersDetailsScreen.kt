@@ -305,7 +305,7 @@ private fun ContainerDetailsCard(
                     modifier = Modifier.weight(1f, fill = false),
                 )
                 Text(
-                    text = "#${container.id}",
+                    text = "#${container.shortId}",
                     style = AppTheme.typography.labelCode,
                     color = AppTheme.colors.textMuted,
                     maxLines = 1,

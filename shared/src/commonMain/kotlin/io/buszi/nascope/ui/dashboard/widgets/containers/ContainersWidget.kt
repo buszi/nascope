@@ -439,7 +439,7 @@ private fun ContainerRowCard(
                     )
 
                     Text(
-                        text = "#${container.id}",
+                        text = "#${container.shortId}",
                         style = AppTheme.typography.labelCode,
                         color = AppTheme.colors.textMuted,
                         maxLines = 1,

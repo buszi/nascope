@@ -55,8 +55,14 @@ class ContainerUiTest {
         assertEquals("", ContainersUi.from(Data(listOf(usage(null)))).engine)
     }
 
-    private fun container(usage: Long?, limit: Long?) = ContainerUi(
-        id = "id",
+    @Test
+    fun shortIdIsTheFirstTwelveCharacters() {
+        assertEquals("cb4c3073a1b2", container(usage = null, limit = null, id = "cb4c3073a1b2" + "f".repeat(52)).shortId)
+        assertEquals("id", container(usage = null, limit = null).shortId)
+    }
+
+    private fun container(usage: Long?, limit: Long?, id: String = "id") = ContainerUi(
+        id = id,
         name = "name",
         image = "image",
         state = ContainerStateUi.Running,

@@ -59,6 +59,10 @@ data class ContainerUi(
     val memoryLimitBytes: Long? = null,
     val uptime: String? = null,
 ) {
+    /** The id as Docker abbreviates it: the first 12 characters, so a 64-character id never crowds out the name. */
+    val shortId: String
+        get() = id.take(SHORT_ID_LENGTH)
+
     /** Memory usage relative to the configured limit in `[0.0, 1.0]`, or `null` when unlimited or unknown. */
     val memoryRatio: Float?
         get() = if (memoryUsageBytes == null) {
@@ -70,6 +74,8 @@ data class ContainerUi(
         }
 
     companion object {
+        private const val SHORT_ID_LENGTH = 12
+
         fun from(data: ContainerUsage) = ContainerUi(
             id = data.id,
             name = data.name,
