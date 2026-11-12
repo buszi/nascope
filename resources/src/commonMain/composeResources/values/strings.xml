@@ -342,4 +342,8 @@
     <string name="nodes_demo_connect">Connect to a server</string>
     <string name="nodes_demo_exit">Exit demo</string>
     <string name="nodes_demo_use">Use demo data</string>
+    <string name="widget_state_invalid_response">The server answered with data that could not be read.</string>
+    <string name="widget_state_stale">STALE</string>
+    <string name="widget_state_unavailable">Not available on this host</string>
+    <string name="widget_state_value_placeholder">—</string>
 </resources>

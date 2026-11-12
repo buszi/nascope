@@ -1,10 +1,16 @@
 package io.buszi.nascope.ui.dashboard.widgets.memory
 
 import app.cash.turbine.turbineScope
-import io.buszi.nascope.data.telemetry.MemorySwapData
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.MemoryUsage
+import io.buszi.nascope.domain.model.telemetry.SwapUsage
+import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveMemoryUseCase
+import io.buszi.nascope.domain.telemetry.ObserveMemoryUseCase.Data
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
+import io.buszi.nascope.ui.common.model.MemorySwapUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.memory.MemorySwapViewModel.ViewAction.OnRetry
 import io.buszi.nascope.ui.dashboard.widgets.memory.MemorySwapViewModel.ViewState
@@ -27,85 +33,98 @@ class MemorySwapViewModelTest {
     @get:Rule
     val coroutineRule = TestCoroutineRule()
 
-    private val telemetryStateHolder = mockk<TelemetryStateHolder>()
+    private val observeMemory = mockk<ObserveMemoryUseCase>()
+    private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
+    private val states = MutableStateFlow<TelemetryState<Data>>(TelemetryState.Loading)
 
     private val viewModel by lazy {
+        every { observeMemory() } returns states
         MemorySwapViewModel(
-            telemetryStateHolder = telemetryStateHolder,
+            observeMemory = observeMemory,
+            refreshTelemetry = refreshTelemetry,
+        )
+    }
+
+    private suspend fun kotlinx.coroutines.test.TestScope.viewStates(
+        vararg steps: TelemetryState<Data>,
+    ): List<ViewState> {
+        var result: List<ViewState> = emptyList()
+        turbineScope {
+            val turbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            steps.forEach {
+                states.value = it
+                runCurrent()
+            }
+            result = turbine.cancelAndConsumeItems()
+        }
+        return result
+    }
+
+    @Test
+    fun memorySwapViewModelStartsLoadingThenShowsTheMappedData() = runTest {
+        assertEquals(
+            listOf(ViewState(), readyViewState),
+            viewStates(TelemetryState.Ready(data, isStale = false)),
         )
     }
 
     @Test
-    fun memorySwapViewModelEmitsReadyStateWithTelemetryData() = runTest {
-        turbineScope {
-            val memorySwapFlow = MutableStateFlow(memorySwap)
-            every { telemetryStateHolder.memorySwap } returns memorySwapFlow
-
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-
-            assertEquals(
-                listOf(
-                    initialViewState,
-                    readyViewState,
-                ),
-                viewStateTurbine.cancelAndConsumeItems(),
-            )
-            verifySequence {
-                telemetryStateHolder.memorySwap
-            }
-        }
+    fun memorySwapViewModelMarksStaleDataAndKeepsTheContent() = runTest {
+        assertEquals(
+            listOf(ViewState(), readyViewState, readyViewState.copy(widgetState = WidgetState.Stale)),
+            viewStates(TelemetryState.Ready(data, false), TelemetryState.Ready(data, true)),
+        )
     }
 
     @Test
-    fun memorySwapViewModelHandlesRetryAction() = runTest {
-        turbineScope {
-            val memorySwapFlow = MutableStateFlow(memorySwap)
-            every { telemetryStateHolder.memorySwap } returns memorySwapFlow
-            every { telemetryStateHolder.refresh() } just runs
+    fun memorySwapViewModelShowsUnavailableWhenThePluginIsMissing() = runTest {
+        assertEquals(
+            listOf(ViewState(), ViewState(widgetState = WidgetState.Unavailable)),
+            viewStates(TelemetryState.Failed(TelemetryFailure.PluginUnavailable)),
+        )
+    }
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-            viewModel.onViewAction(OnRetry)
+    @Test
+    fun memorySwapViewModelTreatsAMissingSwapAsNoSwapAndKeepsMissingCacheFigures() = runTest {
+        val noSwap = Data(memory.copy(cachedBytes = null, buffersBytes = null), swap = null)
 
-            assertEquals(
-                listOf(
-                    initialViewState,
-                    readyViewState,
-                    readyViewState.copy(widgetState = WidgetState.Loading),
-                ),
-                viewStateTurbine.cancelAndConsumeItems(),
-            )
-            verifySequence {
-                telemetryStateHolder.memorySwap
-                telemetryStateHolder.refresh()
-            }
+        val last = viewStates(TelemetryState.Ready(noSwap, false)).last()
+
+        assertEquals(
+            MemorySwapUi(totalBytes = 100, usedBytes = 40, cachedBytes = null, buffersBytes = null, freeBytes = 60),
+            last.memory,
+        )
+        assertEquals(WidgetState.Ready, last.widgetState)
+    }
+
+    @Test
+    fun memorySwapViewModelRetryRefreshesTelemetry() = runTest {
+        every { refreshTelemetry() } just runs
+
+        viewModel.onViewAction(OnRetry)
+
+        verifySequence {
+            observeMemory()
+            refreshTelemetry()
         }
     }
 
     companion object {
-        private val memorySwap = MemorySwapData(
-            totalMemBytes = 34_359_738_368L,
-            usedMemBytes = 13_743_895_347L,
-            cachedMemBytes = 9_126_805_504L,
-            buffersMemBytes = 1_288_490_188L,
-            freeMemBytes = 10_200_547_329L,
-            totalSwapBytes = 17_179_869_184L,
-            usedSwapBytes = 2_576_980_377L,
-            freeSwapBytes = 14_602_888_807L,
-        )
-
-        private val initialViewState = ViewState()
+        private val memory = MemoryUsage(100, 40, 60, 55, 10, 5)
+        private val data = Data(memory, SwapUsage(20, 2, 18))
 
         private val readyViewState = ViewState(
-            totalMemBytes = 34_359_738_368L,
-            usedMemBytes = 13_743_895_347L,
-            cachedMemBytes = 9_126_805_504L,
-            buffersMemBytes = 1_288_490_188L,
-            freeMemBytes = 10_200_547_329L,
-            totalSwapBytes = 17_179_869_184L,
-            usedSwapBytes = 2_576_980_377L,
-            freeSwapBytes = 14_602_888_807L,
+            memory = MemorySwapUi(
+                totalBytes = 100,
+                usedBytes = 40,
+                cachedBytes = 10,
+                buffersBytes = 5,
+                freeBytes = 60,
+                totalSwapBytes = 20,
+                usedSwapBytes = 2,
+                freeSwapBytes = 18,
+            ),
             widgetState = WidgetState.Ready,
         )
     }

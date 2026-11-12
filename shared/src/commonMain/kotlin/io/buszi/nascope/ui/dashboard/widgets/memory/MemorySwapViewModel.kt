@@ -3,8 +3,12 @@ package io.buszi.nascope.ui.dashboard.widgets.memory
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveMemoryUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
+import io.buszi.nascope.ui.common.model.MemorySwapUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
+import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import io.buszi.nascope.ui.dashboard.widgets.memory.MemorySwapViewModel.ViewAction.OnRetry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +20,8 @@ import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class MemorySwapViewModel(
-    private val telemetryStateHolder: TelemetryStateHolder,
+    private val observeMemory: ObserveMemoryUseCase,
+    private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -28,28 +33,20 @@ class MemorySwapViewModel(
 
     fun onViewAction(action: ViewAction) {
         when (action) {
-            OnRetry -> retry()
+            OnRetry -> refreshTelemetry()
         }
     }
 
-    private fun retry() {
-        mutableViewState.update { it.copy(widgetState = WidgetState.Loading) }
-        telemetryStateHolder.refresh()
-    }
-
     private fun observeTelemetry() {
-        telemetryStateHolder.memorySwap.onEach { memoryData ->
+        observeMemory().onEach { state ->
             mutableViewState.update {
                 it.copy(
-                    totalMemBytes = memoryData.totalMemBytes,
-                    usedMemBytes = memoryData.usedMemBytes,
-                    cachedMemBytes = memoryData.cachedMemBytes,
-                    buffersMemBytes = memoryData.buffersMemBytes,
-                    freeMemBytes = memoryData.freeMemBytes,
-                    totalSwapBytes = memoryData.totalSwapBytes,
-                    usedSwapBytes = memoryData.usedSwapBytes,
-                    freeSwapBytes = memoryData.freeSwapBytes,
-                    widgetState = WidgetState.Ready,
+                    memory = when (state) {
+                        is TelemetryState.Ready -> MemorySwapUi.from(state.data)
+                        TelemetryState.Loading -> MemorySwapUi()
+                        is TelemetryState.Failed -> it.memory
+                    },
+                    widgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke),
                 )
             }
         }.launchIn(viewModelScope)
@@ -57,14 +54,7 @@ class MemorySwapViewModel(
 
     @Stable
     data class ViewState(
-        val totalMemBytes: Long = 0L,
-        val usedMemBytes: Long = 0L,
-        val cachedMemBytes: Long = 0L,
-        val buffersMemBytes: Long = 0L,
-        val freeMemBytes: Long = 0L,
-        val totalSwapBytes: Long = 0L,
-        val usedSwapBytes: Long = 0L,
-        val freeSwapBytes: Long = 0L,
+        val memory: MemorySwapUi = MemorySwapUi(),
         val widgetState: WidgetState = WidgetState.Loading,
     )
 

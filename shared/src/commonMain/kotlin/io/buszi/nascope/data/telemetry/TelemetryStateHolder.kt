@@ -42,20 +42,6 @@ data class CpuMatrixData(
 )
 
 /**
- * Encapsulates RAM and swap memory allocation telemetry for the memory brick.
- */
-data class MemorySwapData(
-    val totalMemBytes: Long,
-    val usedMemBytes: Long,
-    val cachedMemBytes: Long,
-    val buffersMemBytes: Long,
-    val freeMemBytes: Long,
-    val totalSwapBytes: Long,
-    val usedSwapBytes: Long,
-    val freeSwapBytes: Long,
-)
-
-/**
  * Encapsulates filesystem mount point and capacity telemetry for storage pools.
  */
 data class StorageMountData(
@@ -256,20 +242,6 @@ class TelemetryStateHolder {
         ),
     )
     val cpuMatrix: StateFlow<CpuMatrixData> = _cpuMatrix.asStateFlow()
-
-    private val _memorySwap = MutableStateFlow(
-        MemorySwapData(
-            totalMemBytes = 34_359_738_368L,
-            usedMemBytes = 13_743_895_347L,
-            cachedMemBytes = 9_126_805_504L,
-            buffersMemBytes = 1_288_490_188L,
-            freeMemBytes = 10_200_547_329L,
-            totalSwapBytes = 17_179_869_184L,
-            usedSwapBytes = 2_576_980_377L,
-            freeSwapBytes = 14_602_888_807L,
-        ),
-    )
-    val memorySwap: StateFlow<MemorySwapData> = _memorySwap.asStateFlow()
 
     private val _storagePools = MutableStateFlow(
         StoragePoolsData(
@@ -855,7 +827,6 @@ class TelemetryStateHolder {
         // Triggered by manual dashboard or widget retry
         _hostOverview.value = _hostOverview.value.copy()
         _cpuMatrix.value = _cpuMatrix.value.copy()
-        _memorySwap.value = _memorySwap.value.copy()
         _storagePools.value = _storagePools.value.copy()
         _networkIo.value = _networkIo.value.copy()
         _sensorsThermals.value = _sensorsThermals.value.copy()

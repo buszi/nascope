@@ -55,6 +55,7 @@ import io.buszi.nascope.resources.widget_memory_swap_title
 import io.buszi.nascope.resources.widget_memory_swap_title_compact
 import io.buszi.nascope.resources.widget_memory_swap_total_ram
 import io.buszi.nascope.resources.widget_memory_swap_used
+import io.buszi.nascope.resources.widget_state_value_placeholder
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusDot
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
@@ -94,24 +95,24 @@ fun MemorySwapWidget(
     modifier: Modifier = Modifier,
     onViewAction: (ViewAction) -> Unit = {},
 ) {
-    val usedMemRatio = if (viewState.totalMemBytes > 0L) {
-        (viewState.usedMemBytes.toFloat() / viewState.totalMemBytes).coerceIn(0f, 1f)
+    val usedMemRatio = if (viewState.memory.totalBytes > 0L) {
+        (viewState.memory.usedBytes.toFloat() / viewState.memory.totalBytes).coerceIn(0f, 1f)
     } else 0f
 
-    val cachedMemRatio = if (viewState.totalMemBytes > 0L) {
-        (viewState.cachedMemBytes.toFloat() / viewState.totalMemBytes).coerceIn(0f, 1f)
+    val cachedMemRatio = if (viewState.memory.totalBytes > 0L) {
+        ((viewState.memory.cachedBytes ?: 0L).toFloat() / viewState.memory.totalBytes).coerceIn(0f, 1f)
     } else 0f
 
-    val buffersMemRatio = if (viewState.totalMemBytes > 0L) {
-        (viewState.buffersMemBytes.toFloat() / viewState.totalMemBytes).coerceIn(0f, 1f)
+    val buffersMemRatio = if (viewState.memory.totalBytes > 0L) {
+        ((viewState.memory.buffersBytes ?: 0L).toFloat() / viewState.memory.totalBytes).coerceIn(0f, 1f)
     } else 0f
 
-    val freeMemRatio = if (viewState.totalMemBytes > 0L) {
-        (viewState.freeMemBytes.toFloat() / viewState.totalMemBytes).coerceIn(0f, 1f)
+    val freeMemRatio = if (viewState.memory.totalBytes > 0L) {
+        (viewState.memory.freeBytes.toFloat() / viewState.memory.totalBytes).coerceIn(0f, 1f)
     } else 0f
 
-    val swapRatio = if (viewState.totalSwapBytes > 0L) {
-        (viewState.usedSwapBytes.toFloat() / viewState.totalSwapBytes).coerceIn(0f, 1f)
+    val swapRatio = if (viewState.memory.totalSwapBytes > 0L) {
+        (viewState.memory.usedSwapBytes.toFloat() / viewState.memory.totalSwapBytes).coerceIn(0f, 1f)
     } else 0f
 
     val overallStatus = when {
@@ -136,8 +137,8 @@ fun MemorySwapWidget(
             } else {
                 stringResource(Res.string.widget_memory_swap_title_compact)
             },
-            subtitle = if (viewState.widgetState.isReady && viewState.totalMemBytes > 0L) {
-                stringResource(Res.string.widget_memory_swap_total_ram, formatGb(viewState.totalMemBytes))
+            subtitle = if (viewState.widgetState.isReady && viewState.memory.totalBytes > 0L) {
+                stringResource(Res.string.widget_memory_swap_total_ram, formatGb(viewState.memory.totalBytes))
             } else null,
             modifier = Modifier.fillMaxSize(),
             state = viewState.widgetState,
@@ -158,7 +159,7 @@ fun MemorySwapWidget(
             } else null,
             headerAction = if (viewState.widgetState.isReady) {
                 {
-                    if (viewState.totalSwapBytes > 0L) {
+                    if (viewState.memory.totalSwapBytes > 0L) {
                         val swapPercent = (swapRatio * 100).toInt()
                         TagChip(
                             text = "SWAP " + stringResource(Res.string.percentage_format, swapPercent),
@@ -224,7 +225,7 @@ private fun WideMemorySwapContent(
             verticalAlignment = Alignment.Bottom,
         ) {
             MetricValue(
-                value = formatGb(viewState.usedMemBytes),
+                value = formatGb(viewState.memory.usedBytes),
                 unit = "GB",
                 size = MetricSize.Display,
             )
@@ -277,7 +278,7 @@ private fun WideMemorySwapContent(
                     color = AppTheme.colors.textMuted,
                 )
                 Text(
-                    text = stringResource(Res.string.widget_memory_swap_total_ram, formatGb(viewState.totalMemBytes)),
+                    text = stringResource(Res.string.widget_memory_swap_total_ram, formatGb(viewState.memory.totalBytes)),
                     style = AppTheme.typography.labelCode,
                     color = AppTheme.colors.textSecondary,
                 )
@@ -290,28 +291,28 @@ private fun WideMemorySwapContent(
                 ) {
                     MemoryCell(
                         label = stringResource(Res.string.widget_memory_swap_used),
-                        bytes = viewState.usedMemBytes,
+                        bytes = viewState.memory.usedBytes,
                         ratio = usedMemRatio,
                         indicatorColor = usedColor,
                         modifier = Modifier.weight(1f),
                     )
                     MemoryCell(
                         label = stringResource(Res.string.widget_memory_swap_cached),
-                        bytes = viewState.cachedMemBytes,
+                        bytes = viewState.memory.cachedBytes,
                         ratio = cachedMemRatio,
                         indicatorColor = AppTheme.colors.telemetryB,
                         modifier = Modifier.weight(1f),
                     )
                     MemoryCell(
                         label = stringResource(Res.string.widget_memory_swap_buffers),
-                        bytes = viewState.buffersMemBytes,
+                        bytes = viewState.memory.buffersBytes,
                         ratio = buffersMemRatio,
                         indicatorColor = AppTheme.colors.operational,
                         modifier = Modifier.weight(1f),
                     )
                     MemoryCell(
                         label = stringResource(Res.string.widget_memory_swap_free),
-                        bytes = viewState.freeMemBytes,
+                        bytes = viewState.memory.freeBytes,
                         ratio = freeMemRatio,
                         indicatorColor = AppTheme.colors.textMuted,
                         modifier = Modifier.weight(1f),
@@ -328,14 +329,14 @@ private fun WideMemorySwapContent(
                     ) {
                         MemoryCell(
                             label = stringResource(Res.string.widget_memory_swap_used),
-                            bytes = viewState.usedMemBytes,
+                            bytes = viewState.memory.usedBytes,
                             ratio = usedMemRatio,
                             indicatorColor = usedColor,
                             modifier = Modifier.weight(1f),
                         )
                         MemoryCell(
                             label = stringResource(Res.string.widget_memory_swap_cached),
-                            bytes = viewState.cachedMemBytes,
+                            bytes = viewState.memory.cachedBytes,
                             ratio = cachedMemRatio,
                             indicatorColor = AppTheme.colors.telemetryB,
                             modifier = Modifier.weight(1f),
@@ -347,14 +348,14 @@ private fun WideMemorySwapContent(
                     ) {
                         MemoryCell(
                             label = stringResource(Res.string.widget_memory_swap_buffers),
-                            bytes = viewState.buffersMemBytes,
+                            bytes = viewState.memory.buffersBytes,
                             ratio = buffersMemRatio,
                             indicatorColor = AppTheme.colors.operational,
                             modifier = Modifier.weight(1f),
                         )
                         MemoryCell(
                             label = stringResource(Res.string.widget_memory_swap_free),
-                            bytes = viewState.freeMemBytes,
+                            bytes = viewState.memory.freeBytes,
                             ratio = freeMemRatio,
                             indicatorColor = AppTheme.colors.textMuted,
                             modifier = Modifier.weight(1f),
@@ -373,8 +374,8 @@ private fun WideMemorySwapContent(
 
         // Swap Section
         SwapSectionWide(
-            usedSwapBytes = viewState.usedSwapBytes,
-            totalSwapBytes = viewState.totalSwapBytes,
+            usedSwapBytes = viewState.memory.usedSwapBytes,
+            totalSwapBytes = viewState.memory.totalSwapBytes,
             swapRatio = swapRatio,
         )
     }
@@ -408,7 +409,7 @@ private fun CompactMemorySwapContent(
             verticalAlignment = Alignment.Bottom,
         ) {
             MetricValue(
-                value = formatGb(viewState.usedMemBytes),
+                value = formatGb(viewState.memory.usedBytes),
                 unit = "GB",
                 size = MetricSize.Medium,
             )
@@ -462,25 +463,25 @@ private fun CompactMemorySwapContent(
         ) {
             CompactMemoryRow(
                 label = stringResource(Res.string.widget_memory_swap_used),
-                bytes = viewState.usedMemBytes,
+                bytes = viewState.memory.usedBytes,
                 ratio = usedMemRatio,
                 indicatorColor = usedColor,
             )
             CompactMemoryRow(
                 label = stringResource(Res.string.widget_memory_swap_cached),
-                bytes = viewState.cachedMemBytes,
+                bytes = viewState.memory.cachedBytes,
                 ratio = cachedMemRatio,
                 indicatorColor = AppTheme.colors.telemetryB,
             )
             CompactMemoryRow(
                 label = stringResource(Res.string.widget_memory_swap_buffers),
-                bytes = viewState.buffersMemBytes,
+                bytes = viewState.memory.buffersBytes,
                 ratio = buffersMemRatio,
                 indicatorColor = AppTheme.colors.operational,
             )
             CompactMemoryRow(
                 label = stringResource(Res.string.widget_memory_swap_free),
-                bytes = viewState.freeMemBytes,
+                bytes = viewState.memory.freeBytes,
                 ratio = freeMemRatio,
                 indicatorColor = AppTheme.colors.textMuted,
             )
@@ -495,8 +496,8 @@ private fun CompactMemorySwapContent(
 
         // Compact Swap Section
         SwapSectionCompact(
-            usedSwapBytes = viewState.usedSwapBytes,
-            totalSwapBytes = viewState.totalSwapBytes,
+            usedSwapBytes = viewState.memory.usedSwapBytes,
+            totalSwapBytes = viewState.memory.totalSwapBytes,
             swapRatio = swapRatio,
         )
     }
@@ -593,12 +594,17 @@ private fun TieredBarGauge(
 @Composable
 private fun MemoryCell(
     label: String,
-    bytes: Long,
+    bytes: Long?,
     ratio: Float,
     indicatorColor: Color,
     modifier: Modifier = Modifier,
 ) {
     val percentage = (ratio.coerceIn(0f, 1f) * 100).toInt()
+    val percentageText = if (bytes == null) {
+        stringResource(Res.string.widget_state_value_placeholder)
+    } else {
+        stringResource(Res.string.percentage_format, percentage)
+    }
 
     Column(
         modifier = modifier
@@ -634,12 +640,13 @@ private fun MemoryCell(
             verticalAlignment = Alignment.Bottom,
         ) {
             Text(
-                text = stringResource(Res.string.widget_memory_swap_gb_format, formatGb(bytes)),
+                text = bytes?.let { stringResource(Res.string.widget_memory_swap_gb_format, formatGb(it)) }
+                ?: stringResource(Res.string.widget_state_value_placeholder),
                 style = AppTheme.typography.metricMd,
                 color = AppTheme.colors.textPrimary,
             )
             Text(
-                text = stringResource(Res.string.percentage_format, percentage),
+                text = percentageText,
                 style = AppTheme.typography.labelCode,
                 color = indicatorColor,
             )
@@ -650,12 +657,17 @@ private fun MemoryCell(
 @Composable
 private fun CompactMemoryRow(
     label: String,
-    bytes: Long,
+    bytes: Long?,
     ratio: Float,
     indicatorColor: Color,
     modifier: Modifier = Modifier,
 ) {
     val percentage = (ratio.coerceIn(0f, 1f) * 100).toInt()
+    val percentageText = if (bytes == null) {
+        stringResource(Res.string.widget_state_value_placeholder)
+    } else {
+        stringResource(Res.string.percentage_format, percentage)
+    }
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -674,13 +686,14 @@ private fun CompactMemoryRow(
             modifier = Modifier.width(52.dp),
         )
         Text(
-            text = stringResource(Res.string.widget_memory_swap_gb_format, formatGb(bytes)),
+            text = bytes?.let { stringResource(Res.string.widget_memory_swap_gb_format, formatGb(it)) }
+                ?: stringResource(Res.string.widget_state_value_placeholder),
             style = AppTheme.typography.codeBase,
             color = AppTheme.colors.textPrimary,
             modifier = Modifier.weight(1f),
         )
         Text(
-            text = stringResource(Res.string.percentage_format, percentage),
+            text = percentageText,
             style = AppTheme.typography.labelCode,
             color = indicatorColor,
             modifier = Modifier.width(36.dp),

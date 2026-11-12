@@ -30,11 +30,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.screen_details_close
+import io.buszi.nascope.resources.widget_state_stale
+import io.buszi.nascope.resources.widget_state_unavailable
 import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.containers.TelemetryCard
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
+import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.WidgetSkeleton
 import io.buszi.nascope.ui.navigation.components.NavigationGlyph
 import io.buszi.nascope.ui.navigation.components.NavigationGlyphType
@@ -54,6 +57,7 @@ import org.jetbrains.compose.resources.stringResource
  * @param modifier Root layout modifier supplied by the hosting pane / screen.
  * @param subtitle Optional one-line summary rendered below [title].
  * @param statusTag Optional status badge rendered next to the close action.
+ * @param widgetState State of the brick's telemetry; [WidgetState.Stale] adds a stale tag next to [statusTag].
  * @param content Sections of the details screen.
  */
 @Composable
@@ -64,6 +68,7 @@ fun DetailsScaffold(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     statusTag: (@Composable () -> Unit)? = null,
+    widgetState: WidgetState = WidgetState.Ready,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier.fillMaxSize().testTag(testTag)) {
@@ -101,6 +106,9 @@ fun DetailsScaffold(
             }
 
             statusTag?.invoke()
+            if (widgetState is WidgetState.Stale) {
+                TagChip(text = stringResource(Res.string.widget_state_stale))
+            }
 
             if (AppTheme.windowWidthClass != WindowWidthClass.Compact) {
                 CloseButton(onClick = onClose)
@@ -232,6 +240,36 @@ fun DetailsLoadingPlaceholder(modifier: Modifier = Modifier) {
                     .height(AppTheme.dimensions.brickHeightUnit / 2),
             )
         }
+    }
+}
+
+/**
+ * What a details screen shows instead of its sections while [state] is not ready:
+ * a skeleton while loading, a muted message when the host lacks the data, the failure message otherwise.
+ */
+@Composable
+fun DetailsStatePlaceholder(state: WidgetState, modifier: Modifier = Modifier) {
+    when (state) {
+        WidgetState.Loading -> DetailsLoadingPlaceholder(modifier)
+        WidgetState.Unavailable -> Text(
+            text = stringResource(Res.string.widget_state_unavailable),
+            style = AppTheme.typography.bodyMd,
+            color = AppTheme.colors.textMuted,
+            modifier = modifier,
+        )
+        is WidgetState.Offline -> Text(
+            text = state.reason.getText(),
+            style = AppTheme.typography.codeBase,
+            color = AppTheme.colors.degraded,
+            modifier = modifier,
+        )
+        is WidgetState.Error -> Text(
+            text = state.message.getText(),
+            style = AppTheme.typography.codeBase,
+            color = AppTheme.colors.critical,
+            modifier = modifier,
+        )
+        WidgetState.Ready, WidgetState.Stale -> Unit
     }
 }
 

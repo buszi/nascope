@@ -73,7 +73,8 @@ fun SystemOverviewWidget(
     modifier: Modifier = Modifier,
     onViewAction: (ViewAction) -> Unit = {},
 ) {
-    val normalized1m = if (viewState.cpuCores > 0) viewState.load1m / viewState.cpuCores else 0f
+    val overview = viewState.overview
+    val normalized1m = overview.load?.let { if (it.cpuCores > 0) it.load1m / it.cpuCores else 0f } ?: 0f
     val overallStatus = when {
         normalized1m >= 1.0f -> StatusLevel.Critical
         normalized1m >= 0.75f -> StatusLevel.Degraded
@@ -87,7 +88,7 @@ fun SystemOverviewWidget(
 
     DashboardWidget(
         title = stringResource(Res.string.widget_system_overview_title),
-        subtitle = if (viewState.widgetState.isReady) viewState.osName else null,
+        subtitle = if (viewState.widgetState.isReady) overview.osName else null,
         modifier = modifier,
         state = viewState.widgetState,
         statusTag = if (viewState.widgetState.isReady) {
@@ -100,7 +101,9 @@ fun SystemOverviewWidget(
         } else null,
         headerAction = if (viewState.widgetState.isReady) {
             {
-                TagChip(text = stringResource(Res.string.widget_system_overview_uptime, viewState.uptime))
+                overview.uptime?.let { uptime ->
+                    TagChip(text = stringResource(Res.string.widget_system_overview_uptime, uptime))
+                }
             }
         } else null,
     ) {
@@ -145,7 +148,7 @@ private fun WideOverviewContent(
                 contentAlignment = Alignment.Center,
             ) {
                 HostPlatformIcon(
-                    platform = viewState.platform,
+                    platform = viewState.overview.platform,
                     tint = AppTheme.colors.telemetryA,
                     iconSize = AppTheme.spacing.spaceLg,
                 )
@@ -153,14 +156,14 @@ private fun WideOverviewContent(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = viewState.hostname,
+                    text = viewState.overview.hostname,
                     style = AppTheme.typography.headlineSm,
                     color = AppTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = viewState.kernelRelease,
+                    text = viewState.overview.kernelRelease,
                     style = AppTheme.typography.codeBase,
                     color = AppTheme.colors.textMuted,
                     maxLines = 1,
@@ -168,23 +171,26 @@ private fun WideOverviewContent(
                 )
             }
 
-            TagChip(text = stringResource(Res.string.widget_system_overview_cores, viewState.cpuCores))
+            viewState.overview.load?.let { load ->
+                TagChip(text = stringResource(Res.string.widget_system_overview_cores, load.cpuCores))
+            }
         }
 
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(AppTheme.dimensions.hairlineBorder)
-                .background(AppTheme.colors.subtleDivider),
-        )
-
-        // Load Averages Section
-        LoadAveragesWide(
-            load1m = viewState.load1m,
-            load5m = viewState.load5m,
-            load15m = viewState.load15m,
-            cpuCores = viewState.cpuCores,
-        )
+        // Load Averages Section: left out when the host reports no load
+        viewState.overview.load?.let { load ->
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(AppTheme.dimensions.hairlineBorder)
+                    .background(AppTheme.colors.subtleDivider),
+            )
+            LoadAveragesWide(
+                load1m = load.load1m,
+                load5m = load.load5m,
+                load15m = load.load15m,
+                cpuCores = load.cpuCores,
+            )
+        }
     }
 }
 
@@ -215,7 +221,7 @@ private fun CompactOverviewContent(
                 contentAlignment = Alignment.Center,
             ) {
                 HostPlatformIcon(
-                    platform = viewState.platform,
+                    platform = viewState.overview.platform,
                     tint = AppTheme.colors.telemetryA,
                     iconSize = AppTheme.spacing.spaceMd,
                 )
@@ -223,14 +229,14 @@ private fun CompactOverviewContent(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = viewState.hostname,
+                    text = viewState.overview.hostname,
                     style = AppTheme.typography.bodyMd,
                     color = AppTheme.colors.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = viewState.kernelRelease,
+                    text = viewState.overview.kernelRelease,
                     style = AppTheme.typography.labelCode,
                     color = AppTheme.colors.textMuted,
                     maxLines = 1,
@@ -238,50 +244,54 @@ private fun CompactOverviewContent(
                 )
             }
 
-            TagChip(text = stringResource(Res.string.widget_system_overview_cores_compact, viewState.cpuCores))
+            viewState.overview.load?.let { load ->
+                TagChip(text = stringResource(Res.string.widget_system_overview_cores_compact, load.cpuCores))
+            }
         }
 
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(AppTheme.dimensions.hairlineBorder)
-                .background(AppTheme.colors.subtleDivider),
-        )
+        viewState.overview.load?.let { load ->
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(AppTheme.dimensions.hairlineBorder)
+                    .background(AppTheme.colors.subtleDivider),
+            )
 
-        // Compact Load Averages Rows
-        Text(
-            text = stringResource(Res.string.widget_system_overview_load_averages),
-            style = AppTheme.typography.labelUi,
-            color = AppTheme.colors.textMuted,
-        )
+            // Compact Load Averages Rows
+            Text(
+                text = stringResource(Res.string.widget_system_overview_load_averages),
+                style = AppTheme.typography.labelUi,
+                color = AppTheme.colors.textMuted,
+            )
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppTheme.colors.inputBackground, AppTheme.shapes.base)
-                .border(
-                    width = AppTheme.dimensions.hairlineBorder,
-                    color = AppTheme.colors.baseBorder,
-                    shape = AppTheme.shapes.base,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(AppTheme.colors.inputBackground, AppTheme.shapes.base)
+                    .border(
+                        width = AppTheme.dimensions.hairlineBorder,
+                        color = AppTheme.colors.baseBorder,
+                        shape = AppTheme.shapes.base,
+                    )
+                    .padding(AppTheme.spacing.spaceSm),
+                verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+            ) {
+                CompactLoadRow(
+                    label = stringResource(Res.string.widget_system_overview_load_1m_compact),
+                    value = load.load1m,
+                    cpuCores = load.cpuCores,
                 )
-                .padding(AppTheme.spacing.spaceSm),
-            verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
-        ) {
-            CompactLoadRow(
-                label = stringResource(Res.string.widget_system_overview_load_1m_compact),
-                value = viewState.load1m,
-                cpuCores = viewState.cpuCores,
-            )
-            CompactLoadRow(
-                label = stringResource(Res.string.widget_system_overview_load_5m_compact),
-                value = viewState.load5m,
-                cpuCores = viewState.cpuCores,
-            )
-            CompactLoadRow(
-                label = stringResource(Res.string.widget_system_overview_load_15m_compact),
-                value = viewState.load15m,
-                cpuCores = viewState.cpuCores,
-            )
+                CompactLoadRow(
+                    label = stringResource(Res.string.widget_system_overview_load_5m_compact),
+                    value = load.load5m,
+                    cpuCores = load.cpuCores,
+                )
+                CompactLoadRow(
+                    label = stringResource(Res.string.widget_system_overview_load_15m_compact),
+                    value = load.load15m,
+                    cpuCores = load.cpuCores,
+                )
+            }
         }
     }
 }

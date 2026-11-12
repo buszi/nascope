@@ -27,6 +27,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.stringResource
+import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.widget_state_stale
+import io.buszi.nascope.resources.widget_state_unavailable
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.StatusDot
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
@@ -49,6 +53,8 @@ import io.buszi.nascope.ui.dashboard.framework.LocalBrickInteraction
  *   can open details, plus an accented border and raised fill while its details are open.
  * - Cohesive lifecycle state handling:
  *   - [WidgetState.Ready]: Renders [content].
+ *   - [WidgetState.Stale]: Renders [content] and a stale tag in the header.
+ *   - [WidgetState.Unavailable]: Renders a muted "not available on this host" message, no retry.
  *   - [WidgetState.Loading]: Renders [loadingContent] (or default skeleton).
  *   - [WidgetState.Error]: Renders technical error readout with optional retry action.
  *   - [WidgetState.Offline]: Renders offline state indicator with optional reconnect action.
@@ -88,6 +94,14 @@ fun DashboardWidget(
     val effectiveBackground = if (isOpen) AppTheme.colors.elevatedOverlay else backgroundColor
     val effectiveBorderColor = if (isOpen) AppTheme.colors.telemetryA else borderColor
     val effectiveBorderWidth = if (isOpen) AppTheme.dimensions.focusRing else borderWidth
+    val effectiveStatusTag: (@Composable () -> Unit)? = if (state is WidgetState.Stale) {
+        {
+            statusTag?.invoke()
+            TagChip(text = stringResource(Res.string.widget_state_stale))
+        }
+    } else {
+        statusTag
+    }
     val effectiveHeaderAction: (@Composable RowScope.() -> Unit)? =
         if (interaction == BrickInteraction.None) {
             headerAction
@@ -138,8 +152,8 @@ fun DashboardWidget(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false),
                         )
-                        if (statusTag != null) {
-                            statusTag()
+                        if (effectiveStatusTag != null) {
+                            effectiveStatusTag()
                         }
                     }
 
@@ -191,8 +205,8 @@ fun DashboardWidget(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f, fill = false),
                             )
-                            if (statusTag != null) {
-                                statusTag()
+                            if (effectiveStatusTag != null) {
+                                effectiveStatusTag()
                             }
                         }
 
@@ -229,8 +243,11 @@ fun DashboardWidget(
                 .clipToBounds(),
         ) {
             when (state) {
-                is WidgetState.Ready -> {
+                is WidgetState.Ready, is WidgetState.Stale -> {
                     content()
+                }
+                is WidgetState.Unavailable -> {
+                    WidgetUnavailableState()
                 }
                 is WidgetState.Loading -> {
                     if (loadingContent != null) {
@@ -279,6 +296,15 @@ private fun DefaultWidgetSkeleton() {
                 .height(AppTheme.spacing.spaceSm),
         )
     }
+}
+
+@Composable
+private fun WidgetUnavailableState() {
+    Text(
+        text = stringResource(Res.string.widget_state_unavailable),
+        style = AppTheme.typography.bodyMd,
+        color = AppTheme.colors.textMuted,
+    )
 }
 
 @Composable
@@ -402,6 +428,24 @@ private fun DashboardWidgetPreview() {
                 state = WidgetState.Loading,
             ) {
                 // Not rendered in Loading state
+            }
+
+            DashboardWidget(
+                title = "FAN CONTROL",
+                state = WidgetState.Unavailable,
+            ) {
+                // Not rendered in Unavailable state
+            }
+
+            DashboardWidget(
+                title = "MEMORY",
+                state = WidgetState.Stale,
+            ) {
+                Text(
+                    text = "12.4 GB",
+                    style = AppTheme.typography.metricDisplay,
+                    color = AppTheme.colors.textPrimary,
+                )
             }
 
             DashboardWidget(

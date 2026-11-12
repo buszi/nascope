@@ -3,8 +3,12 @@ package io.buszi.nascope.ui.dashboard.widgets.system
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveSystemOverviewUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
+import io.buszi.nascope.ui.common.model.SystemOverviewUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
+import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewViewModel.ViewAction.OnRetry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +20,8 @@ import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class SystemOverviewViewModel(
-    private val telemetryStateHolder: TelemetryStateHolder,
+    private val observeSystemOverview: ObserveSystemOverviewUseCase,
+    private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -28,29 +33,20 @@ class SystemOverviewViewModel(
 
     fun onViewAction(action: ViewAction) {
         when (action) {
-            OnRetry -> retry()
+            OnRetry -> refreshTelemetry()
         }
     }
 
-    private fun retry() {
-        mutableViewState.update { it.copy(widgetState = WidgetState.Loading) }
-        telemetryStateHolder.refresh()
-    }
-
     private fun observeTelemetry() {
-        telemetryStateHolder.hostOverview.onEach { overview ->
+        observeSystemOverview().onEach { state ->
             mutableViewState.update {
                 it.copy(
-                    hostname = overview.hostname,
-                    osName = overview.osName,
-                    kernelRelease = overview.kernelRelease,
-                    uptime = overview.uptime,
-                    load1m = overview.load1m,
-                    load5m = overview.load5m,
-                    load15m = overview.load15m,
-                    cpuCores = overview.cpuCores,
-                    platform = HostPlatform.fromIdentifier(overview.osName),
-                    widgetState = WidgetState.Ready,
+                    overview = when (state) {
+                        is TelemetryState.Ready -> SystemOverviewUi.from(state.data)
+                        TelemetryState.Loading -> SystemOverviewUi()
+                        is TelemetryState.Failed -> it.overview
+                    },
+                    widgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke),
                 )
             }
         }.launchIn(viewModelScope)
@@ -58,15 +54,7 @@ class SystemOverviewViewModel(
 
     @Stable
     data class ViewState(
-        val hostname: String = "",
-        val osName: String = "",
-        val kernelRelease: String = "",
-        val uptime: String = "",
-        val load1m: Float = 0f,
-        val load5m: Float = 0f,
-        val load15m: Float = 0f,
-        val cpuCores: Int = 0,
-        val platform: HostPlatform = HostPlatform.Generic,
+        val overview: SystemOverviewUi = SystemOverviewUi(),
         val widgetState: WidgetState = WidgetState.Loading,
     )
 
