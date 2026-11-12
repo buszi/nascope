@@ -32,7 +32,7 @@ If the code and this document disagree after a review correction, fix this docum
 
 ## 2. `:domain-model`
 
-- Contains models that more than one module needs: entities, value classes, enums and sealed result/failure types (e.g. `ServerProfile`, `ServerCredentials`, `ConnectionFailure`).
+- Contains models that more than one module needs: entities, value classes, enums and sealed result/failure types (e.g. `ServerProfile`, `ServerCredentials`, `ConnectionFailure`). Packages: `domain.model.connection` (server profiles, connection input and failures) and `domain.model.telemetry` (raw Glances snapshot models such as `CpuUsage` and `TelemetryFailure`: raw units, no history, no formatting).
 - Plain Kotlin only: no Koin, no Ktor, no serialization annotations, no coroutines, no logic beyond trivial derived properties.
 - A model belongs here only if it crosses a module boundary as a parameter or return type of a `:network` / `:storage` interface, or is shared by several use cases. Models produced by one use case do **not** belong here (see section 4).
 
@@ -41,6 +41,7 @@ If the code and this document disagree after a review correction, fix this docum
 ## 3. Data modules: `:network` and `:storage`
 
 - Each data module **declares its own public interfaces** and implements them with `internal` classes wired into DI with Koin annotations. Nothing but the interfaces (and the module's Koin module class) is public.
+- New fallible data calls return `com.github.michaelbull.result.Result<T, E>` with an error type from `:domain-model` (e.g. `Result<CpuUsage, TelemetryFailure>`). A module whose public interface uses it declares `kotlin-result` as `api`. Existing `ConnectionFailure?` APIs are not migrated.
 - Interface parameters and return types are **domain models** from `:domain-model` or Kotlin/coroutines primitives. DTOs, Ktor types, DataStore types, exceptions from the underlying library and serialization annotations never leave the module. Map to domain models (including failures) at the module boundary.
 - Data modules are **thin**: one interface function is one remote call or one storage operation. No business rules, no orchestration of several steps, no knowledge of what the UI does. If an implementation starts deciding *what should happen next*, that logic belongs in a use case.
 - Data modules know nothing about each other. Anything that needs both (e.g. a request that needs a stored secret) is combined in `:domain`.

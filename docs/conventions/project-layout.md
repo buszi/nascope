@@ -10,7 +10,7 @@ See [`module-architecture.md`](./module-architecture.md) for responsibilities an
 
 | Module | Contents |
 | :--- | :--- |
-| `domain-model/` | Shared domain models (`io.buszi.nascope.domain.model`), e.g. `domain/model/connection/`. Data only, no dependencies. |
+| `domain-model/` | Shared domain models (`io.buszi.nascope.domain.model`), `domain/model/connection/` and `domain/model/telemetry/`. Data only, no dependencies. |
 | `storage/` | Local persistence (`io.buszi.nascope.storage`): public `ServerProfileStore`, `AppPreferencesStore`, `SecretStore`; internal DataStore, Keystore (`androidMain`) and keyring (`jvmMain`) implementations. |
 | `network/` | Remote data access (`io.buszi.nascope.network`): public `GlancesConnectionClient`; internal Ktor/OkHttp implementation, URL building and error mapping. |
 | `domain/` | Business logic (`io.buszi.nascope.domain`): use cases in `connection/` (public `fun interface` with nested result models); `internal` `@Factory` implementations in `connection/impl/`, one file each, taking the injected `CoroutineDispatcher`. |
