@@ -171,24 +171,17 @@
     <!-- CPU details -->
     <string name="details_cpu_title">CPU // DETAILS</string>
     <string name="details_cpu_overview">UTILIZATION</string>
-    <string name="details_cpu_stat_clock_avg">AVG CLOCK</string>
-    <string name="details_cpu_stat_clock_peak">PEAK CLOCK</string>
+    <string name="details_cpu_stat_clock">CLOCK</string>
+    <string name="details_cpu_stat_clock_max">MAX CLOCK</string>
     <string name="details_cpu_stat_package_temp">PACKAGE TEMP</string>
-    <string name="details_cpu_stat_hottest_core">HOTTEST CORE</string>
     <string name="details_cpu_stat_busiest_core">BUSIEST CORE</string>
     <string name="details_cpu_busiest_core_format">CORE %1$s // %2$d%</string>
     <string name="details_cpu_history">USAGE HISTORY</string>
     <string name="details_cpu_history_average">AVG %1$s%</string>
     <string name="details_cpu_history_peak">PEAK %1$s%</string>
-    <string name="details_cpu_load">LOAD AVERAGE</string>
-    <string name="details_cpu_load_1m">1 MIN</string>
-    <string name="details_cpu_load_5m">5 MIN</string>
-    <string name="details_cpu_load_15m">15 MIN</string>
     <string name="details_cpu_cores">CORES</string>
     <string name="details_cpu_sort_core">CORE</string>
     <string name="details_cpu_sort_usage">LOAD</string>
-    <string name="details_cpu_sort_frequency">CLOCK</string>
-    <string name="details_cpu_sort_temperature">TEMP</string>
 
     <!-- Containers details -->
     <string name="details_containers_title">CONTAINERS // DETAILS</string>

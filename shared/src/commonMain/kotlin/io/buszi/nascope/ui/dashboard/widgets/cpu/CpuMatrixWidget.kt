@@ -71,7 +71,7 @@ fun CpuMatrixWidget(
     modifier: Modifier = Modifier,
     onViewAction: (ViewAction) -> Unit = {},
 ) {
-    val overallStatus = CpuCoreUi.overallStatus(viewState.aggregateUsage, viewState.temperatureC)
+    val overallStatus = viewState.cpu.overallStatus
     val statusLabel = when (overallStatus) {
         StatusLevel.Critical -> stringResource(Res.string.widget_cpu_matrix_status_critical)
         StatusLevel.Degraded -> stringResource(Res.string.widget_cpu_matrix_status_elevated)
@@ -89,7 +89,7 @@ fun CpuMatrixWidget(
             } else {
                 stringResource(Res.string.widget_cpu_matrix_title_compact)
             },
-            subtitle = if (viewState.widgetState.isReady && viewState.modelName.isNotBlank()) viewState.modelName else null,
+            subtitle = if (viewState.widgetState.isReady && viewState.cpu.modelName.isNotBlank()) viewState.cpu.modelName else null,
             modifier = Modifier.fillMaxSize(),
             state = viewState.widgetState,
             statusTag = if (viewState.widgetState.isReady) {
@@ -109,13 +109,13 @@ fun CpuMatrixWidget(
             } else null,
             headerAction = if (viewState.widgetState.isReady) {
                 {
-                    if (isWide && viewState.frequencyGhz > 0f) {
-                        TagChip(text = formatFrequency(viewState.frequencyGhz))
+                    viewState.cpu.frequencyGhz?.takeIf { isWide }?.let { frequency ->
+                        TagChip(text = formatFrequency(frequency))
                     }
-                    if (viewState.temperatureC > 0f) {
-                        val tempStatus = CpuCoreUi.temperatureStatus(viewState.temperatureC)
+                    viewState.cpu.temperatureC?.let { temperature ->
+                        val tempStatus = CpuCoreUi.temperatureStatus(temperature)
                         StatusChip(
-                            text = formatTemperature(viewState.temperatureC),
+                            text = formatTemperature(temperature),
                             status = tempStatus,
                             showDot = isWide,
                             pulsing = tempStatus == StatusLevel.Critical,
@@ -146,8 +146,8 @@ private fun FixedHeightCpuContent(
     viewState: ViewState,
     modifier: Modifier = Modifier,
 ) {
-    val ratio = (viewState.aggregateUsage / 100f).coerceIn(0f, 1f)
-    val cores = viewState.coreUsages
+    val ratio = (viewState.cpu.usagePercent / 100f).coerceIn(0f, 1f)
+    val cores = viewState.cpu.cores.map { it.usagePercent }
     val overflow = (cores.size - FIXED_HEIGHT_MAX_CORES).coerceAtLeast(0)
     val shownCores = if (overflow > 0) cores.take(FIXED_HEIGHT_MAX_CORES - 1) else cores
     val hiddenCount = cores.size - shownCores.size
@@ -162,7 +162,7 @@ private fun FixedHeightCpuContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             MetricValue(
-                value = formatPercentValue(viewState.aggregateUsage),
+                value = formatPercentValue(viewState.cpu.usagePercent),
                 unit = "%",
                 size = MetricSize.Medium,
                 inlineTrend = false,
@@ -232,8 +232,8 @@ private fun WideCpuMatrixContent(
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
     ) {
         AggregateUsageWide(
-            usage = viewState.aggregateUsage,
-            trend = viewState.usageTrend,
+            usage = viewState.cpu.usagePercent,
+            trend = viewState.cpu.trend,
         )
 
         Spacer(
@@ -244,7 +244,7 @@ private fun WideCpuMatrixContent(
         )
 
         CoreMatrixWide(
-            coreUsages = viewState.coreUsages,
+            coreUsages = viewState.cpu.cores.map { it.usagePercent },
             maxWidth = maxWidth,
         )
     }
@@ -261,9 +261,9 @@ private fun CompactCpuMatrixContent(
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
     ) {
         AggregateUsageCompact(
-            usage = viewState.aggregateUsage,
-            trend = viewState.usageTrend,
-            frequencyGhz = viewState.frequencyGhz,
+            usage = viewState.cpu.usagePercent,
+            trend = viewState.cpu.trend,
+            frequencyGhz = viewState.cpu.frequencyGhz,
         )
 
         Spacer(
@@ -274,7 +274,7 @@ private fun CompactCpuMatrixContent(
         )
 
         CoreMatrixCompact(
-            coreUsages = viewState.coreUsages,
+            coreUsages = viewState.cpu.cores.map { it.usagePercent },
             maxWidth = maxWidth,
         )
     }
@@ -283,7 +283,7 @@ private fun CompactCpuMatrixContent(
 @Composable
 private fun AggregateUsageWide(
     usage: Float,
-    trend: String,
+    trend: String?,
     modifier: Modifier = Modifier,
 ) {
     val ratio = (usage / 100f).coerceIn(0f, 1f)
@@ -299,7 +299,7 @@ private fun AggregateUsageWide(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom,
         ) {
-            if (trend.isNotBlank()) {
+            if (trend != null) {
                 MetricValue(
                     value = formatPercentValue(usage),
                     unit = "%",
@@ -341,8 +341,8 @@ private fun AggregateUsageWide(
 @Composable
 private fun AggregateUsageCompact(
     usage: Float,
-    trend: String,
-    frequencyGhz: Float,
+    trend: String?,
+    frequencyGhz: Float?,
     modifier: Modifier = Modifier,
 ) {
     val ratio = (usage / 100f).coerceIn(0f, 1f)
@@ -368,10 +368,10 @@ private fun AggregateUsageCompact(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.space2xs),
             ) {
-                if (frequencyGhz > 0f) {
+                if (frequencyGhz != null) {
                     TagChip(text = formatFrequency(frequencyGhz))
                 }
-                if (trend.isNotBlank()) {
+                if (trend != null) {
                     TrendBadge(
                         text = trend,
                         status = status,

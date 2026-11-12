@@ -1,6 +1,8 @@
 package io.buszi.nascope.ui.dashboard.widgets.cpu
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import io.buszi.nascope.ui.common.model.CpuCoreUi
+import io.buszi.nascope.ui.common.model.CpuUi
 import io.buszi.nascope.ui.common.util.Message
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixViewModel.ViewState
@@ -26,71 +28,94 @@ class CpuMatrixPreviewParameterProvider : PreviewParameterProvider<ViewState> {
         HighLoadCritical,
         LoadingState,
         ErrorState,
+        StaleState,
+        UnavailableState,
+        NoSensorsState,
         OfflineState,
     )
 
     companion object {
         val Ryzen16Core = ViewState(
-            modelName = "AMD Ryzen 9 5950X (16-Core)",
-            aggregateUsage = 42.8f,
-            usageTrend = "+2.4% / 5m",
-            frequencyGhz = 3.80f,
-            temperatureC = 58.0f,
-            coreUsages = listOf(
+            cpu = CpuUi(
+                modelName = "AMD Ryzen 9 5950X (16-Core)",
+                usagePercent = 42.8f,
+                trend = "+2.4%",
+                frequencyGhz = 3.80f,
+                temperatureC = 58.0f,
+                cores = coreUsages(
                 34.2f, 48.1f, 12.0f, 88.5f,
                 24.0f, 62.3f, 41.0f, 19.8f,
                 55.4f, 31.2f, 76.8f, 92.1f,
                 15.6f, 43.9f, 28.7f, 64.5f,
             ),
+            ),
             widgetState = WidgetState.Ready,
         )
 
         val IntelQuadCore = ViewState(
-            modelName = "Intel Celeron J4125 (4-Core)",
-            aggregateUsage = 28.4f,
-            usageTrend = "-1.2% / 5m",
-            frequencyGhz = 2.00f,
-            temperatureC = 44.0f,
-            coreUsages = listOf(22.0f, 35.5f, 18.2f, 38.0f),
+            cpu = CpuUi(
+                modelName = "Intel Celeron J4125 (4-Core)",
+                usagePercent = 28.4f,
+                trend = "-1.2%",
+                frequencyGhz = 2.00f,
+                temperatureC = 44.0f,
+                cores = coreUsages(22.0f, 35.5f, 18.2f, 38.0f),
+            ),
             widgetState = WidgetState.Ready,
         )
 
         val XeonOctaCore = ViewState(
-            modelName = "Intel Xeon E5-2667 v4 (8-Core)",
-            aggregateUsage = 76.4f,
-            usageTrend = "+8.5% / 5m",
-            frequencyGhz = 3.20f,
-            temperatureC = 76.0f,
-            coreUsages = listOf(72.0f, 84.5f, 68.2f, 88.0f, 74.1f, 79.5f, 65.4f, 79.8f),
+            cpu = CpuUi(
+                modelName = "Intel Xeon E5-2667 v4 (8-Core)",
+                usagePercent = 76.4f,
+                trend = "+8.5%",
+                frequencyGhz = 3.20f,
+                temperatureC = 76.0f,
+                cores = coreUsages(72.0f, 84.5f, 68.2f, 88.0f, 74.1f, 79.5f, 65.4f, 79.8f),
+            ),
             widgetState = WidgetState.Ready,
         )
 
         val Threadripper32Core = ViewState(
-            modelName = "AMD Threadripper PRO 5975WX (32-Core)",
-            aggregateUsage = 61.2f,
-            usageTrend = "+0.8% / 5m",
-            frequencyGhz = 4.10f,
-            temperatureC = 68.0f,
-            coreUsages = listOf(
+            cpu = CpuUi(
+                modelName = "AMD Threadripper PRO 5975WX (32-Core)",
+                usagePercent = 61.2f,
+                trend = "+0.8%",
+                frequencyGhz = 4.10f,
+                temperatureC = 68.0f,
+                cores = coreUsages(
                 45.2f, 68.1f, 52.0f, 78.5f, 34.0f, 62.3f, 41.0f, 59.8f,
                 75.4f, 81.2f, 46.8f, 62.1f, 55.6f, 63.9f, 48.7f, 74.5f,
                 65.0f, 71.3f, 58.4f, 82.0f, 42.1f, 55.8f, 49.2f, 67.4f,
                 70.5f, 84.0f, 53.6f, 69.1f, 60.2f, 73.4f, 51.0f, 77.9f,
             ),
+            ),
             widgetState = WidgetState.Ready,
         )
 
         val HighLoadCritical = ViewState(
-            modelName = "AMD EPYC 7763 (64-Core)",
-            aggregateUsage = 94.6f,
-            usageTrend = "+18.2% / 5m",
-            frequencyGhz = 4.45f,
-            temperatureC = 89.0f,
-            coreUsages = listOf(
+            cpu = CpuUi(
+                modelName = "AMD EPYC 7763 (64-Core)",
+                usagePercent = 94.6f,
+                trend = "+18.2%",
+                frequencyGhz = 4.45f,
+                temperatureC = 89.0f,
+                cores = coreUsages(
                 92.0f, 96.5f, 91.2f, 98.0f, 89.1f, 95.5f, 94.4f, 97.8f,
                 93.2f, 99.1f, 90.5f, 96.0f, 92.4f, 94.8f, 91.0f, 98.5f,
             ),
+            ),
             widgetState = WidgetState.Ready,
+        )
+
+        /** Latest poll failed: values from an earlier one, with the stale tag. */
+        val StaleState = Ryzen16Core.copy(widgetState = WidgetState.Stale)
+
+        val UnavailableState = ViewState(widgetState = WidgetState.Unavailable)
+
+        /** Host without clock and temperature data (container, no quicklook / sensors): the tags are left out. */
+        val NoSensorsState = IntelQuadCore.copy(
+            cpu = IntelQuadCore.cpu.copy(frequencyGhz = null, temperatureC = null, trend = null),
         )
 
         val LoadingState = ViewState(
@@ -112,3 +137,6 @@ class CpuMatrixPreviewParameterProvider : PreviewParameterProvider<ViewState> {
         )
     }
 }
+
+private fun coreUsages(vararg usages: Float): List<CpuCoreUi> =
+    usages.mapIndexed { index, usage -> CpuCoreUi(index, usage) }

@@ -1,6 +1,6 @@
 package io.buszi.nascope.ui.common.model
 
-import io.buszi.nascope.data.telemetry.CpuCoreData
+import io.buszi.nascope.domain.model.telemetry.CpuCoreUsage
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -8,11 +8,8 @@ import kotlin.test.assertEquals
 class CpuCoreUiTest {
 
     @Test
-    fun fromMapsDataAndIndex() {
-        assertEquals(
-            CpuCoreUi(index = 3, usagePercent = 40f, frequencyGhz = 3.5f, temperatureC = 60f),
-            CpuCoreUi.from(3, CpuCoreData(usagePercent = 40f, frequencyGhz = 3.5f, temperatureC = 60f)),
-        )
+    fun fromMapsDomainCore() {
+        assertEquals(CpuCoreUi(index = 3, usagePercent = 40f), CpuCoreUi.from(CpuCoreUsage(3, 40f)))
     }
 
     @Test
@@ -39,7 +36,7 @@ class CpuCoreUiTest {
 
     @Test
     fun usageRatioIsClampedToUnitRange() {
-        assertEquals(0.5f, CpuCoreUi(0, 50f, 0f, 0f).usageRatio)
-        assertEquals(1f, CpuCoreUi(0, 140f, 0f, 0f).usageRatio)
+        assertEquals(0.5f, CpuCoreUi(0, 50f).usageRatio)
+        assertEquals(1f, CpuCoreUi(0, 140f).usageRatio)
     }
 }

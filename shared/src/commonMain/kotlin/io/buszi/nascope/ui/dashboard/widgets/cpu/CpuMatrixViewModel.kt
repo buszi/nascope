@@ -3,9 +3,13 @@ package io.buszi.nascope.ui.dashboard.widgets.cpu
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveCpuUseCase
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
+import io.buszi.nascope.ui.common.model.CpuUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixViewModel.ViewAction.OnRetry
+import io.buszi.nascope.ui.dashboard.widgets.toWidgetState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +20,8 @@ import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class CpuMatrixViewModel(
-    private val telemetryStateHolder: TelemetryStateHolder,
+    private val observeCpu: ObserveCpuUseCase,
+    private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState())
@@ -28,26 +33,20 @@ class CpuMatrixViewModel(
 
     fun onViewAction(action: ViewAction) {
         when (action) {
-            OnRetry -> retry()
+            OnRetry -> refreshTelemetry()
         }
     }
 
-    private fun retry() {
-        mutableViewState.update { it.copy(widgetState = WidgetState.Loading) }
-        telemetryStateHolder.refresh()
-    }
-
     private fun observeTelemetry() {
-        telemetryStateHolder.cpuMatrix.onEach { cpuData ->
-            mutableViewState.update { state ->
-                state.copy(
-                    modelName = cpuData.modelName,
-                    aggregateUsage = cpuData.aggregateUsage,
-                    usageTrend = cpuData.usageTrend,
-                    frequencyGhz = cpuData.frequencyGhz,
-                    temperatureC = cpuData.temperatureC,
-                    coreUsages = cpuData.cores.map { it.usagePercent },
-                    widgetState = WidgetState.Ready,
+        observeCpu().onEach { state ->
+            mutableViewState.update {
+                it.copy(
+                    cpu = when (state) {
+                        is TelemetryState.Ready -> CpuUi.from(state.data)
+                        TelemetryState.Loading -> CpuUi()
+                        is TelemetryState.Failed -> it.cpu
+                    },
+                    widgetState = state.toWidgetState(onRetry = refreshTelemetry::invoke),
                 )
             }
         }.launchIn(viewModelScope)
@@ -55,12 +54,7 @@ class CpuMatrixViewModel(
 
     @Stable
     data class ViewState(
-        val modelName: String = "",
-        val aggregateUsage: Float = 0f,
-        val usageTrend: String = "",
-        val frequencyGhz: Float = 0f,
-        val temperatureC: Float = 0f,
-        val coreUsages: List<Float> = emptyList(),
+        val cpu: CpuUi = CpuUi(),
         val widgetState: WidgetState = WidgetState.Loading,
     )
 

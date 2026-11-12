@@ -6,42 +6,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.koin.core.annotation.Single
 
 /**
- * Encapsulates host system identification telemetry for the overview brick.
- */
-data class HostOverviewData(
-    val hostname: String,
-    val osName: String,
-    val kernelRelease: String,
-    val uptime: String,
-    val load1m: Float,
-    val load5m: Float,
-    val load15m: Float,
-    val cpuCores: Int,
-)
-
-/**
- * Encapsulates utilization, clock and thermal telemetry for a single CPU core.
- */
-data class CpuCoreData(
-    val usagePercent: Float,
-    val frequencyGhz: Float = 0f,
-    val temperatureC: Float = 0f,
-)
-
-/**
- * Encapsulates detailed CPU utilization telemetry for the CPU matrix brick.
- */
-data class CpuMatrixData(
-    val modelName: String,
-    val aggregateUsage: Float,
-    val usageTrend: String,
-    val frequencyGhz: Float,
-    val temperatureC: Float,
-    val cores: List<CpuCoreData>,
-    val usageHistory: List<Float> = emptyList(),
-)
-
-/**
  * Encapsulates filesystem mount point and capacity telemetry for storage pools.
  */
 data class StorageMountData(
@@ -193,55 +157,6 @@ data class ProcessListData(
  */
 @Single
 class TelemetryStateHolder {
-
-    private val _hostOverview = MutableStateFlow(
-        HostOverviewData(
-            hostname = "alpha-node-01.local",
-            osName = "Ubuntu 24.04.1 LTS",
-            kernelRelease = "Linux 6.8.0-45-generic",
-            uptime = "14d 06h 32m",
-            load1m = 0.42f,
-            load5m = 0.58f,
-            load15m = 0.71f,
-            cpuCores = 8,
-        ),
-    )
-    val hostOverview: StateFlow<HostOverviewData> = _hostOverview.asStateFlow()
-
-    private val _cpuMatrix = MutableStateFlow(
-        CpuMatrixData(
-            modelName = "AMD Ryzen 9 5950X (16-Core)",
-            aggregateUsage = 42.8f,
-            usageTrend = "+2.4% / 5m",
-            frequencyGhz = 3.80f,
-            temperatureC = 58.0f,
-            cores = listOf(
-                CpuCoreData(34.2f, 3.82f, 55f),
-                CpuCoreData(48.1f, 3.91f, 57f),
-                CpuCoreData(12.0f, 2.20f, 49f),
-                CpuCoreData(88.5f, 4.55f, 66f),
-                CpuCoreData(24.0f, 2.85f, 52f),
-                CpuCoreData(62.3f, 4.10f, 61f),
-                CpuCoreData(41.0f, 3.76f, 56f),
-                CpuCoreData(19.8f, 2.40f, 50f),
-                CpuCoreData(55.4f, 4.02f, 59f),
-                CpuCoreData(31.2f, 3.30f, 54f),
-                CpuCoreData(76.8f, 4.38f, 64f),
-                CpuCoreData(92.1f, 4.60f, 72f),
-                CpuCoreData(15.6f, 2.30f, 48f),
-                CpuCoreData(43.9f, 3.80f, 57f),
-                CpuCoreData(28.7f, 3.05f, 53f),
-                CpuCoreData(64.5f, 4.15f, 62f),
-            ),
-            usageHistory = listOf(
-                31.5f, 34.2f, 38.8f, 36.1f, 41.7f, 45.3f, 43.0f, 39.4f, 37.8f, 42.6f,
-                48.9f, 52.4f, 47.1f, 44.5f, 40.2f, 38.6f, 41.9f, 46.3f, 50.7f, 49.2f,
-                45.8f, 43.1f, 40.5f, 39.0f, 42.4f, 44.9f, 47.6f, 45.1f, 41.3f, 40.8f,
-                43.7f, 46.2f, 44.0f, 41.5f, 39.9f, 42.0f, 44.6f, 43.3f, 42.1f, 42.8f,
-            ),
-        ),
-    )
-    val cpuMatrix: StateFlow<CpuMatrixData> = _cpuMatrix.asStateFlow()
 
     private val _storagePools = MutableStateFlow(
         StoragePoolsData(
@@ -825,8 +740,6 @@ class TelemetryStateHolder {
 
     fun refresh() {
         // Triggered by manual dashboard or widget retry
-        _hostOverview.value = _hostOverview.value.copy()
-        _cpuMatrix.value = _cpuMatrix.value.copy()
         _storagePools.value = _storagePools.value.copy()
         _networkIo.value = _networkIo.value.copy()
         _sensorsThermals.value = _sensorsThermals.value.copy()

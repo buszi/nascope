@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -27,19 +26,12 @@ import io.buszi.nascope.resources.details_cpu_cores
 import io.buszi.nascope.resources.details_cpu_history
 import io.buszi.nascope.resources.details_cpu_history_average
 import io.buszi.nascope.resources.details_cpu_history_peak
-import io.buszi.nascope.resources.details_cpu_load
-import io.buszi.nascope.resources.details_cpu_load_15m
-import io.buszi.nascope.resources.details_cpu_load_1m
-import io.buszi.nascope.resources.details_cpu_load_5m
 import io.buszi.nascope.resources.details_cpu_overview
 import io.buszi.nascope.resources.details_cpu_sort_core
-import io.buszi.nascope.resources.details_cpu_sort_frequency
-import io.buszi.nascope.resources.details_cpu_sort_temperature
 import io.buszi.nascope.resources.details_cpu_sort_usage
 import io.buszi.nascope.resources.details_cpu_stat_busiest_core
-import io.buszi.nascope.resources.details_cpu_stat_clock_avg
-import io.buszi.nascope.resources.details_cpu_stat_clock_peak
-import io.buszi.nascope.resources.details_cpu_stat_hottest_core
+import io.buszi.nascope.resources.details_cpu_stat_clock
+import io.buszi.nascope.resources.details_cpu_stat_clock_max
 import io.buszi.nascope.resources.details_cpu_stat_package_temp
 import io.buszi.nascope.resources.details_cpu_title
 import io.buszi.nascope.resources.percentage_format
@@ -61,7 +53,7 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuDetailsViewModel.SortOrder
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuDetailsViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuDetailsViewModel.ViewState
-import io.buszi.nascope.ui.details.components.DetailsLoadingPlaceholder
+import io.buszi.nascope.ui.details.components.DetailsStatePlaceholder
 import io.buszi.nascope.ui.details.components.DetailsScaffold
 import io.buszi.nascope.ui.details.components.DetailsSection
 import io.buszi.nascope.ui.details.components.DetailsStat
@@ -96,16 +88,17 @@ fun CpuDetailsScreen(
         onClose = onClose,
         testTag = TestTags.details(DashboardBrickId.CpuMatrix),
         modifier = modifier,
-        subtitle = viewState.modelName.takeIf { viewState.widgetState.isReady && it.isNotBlank() },
+        subtitle = viewState.cpu.modelName.takeIf { viewState.widgetState.isReady && it.isNotBlank() },
+        widgetState = viewState.widgetState,
         statusTag = if (viewState.widgetState.isReady) {
             {
                 StatusChip(
-                    text = when (viewState.overallStatus) {
+                    text = when (viewState.cpu.overallStatus) {
                         StatusLevel.Critical -> stringResource(Res.string.widget_cpu_matrix_status_critical)
                         StatusLevel.Degraded -> stringResource(Res.string.widget_cpu_matrix_status_elevated)
                         StatusLevel.Operational -> stringResource(Res.string.widget_cpu_matrix_status_nominal)
                     },
-                    status = viewState.overallStatus,
+                    status = viewState.cpu.overallStatus,
                 )
             }
         } else {
@@ -113,14 +106,13 @@ fun CpuDetailsScreen(
         },
     ) {
         if (!viewState.widgetState.isReady) {
-            DetailsLoadingPlaceholder()
+            DetailsStatePlaceholder(viewState.widgetState)
         } else {
             OverviewSection(viewState = viewState)
-            if (viewState.usageHistory.size >= 2) {
+            if (viewState.cpu.usageHistory.size >= 2) {
                 HistorySection(viewState = viewState)
             }
-            LoadAverageSection(viewState = viewState)
-            if (viewState.cores.isNotEmpty()) {
+            if (viewState.cpu.cores.isNotEmpty()) {
                 CoresSection(viewState = viewState, onViewAction = onViewAction)
             }
         }
@@ -132,58 +124,55 @@ private fun OverviewSection(
     viewState: ViewState,
     modifier: Modifier = Modifier,
 ) {
-    val busiest = viewState.busiestCore
+    val cpu = viewState.cpu
+    val busiest = cpu.busiestCore
 
     DetailsSection(
         title = stringResource(Res.string.details_cpu_overview),
         modifier = modifier,
     ) {
         MetricValue(
-            value = formatPercentValue(viewState.aggregateUsage),
+            value = formatPercentValue(cpu.usagePercent),
             unit = "%",
-            trend = viewState.usageTrend.takeIf { it.isNotBlank() },
+            trend = cpu.trend,
             size = MetricSize.Display,
             inlineTrend = true,
         )
         LinearGauge(
-            progress = viewState.aggregateUsage / 100f,
+            progress = cpu.usagePercent / 100f,
             modifier = Modifier.padding(vertical = AppTheme.spacing.spaceSm),
             warningThreshold = CpuCoreUi.UsageWarningPercent / 100f,
             criticalThreshold = CpuCoreUi.UsageCriticalPercent / 100f,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
-        ) {
-            DetailsStat(
-                label = stringResource(Res.string.details_cpu_stat_clock_avg),
-                value = formatFrequency(viewState.averageFrequencyGhz),
-                modifier = Modifier.weight(1f),
-            )
-            DetailsStat(
-                label = stringResource(Res.string.details_cpu_stat_clock_peak),
-                value = formatFrequency(viewState.peakFrequencyGhz),
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = AppTheme.spacing.spaceSm),
-            horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
-        ) {
-            DetailsStat(
-                label = stringResource(Res.string.details_cpu_stat_package_temp),
-                value = formatTemperature(viewState.temperatureC),
-                valueColor = viewState.temperatureStatus.valueColor(),
-                modifier = Modifier.weight(1f),
-            )
-            DetailsStat(
-                label = stringResource(Res.string.details_cpu_stat_hottest_core),
-                value = formatTemperature(viewState.hottestCoreTemperatureC),
-                valueColor = CpuCoreUi.temperatureStatus(viewState.hottestCoreTemperatureC).valueColor(),
-                modifier = Modifier.weight(1f),
-            )
+        // Only what the host reports: clock, max clock and package temperature are each left out when missing.
+        if (cpu.frequencyGhz != null || cpu.maxFrequencyGhz != null || cpu.temperatureC != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
+            ) {
+                cpu.frequencyGhz?.let {
+                    DetailsStat(
+                        label = stringResource(Res.string.details_cpu_stat_clock),
+                        value = formatFrequency(it),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                cpu.maxFrequencyGhz?.let {
+                    DetailsStat(
+                        label = stringResource(Res.string.details_cpu_stat_clock_max),
+                        value = formatFrequency(it),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                cpu.temperatureC?.let {
+                    DetailsStat(
+                        label = stringResource(Res.string.details_cpu_stat_package_temp),
+                        value = formatTemperature(it),
+                        valueColor = cpu.temperatureStatus.valueColor(),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
         if (busiest != null) {
             DetailsStat(
@@ -213,7 +202,7 @@ private fun HistorySection(
                 Text(
                     text = stringResource(
                         Res.string.details_cpu_history_average,
-                        formatPercentValue(viewState.usageHistoryAverage),
+                        formatPercentValue(viewState.cpu.usageHistoryAverage),
                     ),
                     style = AppTheme.typography.labelCode,
                     color = AppTheme.colors.textMuted,
@@ -221,7 +210,7 @@ private fun HistorySection(
                 Text(
                     text = stringResource(
                         Res.string.details_cpu_history_peak,
-                        formatPercentValue(viewState.usageHistoryPeak),
+                        formatPercentValue(viewState.cpu.usageHistoryPeak),
                     ),
                     style = AppTheme.typography.labelCode,
                     color = AppTheme.colors.textMuted,
@@ -230,63 +219,13 @@ private fun HistorySection(
         },
     ) {
         MiniSparkline(
-            data = viewState.usageHistory,
+            data = viewState.cpu.usageHistory,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(AppTheme.dimensions.sparklineHeight * 2),
             lineColor = AppTheme.colors.telemetryA,
             minValue = 0f,
-            maxValue = (viewState.usageHistoryPeak * 1.25f).coerceIn(20f, 100f),
-        )
-    }
-}
-
-@Composable
-private fun LoadAverageSection(
-    viewState: ViewState,
-    modifier: Modifier = Modifier,
-) {
-    DetailsSection(
-        title = stringResource(Res.string.details_cpu_load),
-        modifier = modifier,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm)) {
-            LoadRow(label = stringResource(Res.string.details_cpu_load_1m), load = viewState.load1m, viewState = viewState)
-            LoadRow(label = stringResource(Res.string.details_cpu_load_5m), load = viewState.load5m, viewState = viewState)
-            LoadRow(label = stringResource(Res.string.details_cpu_load_15m), load = viewState.load15m, viewState = viewState)
-        }
-    }
-}
-
-@Composable
-private fun LoadRow(
-    label: String,
-    load: Float,
-    viewState: ViewState,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
-    ) {
-        Text(
-            text = label,
-            style = AppTheme.typography.labelCode,
-            color = AppTheme.colors.textMuted,
-            modifier = Modifier.width(48.dp),
-        )
-        LinearGauge(
-            progress = viewState.loadPerCore(load),
-            modifier = Modifier.weight(1f),
-            barHeight = AppTheme.spacing.space2xs,
-            normalColor = AppTheme.colors.telemetryB,
-        )
-        Text(
-            text = formatLoad(load),
-            style = AppTheme.typography.codeBase,
-            color = AppTheme.colors.textPrimary,
-            modifier = Modifier.width(40.dp),
+            maxValue = (viewState.cpu.usageHistoryPeak * 1.25f).coerceIn(20f, 100f),
         )
     }
 }
@@ -326,8 +265,6 @@ private fun CoresSection(
 private fun SortOrder.label(): String = when (this) {
     SortOrder.Core -> stringResource(Res.string.details_cpu_sort_core)
     SortOrder.Usage -> stringResource(Res.string.details_cpu_sort_usage)
-    SortOrder.Frequency -> stringResource(Res.string.details_cpu_sort_frequency)
-    SortOrder.Temperature -> stringResource(Res.string.details_cpu_sort_temperature)
 }
 
 @Composable
@@ -374,20 +311,6 @@ private fun CoreRow(
             modifier = Modifier.width(34.dp),
             maxLines = 1,
         )
-        Text(
-            text = formatFrequency(core.frequencyGhz),
-            style = AppTheme.typography.labelCode,
-            color = AppTheme.colors.textSecondary,
-            maxLines = 1,
-            overflow = TextOverflow.Clip,
-        )
-        Text(
-            text = formatTemperature(core.temperatureC),
-            style = AppTheme.typography.labelCode,
-            color = core.temperatureStatus.valueColor(),
-            modifier = Modifier.width(34.dp),
-            maxLines = 1,
-        )
     }
 }
 
@@ -395,12 +318,6 @@ private fun CoreRow(
 private fun StatusLevel.valueColor() = when (this) {
     StatusLevel.Operational -> AppTheme.colors.textPrimary
     StatusLevel.Degraded, StatusLevel.Critical -> color
-}
-
-private fun formatLoad(load: Float): String {
-    val rounded = (load * 100).toInt()
-    val fraction = rounded % 100
-    return "${rounded / 100}.${if (fraction < 10) "0$fraction" else "$fraction"}"
 }
 
 @Preview

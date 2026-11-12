@@ -1,7 +1,7 @@
 package io.buszi.nascope.ui.common.model
 
 import androidx.compose.runtime.Immutable
-import io.buszi.nascope.data.telemetry.CpuCoreData
+import io.buszi.nascope.domain.model.telemetry.CpuCoreUsage
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 
 /**
@@ -14,8 +14,6 @@ import io.buszi.nascope.ui.common.components.badges.StatusLevel
 data class CpuCoreUi(
     val index: Int,
     val usagePercent: Float,
-    val frequencyGhz: Float,
-    val temperatureC: Float,
 ) {
     /** Utilization normalized to `[0.0, 1.0]`. */
     val usageRatio: Float
@@ -25,21 +23,15 @@ data class CpuCoreUi(
     val usageStatus: StatusLevel
         get() = usageStatus(usagePercent)
 
-    /** Status derived from [temperatureC]. */
-    val temperatureStatus: StatusLevel
-        get() = temperatureStatus(temperatureC)
-
     companion object {
         const val UsageWarningPercent: Float = 75f
         const val UsageCriticalPercent: Float = 90f
         const val TemperatureWarningC: Float = 75f
         const val TemperatureCriticalC: Float = 85f
 
-        fun from(index: Int, data: CpuCoreData) = CpuCoreUi(
-            index = index,
-            usagePercent = data.usagePercent,
-            frequencyGhz = data.frequencyGhz,
-            temperatureC = data.temperatureC,
+        fun from(data: CpuCoreUsage) = CpuCoreUi(
+            index = data.index,
+            usagePercent = data.totalPercent,
         )
 
         fun usageStatus(usagePercent: Float): StatusLevel = when {
