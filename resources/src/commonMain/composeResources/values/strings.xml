@@ -301,7 +301,7 @@
     <string name="connection_failure_connection_refused">Connection refused. Check the port and that Glances runs with its web server enabled.</string>
     <string name="connection_failure_timeout">The server did not answer in time. Check the address and your network.</string>
     <string name="connection_failure_tls_error">The secure connection failed. Check the certificate or use HTTP.</string>
-    <string name="connection_failure_not_glances">This does not look like a Glances server. Check the host and port.</string>
+    <string name="connection_failure_not_glances">This does not look like a Glances server. Check the host, port and API version.</string>
     <string name="connection_failure_unauthorized">Access denied. This server needs a valid username and password.</string>
     <string name="connection_failure_unexpected">Something unexpected went wrong while connecting.</string>
     <string name="connection_error_alias_blank">Enter a name for this server</string>

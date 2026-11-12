@@ -117,6 +117,8 @@ internal class KtorGlancesTelemetryClient(
                 HttpStatusCode.OK -> parse(result.body)
                 HttpStatusCode.Unauthorized -> Err(TelemetryFailure.Connection(ConnectionFailure.Unauthorized))
                 HttpStatusCode.BadRequest -> Err(TelemetryFailure.PluginUnavailable)
+                // The whole API is missing: a wrong host, port or API version, not one absent plugin.
+                HttpStatusCode.NotFound -> Err(TelemetryFailure.Connection(ConnectionFailure.NotGlances))
                 else -> Err(TelemetryFailure.Connection(ConnectionFailure.Unexpected("HTTP ${result.status.value}")))
             }
         }

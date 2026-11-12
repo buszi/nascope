@@ -128,6 +128,14 @@ class KtorGlancesTelemetryClientTest {
     }
 
     @Test
+    fun notFoundMapsToNotGlancesAsTheApiVersionDoesNotExist() = runTest {
+        for ((version, _) in versions()) {
+            val result = responding(HttpStatusCode.NotFound).client.fetchCpu(connection(version))
+            assertEquals(TelemetryFailure.Connection(ConnectionFailure.NotGlances), result.getError())
+        }
+    }
+
+    @Test
     fun otherStatusesMapToUnexpected() = runTest {
         val result = responding(HttpStatusCode.InternalServerError).client.fetchCpu(connection(GlancesApiVersion.V4))
         assertEquals(TelemetryFailure.Connection(ConnectionFailure.Unexpected("HTTP 500")), result.getError())
