@@ -17,6 +17,10 @@ internal data class V4DiskIoDto(
     @SerialName("disk_name") val diskName: String? = null,
     @SerialName("read_bytes_rate_per_sec") val readRate: Double? = null,
     @SerialName("write_bytes_rate_per_sec") val writeRate: Double? = null,
+    @SerialName("read_count_rate_per_sec") val readIops: Double? = null,
+    @SerialName("write_count_rate_per_sec") val writeIops: Double? = null,
+    @SerialName("read_latency") val readLatency: Double? = null,
+    @SerialName("write_latency") val writeLatency: Double? = null,
 )
 
 @Serializable
@@ -65,6 +69,10 @@ internal fun parseV4DiskIo(body: String): Result<List<DiskIoRate>, TelemetryFail
             diskName = d.diskName ?: return@parseList null,
             readBytesPerSec = d.readRate?.toLong() ?: 0,
             writeBytesPerSec = d.writeRate?.toLong() ?: 0,
+            readIops = d.readIops?.toLong(),
+            writeIops = d.writeIops?.toLong(),
+            readLatencyMs = d.readLatency?.toLong(),
+            writeLatencyMs = d.writeLatency?.toLong(),
         )
     }
 

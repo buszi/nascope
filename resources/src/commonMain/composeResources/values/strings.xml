@@ -194,6 +194,9 @@
     <string name="details_storage_free_format">%1$s FREE</string>
     <string name="details_storage_distribution">USAGE DISTRIBUTION</string>
     <string name="details_storage_io">DISK I/O</string>
+    <string name="details_storage_disks">DISKS</string>
+    <string name="details_storage_disk_iops">IOPS  R %1$d · W %2$d</string>
+    <string name="details_storage_disk_latency">LATENCY  R %1$d ms · W %2$d ms</string>
     <string name="details_storage_mounts">MOUNT POINTS</string>
     <string name="details_storage_sort_usage">USAGE</string>
     <string name="details_storage_sort_name">NAME</string>

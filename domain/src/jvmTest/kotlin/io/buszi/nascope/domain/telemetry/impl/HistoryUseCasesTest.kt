@@ -225,6 +225,42 @@ class HistoryUseCasesTest {
     }
 
     @Test
+    fun storageKeepsAHistoryPerDiskDropsVanishedDisksAndDoesNotAppendStalePolls() = runTest {
+        turbineScope {
+            val turbine = storageUseCase().testIn(this)
+            runCurrent()
+            fileSystems.value = Polled.Value(listOf(mount), isStale = false)
+            runCurrent()
+            diskIo.value = Polled.Value(listOf(DiskIoRate("a", 100, 50), DiskIoRate("b", 1, 2)), isStale = false)
+            runCurrent()
+            diskIo.value = Polled.Value(listOf(DiskIoRate("a", 10, 5), DiskIoRate("b", 3, 4)), isStale = false)
+            runCurrent()
+            diskIo.value = Polled.Value(listOf(DiskIoRate("a", 10, 5), DiskIoRate("b", 3, 4)), isStale = true)
+            runCurrent()
+            val grown = turbine.cancelAndConsumeItems()
+                .filterIsInstance<TelemetryState.Ready<ObserveStorageUseCase.Data>>().map { it.data }.last()
+            assertEquals(listOf("a", "b"), grown.disks.map { it.io.diskName })
+            assertEquals(listOf(100f, 10f), grown.disks[0].readHistory)
+            assertEquals(listOf(2f, 4f), grown.disks[1].writeHistory)
+        }
+        // A disk that vanishes loses its buffer; when it returns it starts again.
+        turbineScope {
+            val turbine = storageUseCase().testIn(this)
+            runCurrent()
+            diskIo.value = Polled.Value(listOf(DiskIoRate("a", 1, 1), DiskIoRate("b", 7, 7)), isStale = false)
+            runCurrent()
+            diskIo.value = Polled.Value(listOf(DiskIoRate("a", 2, 2)), isStale = false)
+            runCurrent()
+            diskIo.value = Polled.Value(listOf(DiskIoRate("a", 3, 3), DiskIoRate("b", 9, 9)), isStale = false)
+            runCurrent()
+            val last = turbine.cancelAndConsumeItems()
+                .filterIsInstance<TelemetryState.Ready<ObserveStorageUseCase.Data>>().map { it.data }.last()
+            assertEquals(listOf(1f, 2f, 3f), last.disks[0].readHistory)
+            assertEquals(listOf(9f), last.disks[1].readHistory)
+        }
+    }
+
+    @Test
     fun storageWithoutDiskIoStaysReadyWithEmptyDiskFields() = runTest {
         turbineScope {
             fileSystems.value = Polled.Value(listOf(mount), isStale = false)

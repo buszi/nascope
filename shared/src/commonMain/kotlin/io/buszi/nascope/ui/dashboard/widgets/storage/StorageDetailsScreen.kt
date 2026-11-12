@@ -30,6 +30,9 @@ import io.buszi.nascope.resources.details_storage_field_filesystem
 import io.buszi.nascope.resources.details_storage_field_free
 import io.buszi.nascope.resources.details_storage_field_options
 import io.buszi.nascope.resources.details_storage_free_format
+import io.buszi.nascope.resources.details_storage_disk_iops
+import io.buszi.nascope.resources.details_storage_disk_latency
+import io.buszi.nascope.resources.details_storage_disks
 import io.buszi.nascope.resources.details_storage_io
 import io.buszi.nascope.resources.details_storage_mounts
 import io.buszi.nascope.resources.details_storage_no_mounts
@@ -57,6 +60,7 @@ import io.buszi.nascope.ui.common.components.inputs.SelectableChip
 import io.buszi.nascope.ui.common.components.metrics.MetricSize
 import io.buszi.nascope.ui.common.components.metrics.MetricValue
 import io.buszi.nascope.ui.common.model.DiskIoUi
+import io.buszi.nascope.ui.common.model.DiskUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.common.model.distinctDevices
 import io.buszi.nascope.ui.common.testing.TestTags
@@ -68,6 +72,7 @@ import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.Vie
 import io.buszi.nascope.ui.details.components.DetailsKeyValueRow
 import io.buszi.nascope.ui.details.components.DetailsStatePlaceholder
 import io.buszi.nascope.ui.details.components.DetailsScaffold
+import io.buszi.nascope.ui.details.components.DetailsPager
 import io.buszi.nascope.ui.details.components.DetailsSection
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -139,6 +144,7 @@ fun StorageDetailsScreen(
             OverviewSection(viewState = viewState)
             DistributionSection(viewState = viewState)
             viewState.diskIo?.let { DiskIoSection(diskIo = it) }
+            if (viewState.disks.isNotEmpty()) DisksSection(viewState = viewState, onViewAction = onViewAction)
             MountsSection(viewState = viewState, onViewAction = onViewAction)
         }
     }
@@ -286,6 +292,71 @@ private fun DiskIoSection(
                 bytesPerSec = diskIo.writeBytesPerSec,
                 history = diskIo.writeHistory,
                 color = AppTheme.colors.telemetryA,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DisksSection(
+    viewState: ViewState,
+    onViewAction: (ViewAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DetailsSection(
+        title = stringResource(Res.string.details_storage_disks),
+        modifier = modifier,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd)) {
+            viewState.pagedDisks.forEach { DiskCard(it) }
+            if (viewState.disksPageCount > 1) {
+                DetailsPager(
+                    page = viewState.disksPage,
+                    pageCount = viewState.disksPageCount,
+                    onPrevious = { onViewAction(ViewAction.OnDisksPage(-1)) },
+                    onNext = { onViewAction(ViewAction.OnDisksPage(1)) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiskCard(disk: DiskUi, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
+    ) {
+        Text(
+            text = disk.name,
+            style = AppTheme.typography.codeBase,
+            color = AppTheme.colors.textPrimary,
+            maxLines = 1,
+        )
+        IoChannel(
+            label = stringResource(Res.string.widget_storage_io_read),
+            bytesPerSec = disk.readBytesPerSec,
+            history = disk.readHistory,
+            color = AppTheme.colors.telemetryB,
+        )
+        IoChannel(
+            label = stringResource(Res.string.widget_storage_io_write),
+            bytesPerSec = disk.writeBytesPerSec,
+            history = disk.writeHistory,
+            color = AppTheme.colors.telemetryA,
+        )
+        if (disk.readIops != null && disk.writeIops != null) {
+            Text(
+                text = stringResource(Res.string.details_storage_disk_iops, disk.readIops, disk.writeIops),
+                style = AppTheme.typography.labelCode,
+                color = AppTheme.colors.textMuted,
+            )
+        }
+        if (disk.readLatencyMs != null && disk.writeLatencyMs != null) {
+            Text(
+                text = stringResource(Res.string.details_storage_disk_latency, disk.readLatencyMs, disk.writeLatencyMs),
+                style = AppTheme.typography.labelCode,
+                color = AppTheme.colors.textMuted,
             )
         }
     }

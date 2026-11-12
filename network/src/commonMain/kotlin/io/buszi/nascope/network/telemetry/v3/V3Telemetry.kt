@@ -29,6 +29,8 @@ internal data class V3DiskIoDto(
     @SerialName("disk_name") val diskName: String? = null,
     @SerialName("read_bytes") val readBytes: Long? = null,
     @SerialName("write_bytes") val writeBytes: Long? = null,
+    @SerialName("read_count") val readCount: Long? = null,
+    @SerialName("write_count") val writeCount: Long? = null,
     @SerialName("time_since_update") val timeSinceUpdate: Double? = null,
 )
 
@@ -81,6 +83,9 @@ internal fun parseV3DiskIo(body: String): Result<List<DiskIoRate>, TelemetryFail
             diskName = d.diskName ?: return@parseList null,
             readBytesPerSec = ratePerSecond(d.readBytes, d.timeSinceUpdate),
             writeBytesPerSec = ratePerSecond(d.writeBytes, d.timeSinceUpdate),
+            // The operation counts are deltas too. The latency is not reported by Glances 3.
+            readIops = d.readCount?.let { ratePerSecond(it, d.timeSinceUpdate) },
+            writeIops = d.writeCount?.let { ratePerSecond(it, d.timeSinceUpdate) },
         )
     }
 

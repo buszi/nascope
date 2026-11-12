@@ -2,9 +2,11 @@ package io.buszi.nascope.domain.telemetry.impl
 
 import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.KeyedMetricHistory
 import io.buszi.nascope.domain.telemetry.MetricRingBuffer
 import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase
 import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase.Data
+import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase.Disk
 import io.buszi.nascope.domain.telemetry.Polled
 import io.buszi.nascope.domain.telemetry.TelemetryPoller
 import io.buszi.nascope.domain.telemetry.mapValue
@@ -26,10 +28,12 @@ internal class ObserveStorageUseCaseImpl(
     private class DiskHistory(
         val read: MetricRingBuffer = MetricRingBuffer(),
         val write: MetricRingBuffer = MetricRingBuffer(),
+        val perDiskRead: KeyedMetricHistory<String> = KeyedMetricHistory(),
+        val perDiskWrite: KeyedMetricHistory<String> = KeyedMetricHistory(),
     )
 
     private class DiskSample(
-        val disks: List<DiskIoRate>,
+        val disks: List<Disk>,
         val readHistory: List<Float>,
         val writeHistory: List<Float>,
     )
@@ -41,8 +45,8 @@ internal class ObserveStorageUseCaseImpl(
             Data(
                 fileSystems = fileSystems,
                 disks = sample?.disks.orEmpty(),
-                readBytesPerSec = sample?.disks?.sumOf { it.readBytesPerSec },
-                writeBytesPerSec = sample?.disks?.sumOf { it.writeBytesPerSec },
+                readBytesPerSec = sample?.disks?.sumOf { it.io.readBytesPerSec },
+                writeBytesPerSec = sample?.disks?.sumOf { it.io.writeBytesPerSec },
                 readHistory = sample?.readHistory.orEmpty(),
                 writeHistory = sample?.writeHistory.orEmpty(),
             )
@@ -56,13 +60,39 @@ internal class ObserveStorageUseCaseImpl(
             Polled.Loading -> {
                 history.read.clear()
                 history.write.clear()
+                history.perDiskRead.clear()
+                history.perDiskWrite.clear()
             }
             is Polled.Value -> if (!polled.isStale) {
                 history.read.add(polled.value.sumOf { it.readBytesPerSec }.toFloat())
                 history.write.add(polled.value.sumOf { it.writeBytesPerSec }.toFloat())
+                val present = polled.value.mapTo(mutableSetOf()) { it.diskName }
+                history.perDiskRead.retainOnly(present)
+                history.perDiskWrite.retainOnly(present)
             }
             is Polled.Failed -> Unit
         }
-        return polled.mapValue { DiskSample(it, history.read.snapshot(), history.write.snapshot()) }
+        val fresh = polled is Polled.Value && !polled.isStale
+        return polled.mapValue { disks ->
+            DiskSample(
+                disks = disks.map { io ->
+                    Disk(
+                        io = io,
+                        readHistory = if (fresh) {
+                            history.perDiskRead.add(io.diskName, io.readBytesPerSec.toFloat())
+                        } else {
+                            history.perDiskRead.snapshot(io.diskName)
+                        },
+                        writeHistory = if (fresh) {
+                            history.perDiskWrite.add(io.diskName, io.writeBytesPerSec.toFloat())
+                        } else {
+                            history.perDiskWrite.snapshot(io.diskName)
+                        },
+                    )
+                },
+                readHistory = history.read.snapshot(),
+                writeHistory = history.write.snapshot(),
+            )
+        }
     }
 }

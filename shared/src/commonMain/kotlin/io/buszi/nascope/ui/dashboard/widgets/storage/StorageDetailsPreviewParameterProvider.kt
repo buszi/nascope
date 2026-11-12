@@ -2,6 +2,7 @@ package io.buszi.nascope.ui.dashboard.widgets.storage
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.buszi.nascope.ui.common.model.DiskIoUi
+import io.buszi.nascope.ui.common.model.DiskUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewState
@@ -18,6 +19,17 @@ class StorageDetailsPreviewParameterProvider : PreviewParameterProvider<ViewStat
                 writeHistory = listOf(96e6f, 110e6f, 125e6f, 138e6f, 131e6f, 120e6f, 127e6f, 143e6f, 152e6f, 139e6f, 128e6f, 122e6f),
             ),
             expandedMountPoint = "/zpool/media",
+            widgetState = WidgetState.Ready,
+        ),
+
+        // 1b. Per-disk I/O: a v4 disk with IOPS and latency, a v3 one without latency, an idle one; second page of two
+        ViewState(
+            mounts = previewMounts,
+            disks = listOf(
+                DiskUi("nvme0n1", 42_500_000L, 128_300_000L, 1_240, 3_900, 1, 2, listOf(30e6f, 41e6f, 38e6f, 45e6f), listOf(90e6f, 120e6f, 130e6f, 128e6f)),
+                DiskUi("sda", 8_000_000L, 2_000_000L, 64, 20, null, null, listOf(7e6f, 8e6f, 9e6f), listOf(1e6f, 2e6f, 2e6f)),
+                DiskUi("sdb", 0L, 0L, 0, 0, 0, 0, emptyList(), emptyList()),
+            ),
             widgetState = WidgetState.Ready,
         ),
 

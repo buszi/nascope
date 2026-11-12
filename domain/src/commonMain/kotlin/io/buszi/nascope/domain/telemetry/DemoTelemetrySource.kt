@@ -205,7 +205,10 @@ internal class DemoTelemetrySource(
         nvmeWrite = walkLong(nvmeWrite, 12_000_000, 1_000_000, 250_000_000)
         sdaRead = walkLong(sdaRead, 3_000_000, 0, 60_000_000)
         sdaWrite = walkLong(sdaWrite, 4_000_000, 0, 80_000_000)
-        listOf(DiskIoRate("nvme0n1", nvmeRead, nvmeWrite), DiskIoRate("sda", sdaRead, sdaWrite))
+        listOf(
+            DiskIoRate("nvme0n1", nvmeRead, nvmeWrite, nvmeRead / 32_768, nvmeWrite / 65_536, 1, 1),
+            DiskIoRate("sda", sdaRead, sdaWrite, sdaRead / 131_072, sdaWrite / 131_072, 4 + sdaRead / 20_000_000, 6 + sdaWrite / 20_000_000),
+        )
     }
 
     // endregion

@@ -1,11 +1,13 @@
 package io.buszi.nascope.ui.dashboard.widgets.storage
 
+import io.buszi.nascope.domain.model.telemetry.DiskIoRate
 import io.buszi.nascope.domain.model.telemetry.FileSystemUsage
 import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase
 import io.buszi.nascope.domain.telemetry.ObserveStorageUseCase.Data
 import io.buszi.nascope.ui.common.model.DiskIoUi
 import io.buszi.nascope.ui.common.model.StorageMountUi
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.SortOrder
+import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnDisksPage
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnSelectSort
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewAction.OnToggleMount
 import io.buszi.nascope.ui.dashboard.widgets.storage.StorageDetailsViewModel.ViewState
@@ -100,6 +102,46 @@ class StorageDetailsViewModelTest {
         assertEquals(listOf("/big", "/small"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
         viewModel.onViewAction(OnSelectSort(SortOrder.Usage))
         assertEquals(listOf("/small", "/big"), viewModel.viewState.value.sortedMounts.map { it.mountPoint })
+    }
+
+    private fun disk(name: String, read: Long) =
+        ObserveStorageUseCase.Disk(DiskIoRate(name, read, 0), listOf(read.toFloat()), emptyList())
+
+    @Test
+    fun storageDetailsViewModelListsDisksBusiestFirstAndPagesThem() = runTest {
+        viewModel
+        val disks = (1..12).map { disk("d$it", it * 10L) }
+        states.value = TelemetryState.Ready(data().copy(disks = disks), false)
+        runCurrent()
+
+        val first = viewModel.viewState.value
+        assertEquals(12, first.disks.size)
+        assertEquals(listOf("d12", "d11", "d10", "d9", "d8"), first.pagedDisks.map { it.name })
+        assertEquals(3, first.disksPageCount)
+        viewModel.onViewAction(OnDisksPage(1))
+        assertEquals(listOf("d7", "d6", "d5", "d4", "d3"), viewModel.viewState.value.pagedDisks.map { it.name })
+        viewModel.onViewAction(OnDisksPage(1))
+        viewModel.onViewAction(OnDisksPage(1)) // clamped at the last page
+        assertEquals(listOf("d2", "d1"), viewModel.viewState.value.pagedDisks.map { it.name })
+        viewModel.onViewAction(OnDisksPage(-5))
+        assertEquals(0, viewModel.viewState.value.disksPage)
+    }
+
+    @Test
+    fun storageDetailsViewModelStepsBackWhenTheDisksShrinkAndHasNoDisksSectionWithoutDisks() = runTest {
+        viewModel
+        states.value = TelemetryState.Ready(data().copy(disks = (1..12).map { disk("d$it", it.toLong()) }), false)
+        runCurrent()
+        viewModel.onViewAction(OnDisksPage(1))
+        viewModel.onViewAction(OnDisksPage(1))
+        assertEquals(2, viewModel.viewState.value.disksPage)
+
+        states.value = TelemetryState.Ready(data().copy(disks = listOf(disk("only", 1))), false)
+        runCurrent()
+        assertEquals(0, viewModel.viewState.value.disksPage)
+        states.value = TelemetryState.Ready(data(), false)
+        runCurrent()
+        assertEquals(emptyList(), viewModel.viewState.value.disks)
     }
 
     @Test

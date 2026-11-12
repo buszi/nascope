@@ -9,6 +9,8 @@ data class StorageUi(
     val mounts: List<StorageMountUi> = emptyList(),
     /** `null` when `diskio` is not available: the disk I/O section is left out. */
     val diskIo: DiskIoUi? = null,
+    /** Busiest first; empty when `diskio` is not available or reports no disk: the disks section is left out. */
+    val disks: List<DiskUi> = emptyList(),
 ) {
     companion object {
         fun from(data: ObserveStorageUseCase.Data): StorageUi = StorageUi(
@@ -23,6 +25,37 @@ data class StorageUi(
             } else {
                 null
             },
+            disks = data.disks.map(DiskUi::from).sortedByDescending { it.totalBytesPerSec },
+        )
+    }
+}
+
+/** One disk's I/O: rates, operations per second and latency (each `null` when the host cannot tell) and history. */
+@Immutable
+data class DiskUi(
+    val name: String,
+    val readBytesPerSec: Long,
+    val writeBytesPerSec: Long,
+    val readIops: Long?,
+    val writeIops: Long?,
+    val readLatencyMs: Long?,
+    val writeLatencyMs: Long?,
+    val readHistory: List<Float>,
+    val writeHistory: List<Float>,
+) {
+    val totalBytesPerSec: Long get() = readBytesPerSec + writeBytesPerSec
+
+    companion object {
+        fun from(disk: ObserveStorageUseCase.Disk) = DiskUi(
+            name = disk.io.diskName,
+            readBytesPerSec = disk.io.readBytesPerSec,
+            writeBytesPerSec = disk.io.writeBytesPerSec,
+            readIops = disk.io.readIops,
+            writeIops = disk.io.writeIops,
+            readLatencyMs = disk.io.readLatencyMs,
+            writeLatencyMs = disk.io.writeLatencyMs,
+            readHistory = disk.readHistory,
+            writeHistory = disk.writeHistory,
         )
     }
 }

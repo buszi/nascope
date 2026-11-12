@@ -226,6 +226,44 @@ class KtorGlancesTelemetryClientTest {
         responding(HttpStatusCode.OK, "{}").client.fetchAlerts(connection(GlancesApiVersion.V4)).assertInvalid()
     }
 
+    private fun disksOf(version: GlancesApiVersion, dir: String) = kotlinx.coroutines.runBlocking {
+        responding(HttpStatusCode.OK, Fixtures.read(dir, "diskio")).client.fetchDiskIo(connection(version))
+    }.getOrElse { fail("$it") }
+
+    @Test
+    fun diskIoV4CarriesIopsAndLatency() {
+        val nvme = disksOf(GlancesApiVersion.V4, "v4-nas").first { it.diskName == "nvme0n1" }
+        assertEquals(73_470L, nvme.readBytesPerSec)
+        assertEquals(5L, nvme.readIops)
+        assertEquals(3L, nvme.writeIops)
+        assertEquals(2L, nvme.readLatencyMs)
+        assertEquals(1L, nvme.writeLatencyMs)
+    }
+
+    @Test
+    fun diskIoV3DerivesIopsFromTheCountsAndHasNoLatency() {
+        val body = """[{"time_since_update": 2.0, "disk_name": "sda", "read_count": 10, "write_count": 7, "read_bytes": 4096, "write_bytes": 0}]"""
+        val disk = responding(HttpStatusCode.OK, body).let {
+            kotlinx.coroutines.runBlocking { it.client.fetchDiskIo(connection(GlancesApiVersion.V3)) }
+        }.getOrElse { fail("$it") }.single()
+        assertEquals(5L, disk.readIops)
+        assertEquals(3L, disk.writeIops)
+        assertEquals(null, disk.readLatencyMs)
+        assertEquals(2048L, disk.readBytesPerSec)
+        // The real v3 NAS capture parses too, without latency.
+        assertTrue(disksOf(GlancesApiVersion.V3, "v3-nas").all { it.readLatencyMs == null && it.readIops != null })
+    }
+
+    @Test
+    fun diskIoV4WithoutTheExtraFieldsLeavesThemNull() {
+        val body = """[{"disk_name": "sda", "read_bytes_rate_per_sec": 5.0, "write_bytes_rate_per_sec": 6.0}]"""
+        val disk = kotlinx.coroutines.runBlocking {
+            responding(HttpStatusCode.OK, body).client.fetchDiskIo(connection(GlancesApiVersion.V4))
+        }.getOrElse { fail("$it") }.single()
+        assertEquals(null, disk.readIops)
+        assertEquals(null, disk.writeLatencyMs)
+    }
+
     @Test
     fun serverTimeIsReadFromTheIsoField() = runTest {
         val time = responding(HttpStatusCode.OK, Fixtures.read("v4-nas", "now"))
