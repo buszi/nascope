@@ -2,6 +2,7 @@ package io.buszi.nascope.di
 
 import io.buszi.nascope.domain.connection.DeleteServerProfileUseCase
 import io.buszi.nascope.domain.connection.GetServerProfileUseCase
+import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
 import io.buszi.nascope.domain.connection.ObserveServerProfilesUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.SaveServerProfileUseCase
@@ -27,6 +28,7 @@ class KoinGraphTest {
         val koin = startKoin(koinConfiguration<NascopeApp>()).koin
 
         assertNotNull(koin.get<ObserveSessionUseCase>())
+        assertNotNull(koin.get<ObserveConnectionStatusUseCase>())
         assertNotNull(koin.get<ObserveServerProfilesUseCase>())
         assertNotNull(koin.get<GetServerProfileUseCase>())
         assertNotNull(koin.get<ValidateServerInputUseCase>())

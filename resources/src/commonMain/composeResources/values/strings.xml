@@ -140,8 +140,11 @@
     <string name="nav_breadcrumb_nodes">CLUSTER // NODES</string>
     <string name="nav_breadcrumb_settings">SYSTEM // SETTINGS</string>
     <string name="nav_action_back">BACK</string>
-    <string name="nav_active_node_name">alpha-node-01</string>
-    <string name="nav_status_online">ONLINE</string>
+    <string name="nav_connection_connecting">CONNECTING</string>
+    <string name="nav_connection_online">ONLINE</string>
+    <string name="nav_connection_offline">OFFLINE</string>
+    <string name="nav_mode_demo">DEMO</string>
+    <string name="nav_tag_sample_data">SAMPLE DATA</string>
     <string name="screen_nodes_header">CLUSTER // NODES</string>
     <string name="screen_nodes_title">Nodes</string>
     <string name="screen_nodes_route_tag">ROUTE: NODES</string>

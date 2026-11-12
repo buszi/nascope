@@ -25,40 +25,57 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.nav_action_back
-import io.buszi.nascope.resources.nav_active_node_name
 import io.buszi.nascope.resources.nav_breadcrumb_dashboard
 import io.buszi.nascope.resources.nav_breadcrumb_details
 import io.buszi.nascope.resources.nav_breadcrumb_nodes
 import io.buszi.nascope.resources.nav_breadcrumb_settings
-import io.buszi.nascope.resources.nav_status_online
+import io.buszi.nascope.resources.nav_mode_demo
+import io.buszi.nascope.resources.nav_tag_sample_data
 import io.buszi.nascope.ui.common.components.badges.StatusChip
-import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.components.badges.TagChip
+import io.buszi.nascope.ui.common.components.badges.color
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.dashboard.framework.title
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.navigation.NavRoute
+import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.Mode
+import io.buszi.nascope.ui.navigation.components.NascopeTopBarViewModel.ViewState
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.buszi.nascope.ui.common.model.ConnectionStatusUi
 
-/**
- * Adaptive top control bar and app bar for the Nascope shell.
- *
- * Displays contextual back navigation when [canNavigateBack] is `true`, the active route
- * breadcrumb path, and live node telemetry health indicators.
- *
- * @param currentRoute Currently active [NavRoute] rendered in the main workspace.
- * @param canNavigateBack Whether the back button should be visible and enabled.
- * @param onNavigateBack Callback invoked when the back control is activated.
- * @param modifier Root layout modifier applied to the top bar container.
- */
 @Composable
 fun NascopeTopBar(
     currentRoute: NavRoute,
     canNavigateBack: Boolean,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier,
+) {
+    val viewModel = koinViewModel<NascopeTopBarViewModel>()
+    val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+
+    NascopeTopBarContent(
+        viewState = viewState,
+        currentRoute = currentRoute,
+        canNavigateBack = canNavigateBack,
+        onNavigateBack = onNavigateBack,
+    )
+}
+
+/**
+ * Adaptive top control bar and app bar for the Nascope shell.
+ *
+ * Displays contextual back navigation when [canNavigateBack] is `true`, the active route
+ * breadcrumb path, and the data source: the connected node with its live status, or a `DEMO` chip.
+ */
+@Composable
+fun NascopeTopBarContent(
+    viewState: ViewState,
+    currentRoute: NavRoute,
+    canNavigateBack: Boolean,
+    onNavigateBack: () -> Unit,
 ) {
     val windowWidthClass = AppTheme.windowWidthClass
     val breadcrumbText = when (currentRoute) {
@@ -72,7 +89,7 @@ fun NascopeTopBar(
     }
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .background(AppTheme.colors.subSurface),
     ) {
@@ -111,19 +128,34 @@ fun NascopeTopBar(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
             ) {
-                if (windowWidthClass != WindowWidthClass.Compact) {
-                    TagChip(
-                        text = stringResource(Res.string.nav_active_node_name),
-                        dotColor = AppTheme.colors.operational,
-                        pulsing = true,
+                when (viewState.mode) {
+                    Mode.None -> Unit
+                    Mode.Demo -> TagChip(
+                        text = stringResource(Res.string.nav_mode_demo),
+                        modifier = Modifier.testTag(TestTags.TopBarDemo),
                     )
-                }
 
-                StatusChip(
-                    text = stringResource(Res.string.nav_status_online),
-                    status = StatusLevel.Operational,
-                    pulsing = true,
-                )
+                    Mode.Server -> {
+                        if (windowWidthClass != WindowWidthClass.Compact) {
+                            TagChip(
+                                text = viewState.nodeName,
+                                dotColor = viewState.connectionStatus.level.color,
+                                pulsing = viewState.connectionStatus.pulsing,
+                                modifier = Modifier.testTag(TestTags.TopBarNode),
+                            )
+                        }
+                        TagChip(
+                            text = stringResource(Res.string.nav_tag_sample_data),
+                            modifier = Modifier.testTag(TestTags.TopBarSampleData),
+                        )
+                        StatusChip(
+                            text = stringResource(viewState.connectionStatus.labelRes),
+                            status = viewState.connectionStatus.level,
+                            pulsing = viewState.connectionStatus.pulsing,
+                            modifier = Modifier.testTag(TestTags.TopBarStatus),
+                        )
+                    }
+                }
             }
         }
 
@@ -188,14 +220,40 @@ private fun NascopeTopBarPreview() {
             modifier = Modifier.background(AppTheme.colors.canvasBackground),
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
         ) {
-            NascopeTopBar(
+            NascopeTopBarContent(
+                viewState = ViewState(
+                    mode = Mode.Server,
+                    nodeName = "alpha-node-01",
+                    connectionStatus = ConnectionStatusUi.Online,
+                ),
                 currentRoute = NavRoute.Dashboard,
                 canNavigateBack = false,
                 onNavigateBack = {},
             )
-            NascopeTopBar(
+            NascopeTopBarContent(
+                viewState = ViewState(
+                    mode = Mode.Server,
+                    nodeName = "alpha-node-01",
+                    connectionStatus = ConnectionStatusUi.Offline,
+                ),
                 currentRoute = NavRoute.Details(DashboardBrickId.CpuMatrix),
                 canNavigateBack = true,
+                onNavigateBack = {},
+            )
+            NascopeTopBarContent(
+                viewState = ViewState(
+                    mode = Mode.Server,
+                    nodeName = "alpha-node-01",
+                    connectionStatus = ConnectionStatusUi.Connecting,
+                ),
+                currentRoute = NavRoute.Nodes,
+                canNavigateBack = false,
+                onNavigateBack = {},
+            )
+            NascopeTopBarContent(
+                viewState = ViewState(mode = Mode.Demo),
+                currentRoute = NavRoute.Settings,
+                canNavigateBack = false,
                 onNavigateBack = {},
             )
         }

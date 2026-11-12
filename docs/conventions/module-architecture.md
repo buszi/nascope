@@ -78,6 +78,11 @@ If the code and this document disagree after a review correction, fix this docum
 - A use case may call other use cases through their interfaces.
 - Business rules and multi-step orchestration live here, not in ViewModels and not in data modules.
 
+### Shared state and long-running work
+
+- A use case that must keep one loop alive for several collectors (e.g. `ObserveConnectionStatusUseCase`, which polls the active server) is a `@Single` that shares its flow with `shareIn(applicationScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)`: the loop starts with the first collector, stops with the last, and a new collector never sees a stale value.
+- `DomainModule` provides the application-level `CoroutineScope` (`SupervisorJob` + the IO dispatcher). Tests pass a scope built on `coroutineRule.dispatcher` and cancel it in `@After`, so loops run in virtual time.
+
 ### Other domain classes
 
 - Supporting classes that make sense on their own (validators, policies, calculators, shared state holders) are allowed. Same rule: public interface only if `:shared` needs it, otherwise `internal`.

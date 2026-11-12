@@ -42,6 +42,14 @@ class TestTagsTest {
     }
 
     @Test
+    fun topBarTagsAreSnakeCase() {
+        assertEquals("top_bar_node", TestTags.TopBarNode)
+        assertEquals("top_bar_status", TestTags.TopBarStatus)
+        assertEquals("top_bar_demo", TestTags.TopBarDemo)
+        assertEquals("top_bar_sample_data", TestTags.TopBarSampleData)
+    }
+
+    @Test
     fun connectionEditorTagsAreSnakeCase() {
         assertEquals("connection_host", TestTags.ConnectionHost)
         assertEquals("connection_submit", TestTags.ConnectionSubmit)

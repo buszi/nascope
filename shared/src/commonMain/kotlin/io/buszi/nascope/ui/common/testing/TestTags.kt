@@ -14,6 +14,10 @@ object TestTags {
     // Navigation chrome
     fun navigation(destinationName: String): String = "nav_${destinationName.snake()}"
     const val TopBarBack: String = "top_bar_back"
+    const val TopBarNode: String = "top_bar_node"
+    const val TopBarStatus: String = "top_bar_status"
+    const val TopBarDemo: String = "top_bar_demo"
+    const val TopBarSampleData: String = "top_bar_sample_data"
 
     // Setup flow
     const val WelcomeScreen: String = "welcome_screen"

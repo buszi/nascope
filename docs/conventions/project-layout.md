@@ -29,7 +29,7 @@ See [`module-architecture.md`](./module-architecture.md) for responsibilities an
 | `.../ui/common/components/<group>/` | Reusable UI primitives grouped by category: `containers`, `badges`, `metrics`, `gauges`, `inputs`, ... |
 | `.../ui/common/util/` | Shared UI utilities and layout helpers (e.g., `WindowWidthClass`, `LocalWindowWidthClass`). |
 | `.../ui/navigation/` | Adaptive Navigation 3 scaffold (`NascopeAppScaffold`), routes (`NavRoute`), backstack state (`NascopeNavigator`), and multi-pane scene strategy (`DashboardSplitSceneStrategy`). |
-| `.../ui/navigation/components/` | Adaptive navigation chrome (`NascopeSidebarRail`, `NascopeBottomBar`, `NascopeTopBar`, `NavigationGlyph`). |
+| `.../ui/navigation/components/` | Adaptive navigation chrome (`NascopeSidebarRail`, `NascopeBottomBar`, `NascopeTopBar` with `NascopeTopBarViewModel` for the live node name and connection status, `NavigationGlyph`). |
 | `.../ui/root/` | Root gate (`AppRoot`, `AppRootViewModel`): loading canvas, setup flow or navigation scaffold, decided from the session. |
 | `.../ui/setup/` | Setup flow shown before any server exists, outside the scaffold: `SetupRoute` keys, `SetupFlow` (own Navigation 3 back stack), `WelcomeScreen` + `WelcomeViewModel`. |
 | `.../ui/connection/` | Connection editor (`ConnectionEditorScreen`, `ConnectionEditorViewModel`, `ConnectionCheckRow`): one form for adding a server (setup flow) and editing one by profile id. |
