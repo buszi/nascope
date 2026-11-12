@@ -146,9 +146,8 @@
     <string name="nav_mode_demo">DEMO</string>
     <string name="nav_tag_sample_data">SAMPLE DATA</string>
     <string name="screen_settings_header">SYSTEM // SETTINGS</string>
-    <string name="screen_settings_title">Settings</string>
-    <string name="screen_settings_route_tag">ROUTE: SETTINGS</string>
-    <string name="screen_settings_description">Opened screen: Settings. Polling intervals, alert thresholds, and telemetry preferences will be configured here.</string>
+    <string name="settings_refresh_interval_title">Refresh interval</string>
+    <string name="settings_refresh_interval_helper">How often live metrics such as CPU, memory and network refresh. Slower metrics such as storage, sensors and containers refresh at 5 x this interval, at most every 30 seconds.</string>
     <string name="screen_details_close">Close Details</string>
 
     <!-- Storage details -->

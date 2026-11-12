@@ -83,6 +83,7 @@ If the code and this document disagree after a review correction, fix this docum
 
 - A use case that must keep one loop alive for several collectors (e.g. `ObserveConnectionStatusUseCase`, which polls the active server) is a `@Single` that shares its flow with `shareIn(applicationScope, SharingStarted.WhileSubscribed(replayExpirationMillis = 0), replay = 1)`: the loop starts with the first collector, stops with the last, and a new collector never sees a stale value.
 - **Polling loops are gated by the app foreground state.** `domain/foreground/` holds the public `SetAppForegroundUseCase` (called only by `AppRootViewModel`) and the internal `AppForegroundState` (`@Single`). A `true` is published immediately; a `false` only after a 5 s grace period, so rotation or a quick app switch does not interrupt polling. A loop collects `isForeground` (`flatMapLatest`) so it makes no request in the background and checks immediately on return, as `ObserveConnectionStatusUseCaseImpl` does.
+- `domain/settings/` holds the global app settings use cases (`ObserveRefreshIntervalUseCase`, `SetRefreshIntervalUseCase`); the value lives in `AppPreferencesStore` and `RefreshInterval` in `:domain-model`.
 - `DomainModule` provides the application-level `CoroutineScope` (`SupervisorJob` + the IO dispatcher). Tests pass a scope built on `coroutineRule.dispatcher` and cancel it in `@After`, so loops run in virtual time.
 
 ### Other domain classes

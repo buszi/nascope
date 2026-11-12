@@ -53,6 +53,10 @@ object TestTags {
     const val ConnectionBack: String = "connection_back"
     fun connectionCheck(stepName: String): String = "connection_check_${stepName.snake()}"
 
+    // Settings
+    const val SettingsScreen: String = "settings_screen"
+    fun settingsRefreshInterval(intervalName: String): String = "settings_refresh_interval_${intervalName.snake()}"
+
     // Dashboard
     const val DashboardGrid: String = "dashboard_grid"
     fun brick(id: DashboardBrickId): String = "brick_${id.name.snake()}"
