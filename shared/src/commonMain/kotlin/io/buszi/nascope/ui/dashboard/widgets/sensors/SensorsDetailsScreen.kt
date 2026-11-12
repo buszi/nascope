@@ -20,16 +20,15 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.details_sensors_cooling
-import io.buszi.nascope.resources.details_sensors_fan_max_format
 import io.buszi.nascope.resources.details_sensors_fan_stalled
 import io.buszi.nascope.resources.details_sensors_fans_active_format
 import io.buszi.nascope.resources.details_sensors_headroom_critical
 import io.buszi.nascope.resources.details_sensors_headroom_format
 import io.buszi.nascope.resources.details_sensors_headroom_warning
+import io.buszi.nascope.resources.details_sensors_other
 import io.buszi.nascope.resources.details_sensors_overview
 import io.buszi.nascope.resources.details_sensors_stat_at_risk
 import io.buszi.nascope.resources.details_sensors_stat_avg
-import io.buszi.nascope.resources.details_sensors_stat_fan_duty
 import io.buszi.nascope.resources.details_sensors_stat_fans_active
 import io.buszi.nascope.resources.details_sensors_stat_hottest
 import io.buszi.nascope.resources.details_sensors_stat_max
@@ -37,7 +36,6 @@ import io.buszi.nascope.resources.details_sensors_stat_min
 import io.buszi.nascope.resources.details_sensors_subtitle
 import io.buszi.nascope.resources.details_sensors_temperatures
 import io.buszi.nascope.resources.details_sensors_title
-import io.buszi.nascope.resources.percentage_format
 import io.buszi.nascope.resources.widget_sensors_no_sensors
 import io.buszi.nascope.resources.widget_sensors_rpm_format
 import io.buszi.nascope.resources.widget_sensors_status_critical
@@ -55,7 +53,7 @@ import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsDetailsViewModel.ViewState
-import io.buszi.nascope.ui.details.components.DetailsLoadingPlaceholder
+import io.buszi.nascope.ui.details.components.DetailsStatePlaceholder
 import io.buszi.nascope.ui.details.components.DetailsScaffold
 import io.buszi.nascope.ui.details.components.DetailsSection
 import io.buszi.nascope.ui.details.components.DetailsStat
@@ -91,11 +89,12 @@ fun SensorsDetailsScreen(
         onClose = onClose,
         testTag = TestTags.details(DashboardBrickId.SensorsThermals),
         modifier = modifier,
+        widgetState = viewState.widgetState,
         subtitle = if (viewState.widgetState.isReady) {
             stringResource(
                 Res.string.details_sensors_subtitle,
-                viewState.temperatures.size,
-                viewState.fans.size,
+                viewState.sensors.temperatures.size,
+                viewState.sensors.fans.size,
             )
         } else {
             null
@@ -103,13 +102,13 @@ fun SensorsDetailsScreen(
         statusTag = if (viewState.widgetState.isReady) {
             {
                 StatusChip(
-                    text = when (viewState.overallStatus) {
+                    text = when (viewState.sensors.overallStatus) {
                         StatusLevel.Operational -> stringResource(Res.string.widget_sensors_status_nominal)
                         StatusLevel.Degraded -> stringResource(Res.string.widget_sensors_status_elevated)
                         StatusLevel.Critical -> stringResource(Res.string.widget_sensors_status_critical)
                     },
-                    status = viewState.overallStatus,
-                    pulsing = viewState.overallStatus == StatusLevel.Critical,
+                    status = viewState.sensors.overallStatus,
+                    pulsing = viewState.sensors.overallStatus == StatusLevel.Critical,
                 )
             }
         } else {
@@ -117,8 +116,8 @@ fun SensorsDetailsScreen(
         },
     ) {
         if (!viewState.widgetState.isReady) {
-            DetailsLoadingPlaceholder()
-        } else if (viewState.temperatures.isEmpty() && viewState.fans.isEmpty()) {
+            DetailsStatePlaceholder(viewState.widgetState)
+        } else if (viewState.sensors.isEmpty) {
             Text(
                 text = stringResource(Res.string.widget_sensors_no_sensors),
                 style = AppTheme.typography.labelCode,
@@ -126,10 +125,13 @@ fun SensorsDetailsScreen(
             )
         } else {
             OverviewSection(viewState = viewState)
-            if (viewState.temperatures.isNotEmpty()) {
+            if (viewState.sensors.cpu.isNotEmpty() || viewState.sensors.drives.isNotEmpty()) {
                 TemperaturesSection(viewState = viewState)
             }
-            if (viewState.fans.isNotEmpty()) {
+            if (viewState.sensors.other.isNotEmpty()) {
+                OtherSection(viewState = viewState)
+            }
+            if (viewState.sensors.fans.isNotEmpty()) {
                 CoolingSection(viewState = viewState)
             }
         }
@@ -141,7 +143,7 @@ private fun OverviewSection(
     viewState: ViewState,
     modifier: Modifier = Modifier,
 ) {
-    val hottest = viewState.hottest
+    val hottest = viewState.sensors.hottest
 
     DetailsSection(
         title = stringResource(Res.string.details_sensors_overview),
@@ -161,8 +163,8 @@ private fun OverviewSection(
                     )
                     DetailsStat(
                         label = stringResource(Res.string.details_sensors_stat_at_risk),
-                        value = viewState.atRiskCount.toString(),
-                        valueColor = if (viewState.atRiskCount > 0) AppTheme.colors.degraded else AppTheme.colors.textPrimary,
+                        value = viewState.sensors.atRiskCount.toString(),
+                        valueColor = if (viewState.sensors.atRiskCount > 0) AppTheme.colors.degraded else AppTheme.colors.textPrimary,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -171,20 +173,14 @@ private fun OverviewSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
             ) {
-                if (viewState.fans.isNotEmpty()) {
+                if (viewState.sensors.fans.isNotEmpty()) {
                     DetailsStat(
                         label = stringResource(Res.string.details_sensors_stat_fans_active),
                         value = stringResource(
                             Res.string.details_sensors_fans_active_format,
-                            viewState.activeFansCount,
-                            viewState.fans.size,
+                            viewState.sensors.activeFansCount,
+                            viewState.sensors.fans.size,
                         ),
-                        modifier = Modifier.weight(1f),
-                    )
-                    DetailsStat(
-                        label = stringResource(Res.string.details_sensors_stat_fan_duty),
-                        value = stringResource(Res.string.percentage_format, viewState.averageFanDutyPercent.toInt()),
-                        valueColor = AppTheme.colors.telemetryB,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -203,10 +199,10 @@ private fun TemperaturesSection(
         modifier = modifier,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm)) {
-            viewState.cpuTemperature?.let { cpu ->
+            viewState.sensors.cpu.forEach { cpu ->
                 TemperatureCard(sensor = cpu, gaugeRange = CpuGaugeRange)
             }
-            viewState.driveTemperatures.forEach { drive ->
+            viewState.sensors.drives.forEach { drive ->
                 TemperatureCard(sensor = drive, gaugeRange = DriveGaugeRange)
             }
         }
@@ -302,6 +298,23 @@ private fun TemperatureCard(
 }
 
 @Composable
+private fun OtherSection(
+    viewState: ViewState,
+    modifier: Modifier = Modifier,
+) {
+    DetailsSection(
+        title = stringResource(Res.string.details_sensors_other),
+        modifier = modifier,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm)) {
+            viewState.sensors.other.forEach { other ->
+                TemperatureCard(sensor = other, gaugeRange = CpuGaugeRange)
+            }
+        }
+    }
+}
+
+@Composable
 private fun CoolingSection(
     viewState: ViewState,
     modifier: Modifier = Modifier,
@@ -311,7 +324,7 @@ private fun CoolingSection(
         modifier = modifier,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm)) {
-            viewState.fans.forEach { fan ->
+            viewState.sensors.fans.forEach { fan ->
                 FanCard(fan = fan)
             }
         }
@@ -348,16 +361,6 @@ private fun FanCard(
             )
         }
 
-        LinearGauge(
-            progress = fan.dutyCyclePercent,
-            label = stringResource(Res.string.details_sensors_fan_max_format, fan.maxRpm),
-            valueText = stringResource(Res.string.percentage_format, (fan.dutyCyclePercent * 100).toInt()),
-            barHeight = AppTheme.spacing.space2xs,
-            normalColor = AppTheme.colors.telemetryB,
-            warningColor = AppTheme.colors.telemetryB,
-            criticalColor = AppTheme.colors.telemetryB,
-        )
-
         if (fan.rpmHistory.size >= 2) {
             MiniSparkline(
                 data = fan.rpmHistory,
@@ -366,7 +369,7 @@ private fun FanCard(
                     .height(AppTheme.dimensions.sparklineHeight),
                 lineColor = AppTheme.colors.telemetryA,
                 minValue = 0f,
-                maxValue = fan.maxRpm.toFloat(),
+                maxValue = (fan.rpmHistory.maxOrNull() ?: 0f).coerceAtLeast(1f) * 1.25f,
             )
         }
     }

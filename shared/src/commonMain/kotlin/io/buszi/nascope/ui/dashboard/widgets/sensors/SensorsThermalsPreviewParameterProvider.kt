@@ -1,77 +1,59 @@
 package io.buszi.nascope.ui.dashboard.widgets.sensors
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.FanSensorUi
+import io.buszi.nascope.ui.common.model.SensorsUi
 import io.buszi.nascope.ui.common.model.TemperatureSensorUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
 import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsThermalsViewModel.ViewState
 
 class SensorsThermalsPreviewParameterProvider : PreviewParameterProvider<ViewState> {
     override val values: Sequence<ViewState> = sequenceOf(
-        // 1. Nominal / Healthy
+        // 1. Nominal with fans
         ViewState(
-            overallStatus = StatusLevel.Operational,
-            cpuTemperature = TemperatureSensorUi(
-                label = "CPU Package",
-                currentTempC = 58.0f,
-                warningThresholdC = 75.0f,
-                criticalThresholdC = 85.0f,
+            sensors = SensorsUi(
+                cpu = listOf(TemperatureSensorUi("Package id 0", 58.0f, 70.0f, 85.0f)),
+                drives = listOf(
+                    TemperatureSensorUi("nvme0n1 (NVMe)", 41.0f, 65.0f, 75.0f),
+                    TemperatureSensorUi("sda (WD Red 8TB)", 34.0f, 50.0f, 60.0f),
+                ),
+                fans = listOf(FanSensorUi("CPU Fan", 1380), FanSensorUi("Chassis 1", 920)),
             ),
-            driveTemperatures = listOf(
-                TemperatureSensorUi("nvme0n1 (NVMe)", 41.0f, 65.0f, 75.0f),
-                TemperatureSensorUi("sda (WD Red 8TB)", 34.0f, 50.0f, 60.0f),
-                TemperatureSensorUi("sdb (WD Red 8TB)", 36.0f, 50.0f, 60.0f),
-            ),
-            fans = listOf(
-                FanSensorUi("CPU Fan", 1380, 2200),
-                FanSensorUi("Chassis 1", 920, 1800),
-                FanSensorUi("Chassis 2", 890, 1800),
-            ),
-            activeFansCount = 3,
-            maxTemperatureC = 58.0f,
             widgetState = WidgetState.Ready,
         ),
 
-        // 2. Elevated / Warning
+        // 2. Elevated
         ViewState(
-            overallStatus = StatusLevel.Degraded,
-            cpuTemperature = TemperatureSensorUi(
-                label = "CPU Package",
-                currentTempC = 78.0f,
-                warningThresholdC = 75.0f,
-                criticalThresholdC = 85.0f,
+            sensors = SensorsUi(
+                cpu = listOf(TemperatureSensorUi("Package id 0", 78.0f, 70.0f, 85.0f)),
+                drives = listOf(TemperatureSensorUi("nvme0n1 (NVMe)", 48.0f, 65.0f, 75.0f)),
+                fans = listOf(FanSensorUi("CPU Fan", 2100)),
             ),
-            driveTemperatures = listOf(
-                TemperatureSensorUi("nvme0n1 (NVMe)", 48.0f, 65.0f, 75.0f),
-            ),
-            fans = listOf(
-                FanSensorUi("CPU Fan", 2100, 2200),
-            ),
-            activeFansCount = 1,
-            maxTemperatureC = 78.0f,
             widgetState = WidgetState.Ready,
         ),
 
-        // 3. Passive Cooling / Unsupported Sensors (Graceful fallback)
+        // 3. NAS in Docker: package and NVMe temperatures, no fans (passive cooling)
         ViewState(
-            overallStatus = StatusLevel.Operational,
-            cpuTemperature = TemperatureSensorUi(
-                label = "CPU Package",
-                currentTempC = 45.0f,
-                warningThresholdC = 75.0f,
-                criticalThresholdC = 85.0f,
+            sensors = SensorsUi(
+                cpu = listOf(TemperatureSensorUi("Package id 0", 45.0f, 70.0f, 85.0f)),
+                drives = listOf(TemperatureSensorUi("Composite", 38.0f, 70.0f, 85.0f)),
             ),
-            driveTemperatures = emptyList(),
-            fans = emptyList(),
-            activeFansCount = 0,
-            maxTemperatureC = 45.0f,
             widgetState = WidgetState.Ready,
         ),
 
-        // 4. Loading State
+        // 4. Host with a sensors plugin but no readings (plain Docker): the empty text
+        ViewState(widgetState = WidgetState.Ready),
+
+        // 5. Stale
         ViewState(
-            widgetState = WidgetState.Loading,
+            sensors = SensorsUi(cpu = listOf(TemperatureSensorUi("Package id 0", 58.0f, 70.0f, 85.0f))),
+            widgetState = WidgetState.Stale,
         ),
+
+        // 6. Unavailable (sensors plugin disabled)
+        ViewState(widgetState = WidgetState.Unavailable),
+
+        // 7. Loading
+        ViewState(widgetState = WidgetState.Loading),
     )
 }

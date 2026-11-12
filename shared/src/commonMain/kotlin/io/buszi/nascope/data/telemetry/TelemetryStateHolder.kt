@@ -6,37 +6,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.koin.core.annotation.Single
 
 /**
- * Encapsulates telemetry for a temperature sensor.
- */
-data class TemperatureSensorData(
-    val label: String,
-    val currentTempC: Float,
-    val warningThresholdC: Float = 70.0f,
-    val criticalThresholdC: Float = 85.0f,
-    val history: List<Float> = emptyList(),
-)
-
-/**
- * Encapsulates cooling fan speed telemetry and duty cycle.
- */
-data class FanSensorData(
-    val label: String,
-    val rpm: Int,
-    val maxRpm: Int = 2200,
-    val dutyCyclePercent: Float = if (maxRpm > 0) (rpm.toFloat() / maxRpm).coerceIn(0f, 1f) else 0f,
-    val rpmHistory: List<Float> = emptyList(),
-)
-
-/**
- * Encapsulates system thermal sensors and active cooling telemetry.
- */
-data class SensorsThermalsData(
-    val cpuTemperature: TemperatureSensorData? = null,
-    val driveTemperatures: List<TemperatureSensorData> = emptyList(),
-    val fans: List<FanSensorData> = emptyList(),
-)
-
-/**
  * Status lifecycle state for container orchestration.
  */
 enum class ContainerState {
@@ -103,90 +72,6 @@ data class ProcessListData(
  */
 @Single
 class TelemetryStateHolder {
-
-    private val _sensorsThermals = MutableStateFlow(
-        SensorsThermalsData(
-            cpuTemperature = TemperatureSensorData(
-                label = "CPU Package",
-                currentTempC = 58.0f,
-                warningThresholdC = 75.0f,
-                criticalThresholdC = 85.0f,
-                    history = listOf(
-                        58.0f, 61.1f, 60.5f, 59.9f, 61.3f, 60.3f, 56.5f, 55.1f,
-                        56.2f, 55.4f, 54.4f, 57.1f, 60.4f, 60.3f, 59.8f, 61.5f,
-                        61.1f, 57.4f, 55.5f, 56.3f, 55.5f, 54.0f, 56.1f, 59.6f,
-                    ),
-            ),
-            driveTemperatures = listOf(
-                TemperatureSensorData(
-                    label = "nvme0n1 (NVMe)",
-                    currentTempC = 41.0f,
-                    warningThresholdC = 65.0f,
-                    criticalThresholdC = 75.0f,
-                    history = listOf(
-                        39.6f, 40.4f, 39.1f, 40.0f, 40.8f, 39.5f, 40.3f, 41.1f,
-                        39.8f, 40.7f, 41.5f, 40.2f, 41.1f, 41.8f, 40.6f, 41.5f,
-                        42.2f, 40.9f, 41.8f, 42.5f, 41.3f, 42.2f, 42.9f, 41.6f,
-                    ),
-                ),
-                TemperatureSensorData(
-                    label = "sda (WD Red 8TB)",
-                    currentTempC = 34.0f,
-                    warningThresholdC = 50.0f,
-                    criticalThresholdC = 60.0f,
-                    history = listOf(
-                        33.6f, 33.9f, 33.8f, 33.4f, 33.3f, 33.7f, 35.1f, 34.9f,
-                        34.6f, 34.6f, 34.9f, 35.1f, 33.6f, 33.3f, 33.4f, 33.8f,
-                        33.9f, 33.6f, 34.5f, 34.7f, 35.0f, 35.0f, 34.7f, 34.5f,
-                    ),
-                ),
-                TemperatureSensorData(
-                    label = "sdb (WD Red 8TB)",
-                    currentTempC = 36.0f,
-                    warningThresholdC = 50.0f,
-                    criticalThresholdC = 60.0f,
-                    history = listOf(
-                        36.0f, 36.5f, 36.9f, 37.2f, 37.4f, 37.5f, 37.4f, 37.2f,
-                        36.9f, 36.5f, 36.0f, 35.5f, 35.1f, 34.6f, 34.3f, 34.1f,
-                        34.1f, 34.2f, 34.4f, 34.7f, 35.2f, 35.6f, 36.1f, 36.5f,
-                    ),
-                ),
-            ),
-            fans = listOf(
-                FanSensorData(
-                    label = "CPU Fan",
-                    rpm = 1380,
-                    maxRpm = 2200,
-                    rpmHistory = listOf(
-                        1380.0f, 1463.5f, 1428.8f, 1495.7f, 1453.1f, 1358.4f, 1375.7f, 1281.9f,
-                        1268.0f, 1345.0f, 1319.6f, 1416.3f, 1480.4f, 1434.9f, 1489.4f, 1421.5f,
-                        1332.1f, 1352.9f, 1265.6f, 1281.5f, 1365.1f, 1346.3f, 1449.4f, 1489.1f,
-                    ),
-                ),
-                FanSensorData(
-                    label = "Chassis 1",
-                    rpm = 920,
-                    maxRpm = 1800,
-                    rpmHistory = listOf(
-                        895.0f, 901.7f, 902.3f, 896.1f, 948.9f, 947.3f, 952.8f, 960.3f,
-                        902.9f, 898.3f, 890.6f, 887.0f, 950.7f, 958.4f, 962.9f, 960.2f,
-                        892.7f, 887.3f, 889.0f, 896.2f, 962.3f, 961.7f, 954.9f, 948.2f,
-                    ),
-                ),
-                FanSensorData(
-                    label = "Chassis 2",
-                    rpm = 890,
-                    maxRpm = 1800,
-                    rpmHistory = listOf(
-                        915.2f, 919.6f, 919.2f, 914.3f, 905.5f, 894.2f, 882.3f, 871.6f,
-                        863.9f, 860.2f, 861.2f, 866.8f, 876.1f, 887.5f, 899.3f, 909.7f,
-                        917.0f, 920.0f, 918.2f, 912.0f, 902.4f, 890.7f, 879.0f, 869.0f,
-                    ),
-                ),
-            ),
-        ),
-    )
-    val sensorsThermals: StateFlow<SensorsThermalsData> = _sensorsThermals.asStateFlow()
 
     private val _containers = MutableStateFlow(
         ContainersData(
@@ -549,7 +434,6 @@ class TelemetryStateHolder {
 
     fun refresh() {
         // Triggered by manual dashboard or widget retry
-        _sensorsThermals.value = _sensorsThermals.value.copy()
         _containers.value = _containers.value.copy()
         _processList.value = _processList.value.copy()
     }

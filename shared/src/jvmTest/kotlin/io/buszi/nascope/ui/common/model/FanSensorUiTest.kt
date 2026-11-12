@@ -1,5 +1,8 @@
 package io.buszi.nascope.ui.common.model
 
+import io.buszi.nascope.domain.model.telemetry.SensorKind
+import io.buszi.nascope.domain.model.telemetry.SensorReading
+import io.buszi.nascope.domain.telemetry.ObserveSensorsUseCase.Sensor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -14,7 +17,11 @@ class FanSensorUiTest {
     }
 
     @Test
-    fun dutyCycleDefaultsToRpmOverMaxRpm() {
-        assertEquals(0.5f, FanSensorUi(label = "CPU Fan", rpm = 1000, maxRpm = 2000).dutyCyclePercent)
+    fun fromMapsTheReadingToRpmWithItsHistory() {
+        val ui = FanSensorUi.from(
+            Sensor(SensorReading("fan1", SensorKind.FanSpeed, 1199.6f, "R", null, null), listOf(1000f, 1200f)),
+        )
+
+        assertEquals(FanSensorUi("fan1", 1200, listOf(1000f, 1200f)), ui)
     }
 }

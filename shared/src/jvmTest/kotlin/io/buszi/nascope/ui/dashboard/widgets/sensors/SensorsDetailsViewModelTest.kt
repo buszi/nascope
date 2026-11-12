@@ -1,28 +1,33 @@
 package io.buszi.nascope.ui.dashboard.widgets.sensors
 
+import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsDetailsViewModel.ViewState
 import app.cash.turbine.turbineScope
-import io.buszi.nascope.data.telemetry.FanSensorData
-import io.buszi.nascope.data.telemetry.SensorsThermalsData
-import io.buszi.nascope.data.telemetry.TelemetryStateHolder
-import io.buszi.nascope.data.telemetry.TemperatureSensorData
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
+import io.buszi.nascope.domain.model.telemetry.SensorKind
+import io.buszi.nascope.domain.model.telemetry.SensorReading
+import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
+import io.buszi.nascope.domain.model.telemetry.TelemetryState
+import io.buszi.nascope.domain.telemetry.ObserveSensorsUseCase
+import io.buszi.nascope.domain.telemetry.ObserveSensorsUseCase.Data
+import io.buszi.nascope.domain.telemetry.ObserveSensorsUseCase.Sensor
+import io.buszi.nascope.domain.telemetry.RefreshTelemetryUseCase
 import io.buszi.nascope.test.TestCoroutineRule
 import io.buszi.nascope.test.cancelAndConsumeItems
-import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.FanSensorUi
+import io.buszi.nascope.ui.common.model.SensorsUi
 import io.buszi.nascope.ui.common.model.TemperatureSensorUi
 import io.buszi.nascope.ui.dashboard.widgets.WidgetState
-import io.buszi.nascope.ui.dashboard.widgets.sensors.SensorsDetailsViewModel.ViewState
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verifySequence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
+import kotlin.test.assertIs
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SensorsDetailsViewModelTest {
@@ -30,87 +35,104 @@ class SensorsDetailsViewModelTest {
     @get:Rule
     val coroutineRule = TestCoroutineRule()
 
-    private val telemetryStateHolder = mockk<TelemetryStateHolder>()
+    private val observeSensors = mockk<ObserveSensorsUseCase>()
+    private val refreshTelemetry = mockk<RefreshTelemetryUseCase>()
+    private val states = MutableStateFlow<TelemetryState<Data>>(TelemetryState.Loading)
 
     private val viewModel by lazy {
-        SensorsDetailsViewModel(
-            telemetryStateHolder = telemetryStateHolder,
+        every { observeSensors() } returns states
+        SensorsDetailsViewModel(observeSensors = observeSensors, refreshTelemetry = refreshTelemetry)
+    }
+
+    private suspend fun TestScope.viewStates(vararg steps: TelemetryState<Data>): List<ViewState> {
+        var result: List<ViewState> = emptyList()
+        turbineScope {
+            val turbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            steps.forEach {
+                states.value = it
+                runCurrent()
+            }
+            result = turbine.cancelAndConsumeItems()
+        }
+        return result
+    }
+
+    @Test
+    fun sensorsDetailsViewModelStartsLoadingThenShowsTheNasLikeGroupsWithoutFans() = runTest {
+        assertEquals(
+            listOf(ViewState(), ViewState(sensors = nasSensors, widgetState = WidgetState.Ready)),
+            viewStates(TelemetryState.Ready(nasData, isStale = false)),
         )
     }
 
     @Test
-    fun sensorsDetailsViewModelEmitsReadyStateWithTelemetryData() = runTest {
-        turbineScope {
-            every { telemetryStateHolder.sensorsThermals } returns MutableStateFlow(sensorsData)
+    fun sensorsDetailsViewModelShowsFansWithTheirRpmAndStalledState() = runTest {
+        val last = viewStates(TelemetryState.Ready(fanData, false)).last()
 
-            val viewStateTurbine = viewModel.viewState.testIn(this)
-            runCurrent()
-
-            assertEquals(
-                listOf(
-                    initialViewState,
-                    readyViewState,
-                ),
-                viewStateTurbine.cancelAndConsumeItems(),
-            )
-            verifySequence {
-                telemetryStateHolder.sensorsThermals
-            }
-        }
+        assertEquals(listOf(FanSensorUi("fan1", 1200, listOf(1100f, 1200f)), FanSensorUi("fan2", 0)), last.sensors.fans)
+        assertEquals(1, last.sensors.activeFansCount)
     }
 
     @Test
-    fun sensorsDetailsViewStateComputesAggregates() {
-        val state = readyViewState
+    fun sensorsDetailsViewModelShowsAHostWithoutReadingsAsReadyAndEmpty() = runTest {
+        val last = viewStates(TelemetryState.Ready(Data(emptyList(), emptyList(), emptyList(), emptyList()), false)).last()
 
-        assertEquals(listOf("CPU Package", "sda"), state.temperatures.map { it.label })
-        assertEquals("CPU Package", state.hottest?.label)
-        assertEquals(1, state.atRiskCount)
-        assertEquals(1, state.activeFansCount)
-        assertEquals(25f, state.averageFanDutyPercent, absoluteTolerance = 0.001f)
-        assertEquals(StatusLevel.Degraded, state.overallStatus)
+        assertEquals(ViewState(widgetState = WidgetState.Ready), last)
+        assertEquals(true, last.sensors.isEmpty)
     }
 
     @Test
-    fun sensorsDetailsViewStateHandlesNoSensors() {
-        val state = ViewState(widgetState = WidgetState.Ready)
+    fun sensorsDetailsViewModelShowsUnavailableWhenThePluginIsDisabledNeverAnError() = runTest {
+        val last = viewStates(TelemetryState.Failed(TelemetryFailure.PluginUnavailable)).last()
 
-        assertNull(state.hottest)
-        assertEquals(0, state.atRiskCount)
-        assertEquals(0f, state.averageFanDutyPercent)
-        assertEquals(StatusLevel.Operational, state.overallStatus)
+        assertEquals(ViewState(widgetState = WidgetState.Unavailable), last)
+    }
+
+    @Test
+    fun sensorsDetailsViewModelMarksStaleKeepsTheContentAndMapsConnectionFailures() = runTest {
+        val states = viewStates(
+            TelemetryState.Ready(nasData, false),
+            TelemetryState.Ready(nasData, true),
+            TelemetryState.Failed(TelemetryFailure.Connection(ConnectionFailure.Timeout)),
+            TelemetryState.Loading,
+        )
+
+        assertEquals(WidgetState.Stale, states[2].widgetState)
+        assertEquals(nasSensors, states[2].sensors)
+        assertIs<WidgetState.Offline>(states[3].widgetState)
+        assertEquals(nasSensors, states[3].sensors)
+        assertEquals(ViewState(), states[4])
     }
 
     companion object {
-        private val sensorsData = SensorsThermalsData(
-            cpuTemperature = TemperatureSensorData(
-                label = "CPU Package",
-                currentTempC = 78f,
-                warningThresholdC = 75f,
-                criticalThresholdC = 85f,
-                history = listOf(70f, 78f),
-            ),
-            driveTemperatures = listOf(
-                TemperatureSensorData(
-                    label = "sda",
-                    currentTempC = 34f,
-                    warningThresholdC = 50f,
-                    criticalThresholdC = 60f,
-                ),
-            ),
-            fans = listOf(
-                FanSensorData(label = "CPU Fan", rpm = 1100, maxRpm = 2200, rpmHistory = listOf(1000f, 1100f)),
-                FanSensorData(label = "Chassis", rpm = 0, maxRpm = 1800),
-            ),
+        private fun sensor(label: String, value: Float, kind: SensorKind = SensorKind.CpuTemperature, unit: String = "C", history: List<Float> = emptyList()) =
+            Sensor(SensorReading(label, kind, value, unit, null, null), history)
+
+        private val nasData = Data(
+            cpu = listOf(sensor("Package id 0", 55f, history = listOf(54f, 55f)), sensor("Core 0", 52f)),
+            drives = listOf(sensor("Composite", 40f)),
+            fans = emptyList(),
+            other = listOf(sensor("acpitz 0", 27f)),
         )
 
-        private val initialViewState = ViewState()
+        private val nasSensors = SensorsUi(
+            cpu = listOf(
+                TemperatureSensorUi("Package id 0", 55f, 70f, 85f, listOf(54f, 55f)),
+                TemperatureSensorUi("Core 0", 52f, 70f, 85f),
+            ),
+            drives = listOf(TemperatureSensorUi("Composite", 40f, 70f, 85f)),
+            other = listOf(TemperatureSensorUi("acpitz 0", 27f, 70f, 85f)),
+        )
 
-        private val readyViewState = ViewState(
-            cpuTemperature = sensorsData.cpuTemperature?.let(TemperatureSensorUi::from),
-            driveTemperatures = sensorsData.driveTemperatures.map(TemperatureSensorUi::from),
-            fans = sensorsData.fans.map(FanSensorUi::from),
-            widgetState = WidgetState.Ready,
+        private val fanData = Data(
+            cpu = emptyList(),
+            drives = emptyList(),
+            fans = listOf(
+                sensor("fan1", 1200f, SensorKind.FanSpeed, "R", listOf(1100f, 1200f)),
+                sensor("fan2", 0f, SensorKind.FanSpeed, "R"),
+            ),
+            other = emptyList(),
         )
     }
 }

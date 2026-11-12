@@ -27,7 +27,7 @@ import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.widget_sensors_cooling_active
 import io.buszi.nascope.resources.widget_sensors_cooling_active_compact
 import io.buszi.nascope.resources.widget_sensors_cooling_label
-import io.buszi.nascope.resources.widget_sensors_duty_format
+import io.buszi.nascope.resources.details_sensors_fan_stalled
 import io.buszi.nascope.resources.widget_sensors_no_fans
 import io.buszi.nascope.resources.widget_sensors_no_sensors
 import io.buszi.nascope.resources.widget_sensors_rpm_format
@@ -79,7 +79,7 @@ fun SensorsThermalsWidget(
     modifier: Modifier = Modifier,
     onViewAction: (ViewAction) -> Unit = {},
 ) {
-    val statusLabel = when (viewState.overallStatus) {
+    val statusLabel = when (viewState.sensors.overallStatus) {
         StatusLevel.Operational -> stringResource(Res.string.widget_sensors_status_nominal)
         StatusLevel.Degraded -> stringResource(Res.string.widget_sensors_status_elevated)
         StatusLevel.Critical -> stringResource(Res.string.widget_sensors_status_critical)
@@ -89,20 +89,20 @@ fun SensorsThermalsWidget(
         val containerWidth = maxWidth
         val isWide = containerWidth >= 330.dp
 
-        val cpuTempFormatted = viewState.cpuTemperature?.let {
+        val cpuTempFormatted = viewState.sensors.cpuHeadline?.let {
             stringResource(Res.string.widget_sensors_temp_format, formatDecimal(it.currentTempC))
         } ?: "--"
 
         val subtitleText = stringResource(
             Res.string.widget_sensors_subtitle,
             cpuTempFormatted,
-            viewState.driveTemperatures.size,
+            viewState.sensors.drives.size,
         )
 
         val headerActionText = when {
-            viewState.fans.isEmpty() -> stringResource(Res.string.widget_sensors_no_fans)
-            isWide -> stringResource(Res.string.widget_sensors_cooling_active, viewState.activeFansCount)
-            else -> stringResource(Res.string.widget_sensors_cooling_active_compact, viewState.activeFansCount)
+            viewState.sensors.fans.isEmpty() -> stringResource(Res.string.widget_sensors_no_fans)
+            isWide -> stringResource(Res.string.widget_sensors_cooling_active, viewState.sensors.activeFansCount)
+            else -> stringResource(Res.string.widget_sensors_cooling_active_compact, viewState.sensors.activeFansCount)
         }
 
         DashboardWidget(
@@ -117,19 +117,17 @@ fun SensorsThermalsWidget(
             statusTag = {
                 StatusChip(
                     text = statusLabel,
-                    status = viewState.overallStatus,
-                    pulsing = viewState.overallStatus == StatusLevel.Critical,
+                    status = viewState.sensors.overallStatus,
+                    pulsing = viewState.sensors.overallStatus == StatusLevel.Critical,
                 )
             },
             headerAction = {
                 TagChip(text = headerActionText)
             },
         ) {
-            val hasSensors = viewState.cpuTemperature != null ||
-                viewState.driveTemperatures.isNotEmpty() ||
-                viewState.fans.isNotEmpty()
+            val sensors = viewState.sensors
 
-            if (!hasSensors) {
+            if (sensors.cpuHeadline == null && sensors.drives.isEmpty() && sensors.fans.isEmpty()) {
                 EmptySensorsPlaceholder()
             } else {
                 SensorsContent(
@@ -151,21 +149,21 @@ private fun SensorsContent(
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
     ) {
         // Section 1: CPU Package Temperature
-        viewState.cpuTemperature?.let { cpu ->
+        viewState.sensors.cpuHeadline?.let { cpu ->
             CpuTemperatureCard(cpu = cpu, isWide = isWide)
         }
 
         // Section 2: Drive Temperatures (gracefully hidden if empty)
-        if (viewState.driveTemperatures.isNotEmpty()) {
+        if (viewState.sensors.drives.isNotEmpty()) {
             DriveTemperaturesSection(
-                drives = viewState.driveTemperatures,
+                drives = viewState.sensors.drives,
             )
         }
 
         // Section 3: Cooling Fans (gracefully hidden if empty)
-        if (viewState.fans.isNotEmpty()) {
+        if (viewState.sensors.fans.isNotEmpty()) {
             CoolingFansSection(
-                fans = viewState.fans,
+                fans = viewState.sensors.fans,
                 isWide = isWide,
             )
         }
@@ -381,8 +379,6 @@ private fun FanCard(
     fan: FanSensorUi,
     modifier: Modifier = Modifier,
 ) {
-    val dutyPercent = (fan.dutyCyclePercent * 100).roundToInt()
-
     Box(
         modifier = modifier
             .clip(AppTheme.shapes.base)
@@ -410,26 +406,16 @@ private fun FanCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false),
                 )
-
-                Text(
-                    text = stringResource(Res.string.widget_sensors_duty_format, dutyPercent),
-                    style = AppTheme.typography.labelCode,
-                    color = AppTheme.colors.textMuted,
-                )
             }
 
             Text(
-                text = stringResource(Res.string.widget_sensors_rpm_format, fan.rpm),
+                text = if (fan.isStalled) {
+                    stringResource(Res.string.details_sensors_fan_stalled)
+                } else {
+                    stringResource(Res.string.widget_sensors_rpm_format, fan.rpm)
+                },
                 style = AppTheme.typography.bodySm,
-                color = AppTheme.colors.textSecondary,
-            )
-
-            LinearGauge(
-                progress = fan.dutyCyclePercent,
-                normalColor = AppTheme.colors.telemetryB,
-                warningColor = AppTheme.colors.degraded,
-                criticalColor = AppTheme.colors.critical,
-                modifier = Modifier.fillMaxWidth(),
+                color = if (fan.isStalled) AppTheme.colors.critical else AppTheme.colors.textSecondary,
             )
         }
     }

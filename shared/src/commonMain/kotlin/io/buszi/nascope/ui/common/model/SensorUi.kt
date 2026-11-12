@@ -1,12 +1,12 @@
 package io.buszi.nascope.ui.common.model
 
 import androidx.compose.runtime.Immutable
-import io.buszi.nascope.data.telemetry.FanSensorData
-import io.buszi.nascope.data.telemetry.TemperatureSensorData
+import io.buszi.nascope.domain.telemetry.ObserveSensorsUseCase
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
+import kotlin.math.roundToInt
 
 /**
- * UI representation of a temperature sensor with its alert thresholds.
+ * UI representation of a temperature sensor with its alert thresholds, always in Celsius.
  */
 @Immutable
 data class TemperatureSensorUi(
@@ -57,13 +57,26 @@ data class TemperatureSensorUi(
         ((valueC - rangeC.start) / (rangeC.endInclusive - rangeC.start)).coerceIn(0f, 1f)
 
     companion object {
-        fun from(data: TemperatureSensorData) = TemperatureSensorUi(
-            label = data.label,
-            currentTempC = data.currentTempC,
-            warningThresholdC = data.warningThresholdC,
-            criticalThresholdC = data.criticalThresholdC,
-            history = data.history,
-        )
+        /** Used when Glances reports no threshold for a sensor. */
+        const val DefaultWarningC: Float = 70f
+        const val DefaultCriticalC: Float = 85f
+
+        /** Converts a reading in the unit Glances reports (`C` or `F`) and fills in missing thresholds. */
+        fun from(data: ObserveSensorsUseCase.Sensor): TemperatureSensorUi {
+            val reading = data.reading
+            val toCelsius: (Float) -> Float = if (reading.unit.equals("F", ignoreCase = true)) {
+                { (it - 32f) * 5f / 9f }
+            } else {
+                { it }
+            }
+            return TemperatureSensorUi(
+                label = reading.label,
+                currentTempC = toCelsius(reading.value),
+                warningThresholdC = reading.warning?.let(toCelsius) ?: DefaultWarningC,
+                criticalThresholdC = reading.critical?.let(toCelsius) ?: DefaultCriticalC,
+                history = data.history.map(toCelsius),
+            )
+        }
     }
 }
 
@@ -74,8 +87,6 @@ data class TemperatureSensorUi(
 data class FanSensorUi(
     val label: String,
     val rpm: Int,
-    val maxRpm: Int = 2200,
-    val dutyCyclePercent: Float = if (maxRpm > 0) (rpm.toFloat() / maxRpm).coerceIn(0f, 1f) else 0f,
     val rpmHistory: List<Float> = emptyList(),
 ) {
     /** A fan that reports no rotation. */
@@ -83,12 +94,10 @@ data class FanSensorUi(
         get() = rpm <= 0
 
     companion object {
-        fun from(data: FanSensorData) = FanSensorUi(
-            label = data.label,
-            rpm = data.rpm,
-            maxRpm = data.maxRpm,
-            dutyCyclePercent = data.dutyCyclePercent,
-            rpmHistory = data.rpmHistory,
+        fun from(data: ObserveSensorsUseCase.Sensor) = FanSensorUi(
+            label = data.reading.label,
+            rpm = data.reading.value.roundToInt(),
+            rpmHistory = data.history,
         )
     }
 }

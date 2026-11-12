@@ -90,7 +90,6 @@
     <string name="widget_sensors_temperatures_label">TEMPERATURE SENSORS</string>
     <string name="widget_sensors_cooling_label">COOLING &amp; FAN CONTROL</string>
     <string name="widget_sensors_rpm_format">%1$d RPM</string>
-    <string name="widget_sensors_duty_format">%1$d%</string>
     <string name="widget_sensors_temp_format">%1$s°C</string>
     <string name="widget_sensors_no_sensors">NO THERMAL SENSORS DETECTED</string>
     <string name="widget_containers_title">CONTAINERS</string>
@@ -253,9 +252,9 @@
     <string name="details_sensors_stat_hottest">HOTTEST</string>
     <string name="details_sensors_stat_at_risk">SENSORS AT RISK</string>
     <string name="details_sensors_stat_fans_active">FANS ACTIVE</string>
-    <string name="details_sensors_stat_fan_duty">AVG FAN DUTY</string>
     <string name="details_sensors_fans_active_format">%1$d / %2$d</string>
     <string name="details_sensors_temperatures">TEMPERATURES</string>
+    <string name="details_sensors_other">OTHER</string>
     <string name="details_sensors_cooling">COOLING</string>
     <string name="details_sensors_stat_min">MIN</string>
     <string name="details_sensors_stat_avg">AVG</string>
@@ -263,7 +262,6 @@
     <string name="details_sensors_headroom_warning">TO WARNING</string>
     <string name="details_sensors_headroom_critical">TO CRITICAL</string>
     <string name="details_sensors_headroom_format">%1$s°C</string>
-    <string name="details_sensors_fan_max_format">MAX %1$d RPM</string>
     <string name="details_sensors_fan_stalled">STALLED</string>
     <string name="welcome_title">Nascope</string>
     <string name="welcome_description">Nascope shows live telemetry from your servers by connecting to a Glances server on your network. Add one now, or look around with demo data first.</string>
