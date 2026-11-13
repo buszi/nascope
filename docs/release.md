@@ -1,6 +1,53 @@
 # Release runbook
 
-Work in progress: built up task by task in Phase 6B of `PLAN.md`. This version covers Android signing, desktop packaging and the CI workflows.
+How Nascope is built, signed, released and distributed. Start with the checklist; the sections after it hold the detail.
+
+## Release checklist
+
+Everything in this file is the detail behind these steps. A release is a git tag; the workflow does the rest.
+
+**Before tagging**
+
+1. Decide the version (`MAJOR.MINOR.PATCH`) and set `app-version` in `gradle/libs.versions.toml`. The tag must be `v` plus exactly this version (`v1.0.1` for `1.0.1`); the workflow refuses anything else.
+2. Update `CHANGELOG.md`: move the entries under the new version with today's date, and keep "Known limitations" honest.
+3. Run the full verification locally: `./gradlew assemble :domain-model:jvmTest :storage:jvmTest :network:jvmTest :domain:jvmTest :shared:jvmTest`.
+4. If the UI or storage changed, do a device pass: the `nascope-qa` skill on the three emulators, and a packaged desktop build against a real server (the check list under "Desktop packages").
+5. Commit and push `main`, and wait for the `CI` workflow to be green **on that commit**. Tag only a commit that CI has passed.
+6. Check the repository secrets exist (Settings, Secrets and variables, Actions): `NASCOPE_KEYSTORE_FILE`, `NASCOPE_KEYSTORE_PASSWORD`, `NASCOPE_KEY_ALIAS`, `NASCOPE_KEY_PASSWORD`, `HOMEBREW_TAP_TOKEN`. The keystore itself must still be backed up (see "Android release signing").
+
+**Tagging**
+
+```sh
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+For a rehearsal use a suffix, `v1.0.0-rc1`: it is published as a pre-release and never reaches Homebrew. Watch the `Release` workflow in the Actions tab (about 15 to 20 minutes: Android first, then macOS, then publish, then the tap).
+
+**After the workflow**
+
+1. The Release page has `Nascope-<version>.apk`, `Nascope-<version>.dmg` and `SHA256SUMS`, and is marked "Latest" (or "Pre-release" for a suffix).
+2. Download the files and check them: `shasum -a 256 -c SHA256SUMS`, and `apksigner verify --print-certs Nascope-<version>.apk` shows the certificate fingerprint from the README.
+3. Install the APK on a device or emulator and start it; open the dmg (or `brew install --cask buszi/tap/nascope`), go through the first launch and connect to a server.
+4. A real release (no suffix) added a commit "nascope <version>" to `buszi/homebrew-tap`; `brew update && brew upgrade --cask nascope` picks it up.
+5. Announce it.
+
+**When something goes wrong**
+
+- **The workflow fails before the `publish` job:** nothing is public. Fix the cause, then delete the tag and tag again: `git push --delete origin v1.0.0 && git tag -d v1.0.0`, push the fix, create the tag on the new commit. (The Android job runs first; the macOS job only starts when it passed.)
+- **The `publish` job succeeded but the release is wrong:** a published tag is never moved. Ship a fixed patch version (`1.0.1`); mark the bad release as a pre-release or delete it on GitHub, and tell users which version to take.
+- **Only the `homebrew` job failed:** the release itself is fine. Fix the cause (usually the token) and re-run that job from the Actions tab, or edit `version` and `sha256` in the tap by hand.
+- **The keystore is lost:** installed apps can never be updated again; users must uninstall and lose their saved servers. This is why the backup matters.
+
+**Later (not part of 1.0.0, so nobody re-decides it)**
+
+- Windows (`.msi`, winget, Scoop) and Linux (`.deb`, an apt repository, Flatpak): add them after hand testing (see "Adding an OS").
+- Apple notarization (a paid Developer ID) would remove the Gatekeeper steps and allow the official Homebrew cask.
+- Google Play (a paid account, an AAB: switch `bundleRelease` on in the workflow), F-Droid (needs a reproducible build).
+- Windows code signing (SignPath is free for open source).
+- An in-app "new version available" check against the GitHub API.
+- An Intel Mac build (an Intel runner row).
+
+---
 
 ## Android release signing
 
