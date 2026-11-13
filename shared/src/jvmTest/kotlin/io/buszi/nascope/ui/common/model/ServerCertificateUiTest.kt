@@ -37,6 +37,14 @@ class ServerCertificateUiTest {
     }
 
     @Test
+    fun aWrappableFingerprintOnlyAddsBreakOpportunitiesAfterTheColons() {
+        val wrappable = ServerCertificateUi.wrappableFingerprint("0A:FF:12")
+
+        assertEquals("0A:\u200BFF:\u200B12", wrappable)
+        assertEquals("0A:FF:12", wrappable.replace("\u200B", ""))
+    }
+
+    @Test
     fun onlyCertificateFailuresPrompt() {
         assertEquals(
             CertificatePromptUi(ServerCertificateUi.from(certificate), isChange = false),

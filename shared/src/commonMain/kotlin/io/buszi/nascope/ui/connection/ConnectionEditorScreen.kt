@@ -191,7 +191,10 @@ fun ConnectionEditorContent(
 
         viewState.trustedCertificate?.let { fingerprint ->
             Text(
-                text = stringResource(Res.string.connection_trusted_certificate, fingerprint),
+                text = stringResource(
+                    Res.string.connection_trusted_certificate,
+                    ServerCertificateUi.wrappableFingerprint(fingerprint),
+                ),
                 style = AppTheme.typography.labelCode,
                 color = AppTheme.colors.textMuted,
                 modifier = Modifier.testTag(TestTags.ConnectionTrustedCertificate),

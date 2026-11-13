@@ -27,6 +27,14 @@ data class ServerCertificateUi(
 
         fun formatFingerprint(data: CertificateFingerprint): String =
             data.sha256.uppercase().chunked(2).joinToString(":")
+
+        /**
+         * [fingerprint] for display: a zero-width space after every colon, so a wrapped fingerprint breaks between
+         * pairs (never inside one, never before a colon). Not for comparing or copying.
+         */
+        fun wrappableFingerprint(fingerprint: String): String = fingerprint.replace(":", ":$ZeroWidthSpace")
+
+        private const val ZeroWidthSpace = '\u200B'
     }
 }
 

@@ -68,7 +68,7 @@ fun CertificatePromptCard(
             }
             CertificateDetail(
                 label = stringResource(Res.string.connection_certificate_fingerprint),
-                value = prompt.certificate.fingerprint,
+                value = ServerCertificateUi.wrappableFingerprint(prompt.certificate.fingerprint),
                 isCode = true,
                 modifier = Modifier.testTag(TestTags.ConnectionCertificateFingerprint),
             )
