@@ -1,7 +1,8 @@
 name: Release
 
 # Push a tag `vX.Y.Z` (a release candidate is `vX.Y.Z-rc1`, published as a pre-release) to build and publish.
-# Android is built and tested on Ubuntu first; the expensive macOS runner starts only after that passed.
+# Android is built and tested on Ubuntu first; the desktop packages (macOS, Windows, Linux) start only after that
+# passed, so a failing test never starts the expensive runners.
 # Runbook: docs/release.md.
 on:
   push:
@@ -99,14 +100,22 @@ jobs:
     timeout-minutes: 40
     strategy:
       fail-fast: false
-      # One row per OS. Windows (msi) and Linux (deb) are left out until they have been tested by hand:
-      # add a row with its runner, Gradle task and output folder (docs/release.md, "Adding an OS").
+      # One row per OS: runner, Gradle task, output folder (docs/release.md, "Desktop packages in the workflow").
+      # Every row must pass for the release to be published.
       matrix:
         include:
           - name: macOS
             runner: macos-latest # Apple Silicon: the dmg runs on Apple Silicon Macs only
             task: packageReleaseDmg
             folder: dmg
+          - name: Windows
+            runner: windows-latest # x64; Compose downloads the WiX toolset it needs for the msi itself
+            task: packageReleaseMsi
+            folder: msi
+          - name: Linux
+            runner: ubuntu-latest # amd64
+            task: packageReleaseDeb
+            folder: deb
     steps:
       - uses: actions/checkout@v4
 
@@ -117,13 +126,35 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # A published deb must name its real maintainer; without the secret the build would use the placeholder.
+      - name: Check the deb maintainer
+        if: runner.os == 'Linux'
+        env:
+          NASCOPE_DEB_MAINTAINER: ${{ secrets.NASCOPE_DEB_MAINTAINER }}
+        run: |
+          if [ -z "$NASCOPE_DEB_MAINTAINER" ]; then
+            echo "::error::Secret NASCOPE_DEB_MAINTAINER is not set (\"Name <mail>\" for the deb Maintainer field)"
+            exit 1
+          fi
+
+      # jpackage builds the deb with dpkg-deb under fakeroot.
+      - name: Linux packaging tools
+        if: runner.os == 'Linux'
+        run: command -v fakeroot >/dev/null || (sudo apt-get update && sudo apt-get install -y fakeroot)
+
       - name: Package
+        env:
+          # The deb Maintainer field ("Name <mail>"); only the Linux package uses it.
+          NASCOPE_DEB_MAINTAINER: ${{ secrets.NASCOPE_DEB_MAINTAINER }}
         run: ./gradlew :desktopApp:${{ matrix.task }}
 
+      # bash on every runner (Windows defaults to PowerShell).
       - name: Collect
+        shell: bash
         run: |
           mkdir -p dist
           cp desktopApp/build/compose/binaries/main-release/${{ matrix.folder }}/* dist/
+          ls -l dist
 
       - uses: actions/upload-artifact@v4
         with:
@@ -145,9 +176,10 @@ jobs:
           path: dist
           merge-multiple: true
 
+      # Every published file: the deb is named by the Debian convention (nascope_<version>-1_amd64.deb).
       - name: Checksums
         working-directory: dist
-        run: sha256sum Nascope-* | tee SHA256SUMS
+        run: sha256sum -- * | tee SHA256SUMS
 
       - name: Create the release
         env:

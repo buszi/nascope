@@ -9,6 +9,7 @@ import org.jetbrains.compose.desktop.DesktopExtension
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
+@Suppress("UnstableApiUsage")
 class DesktopApplicationPlugin : Plugin<Project> {
 
     override fun apply(target: Project) = with(target) {
@@ -91,9 +92,11 @@ class DesktopApplicationPlugin : Plugin<Project> {
                             appCategory = "net"
                             // The deb Maintainer field needs an e-mail address. Releases get the real one from the
                             // NASCOPE_DEB_MAINTAINER environment variable (a CI secret) or Gradle property, as
-                            // "Name <mail>"; local builds use the placeholder.
+                            // "Name <mail>"; local builds use the placeholder. A blank value (an unset CI secret
+                            // arrives as an empty variable) counts as missing.
                             debMaintainer = project.providers.environmentVariable("NASCOPE_DEB_MAINTAINER")
-                                .orElse(project.providers.gradleProperty("NASCOPE_DEB_MAINTAINER"))
+                                .filter { it.isNotBlank() }
+                                .orElse(project.providers.gradleProperty("NASCOPE_DEB_MAINTAINER").filter { it.isNotBlank() })
                                 .orElse("Nascope <nascope@example.invalid>")
                                 .get()
                         }

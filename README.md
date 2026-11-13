@@ -42,7 +42,7 @@ Glances serves its API on port `61208` by default. See the [Glances documentatio
 
 ## Install
 
-Downloads are on the [Releases](https://github.com/buszi/nascope/releases) page, with a `SHA256SUMS` file to check them against. Nascope is not signed with a paid developer certificate, so macOS and Android ask you to confirm the first launch or install. Windows and Linux packages are not available yet.
+Downloads are on the [Releases](https://github.com/buszi/nascope/releases) page, with a `SHA256SUMS` file to check them against. Nascope is not signed with a paid developer certificate, so macOS, Windows and Android ask you to confirm the first launch or install.
 
 ### macOS (Apple Silicon)
 
@@ -57,6 +57,20 @@ Or download `Nascope-<version>.dmg`, open it and drag **Nascope** to Application
 ```sh
 xattr -dr com.apple.quarantine /Applications/Nascope.app
 ```
+
+### Windows (x64)
+
+Download `Nascope-<version>.msi` and run it. It installs for your user only, without an administrator prompt, and adds **Nascope** to the Start menu; a newer msi upgrades the installed version in place. Because the installer is not code signed, Windows SmartScreen may say **"Windows protected your PC"**: click **More info**, then **Run anyway**. Passwords are stored in the Windows Credential Manager.
+
+### Linux (Debian, Ubuntu and derivatives, amd64)
+
+Download `nascope_<version>-1_amd64.deb` and install it with apt, which also pulls in what it needs:
+
+```sh
+sudo apt install ./nascope_<version>-1_amd64.deb
+```
+
+**Nascope** then appears in the application menu; `sudo apt remove nascope` removes it. Passwords are stored through the Secret Service (GNOME Keyring, KWallet); without one, a password lasts for the session only and the editor says so.
 
 ### Android
 

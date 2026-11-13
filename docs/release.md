@@ -13,7 +13,7 @@ Everything in this file is the detail behind these steps. A release is a git tag
 3. Run the full verification locally: `./gradlew assemble :domain-model:jvmTest :storage:jvmTest :network:jvmTest :domain:jvmTest :shared:jvmTest`.
 4. If the UI or storage changed, do a device pass: the `nascope-qa` skill on the three emulators, and a packaged desktop build against a real server (the check list under "Desktop packages").
 5. Commit and push `main`, and wait for the `CI` workflow to be green **on that commit**. Tag only a commit that CI has passed.
-6. Check the repository secrets exist (Settings, Secrets and variables, Actions): `NASCOPE_KEYSTORE_FILE`, `NASCOPE_KEYSTORE_PASSWORD`, `NASCOPE_KEY_ALIAS`, `NASCOPE_KEY_PASSWORD`, `HOMEBREW_TAP_TOKEN`. The keystore itself must still be backed up (see "Android release signing").
+6. Check the repository secrets exist (Settings, Secrets and variables, Actions): `NASCOPE_KEYSTORE_FILE`, `NASCOPE_KEYSTORE_PASSWORD`, `NASCOPE_KEY_ALIAS`, `NASCOPE_KEY_PASSWORD`, `NASCOPE_DEB_MAINTAINER`, `HOMEBREW_TAP_TOKEN`. The keystore itself must still be backed up (see "Android release signing").
 
 **Tagging**
 
@@ -21,26 +21,27 @@ Everything in this file is the detail behind these steps. A release is a git tag
 git tag v1.0.0 && git push origin v1.0.0
 ```
 
-For a rehearsal use a suffix, `v1.0.0-rc1`: it is published as a pre-release and never reaches Homebrew. Watch the `Release` workflow in the Actions tab (about 15 to 20 minutes: Android first, then macOS, then publish, then the tap).
+For a rehearsal use a suffix, `v1.0.0-rc1`: it is published as a pre-release and never reaches Homebrew. Watch the `Release` workflow in the Actions tab (about 20 to 25 minutes: Android first, then macOS, Windows and Linux in parallel, then publish, then the tap).
 
 **After the workflow**
 
-1. The Release page has `Nascope-<version>.apk`, `Nascope-<version>.dmg` and `SHA256SUMS`, and is marked "Latest" (or "Pre-release" for a suffix).
+1. The Release page has `Nascope-<version>.apk`, `Nascope-<version>.dmg`, `Nascope-<version>.msi`, `nascope_<version>-1_amd64.deb` and `SHA256SUMS`, and is marked "Latest" (or "Pre-release" for a suffix).
 2. Download the files and check them: `shasum -a 256 -c SHA256SUMS`, and `apksigner verify --print-certs Nascope-<version>.apk` shows the certificate fingerprint from the README.
-3. Install the APK on a device or emulator and start it; open the dmg (or `brew install --cask buszi/tap/nascope`), go through the first launch and connect to a server.
+3. Install the APK on a device or emulator and start it; open the dmg (or `brew install --cask buszi/tap/nascope`), go through the first launch and connect to a server. Install the msi on Windows and the deb on Linux and go through "Checking a package" below (a must for the first release candidate of an OS: its shrunk build has not been run before).
 4. A real release (no suffix) added a commit "nascope <version>" to `buszi/homebrew-tap`; `brew update && brew upgrade --cask nascope` picks it up.
 5. Announce it.
 
 **When something goes wrong**
 
-- **The workflow fails before the `publish` job:** nothing is public. Fix the cause, then delete the tag and tag again: `git push --delete origin v1.0.0 && git tag -d v1.0.0`, push the fix, create the tag on the new commit. (The Android job runs first; the macOS job only starts when it passed.)
+- **The workflow fails before the `publish` job:** nothing is public. Fix the cause, then delete the tag and tag again: `git push --delete origin v1.0.0 && git tag -d v1.0.0`, push the fix, create the tag on the new commit. (The Android job runs first; the desktop jobs only start when it passed, and every desktop row must pass.)
 - **The `publish` job succeeded but the release is wrong:** a published tag is never moved. Ship a fixed patch version (`1.0.1`); mark the bad release as a pre-release or delete it on GitHub, and tell users which version to take.
 - **Only the `homebrew` job failed:** the release itself is fine. Fix the cause (usually the token) and re-run that job from the Actions tab, or edit `version` and `sha256` in the tap by hand.
 - **The keystore is lost:** installed apps can never be updated again; users must uninstall and lose their saved servers. This is why the backup matters.
 
-**Later (not part of 1.0.0, so nobody re-decides it)**
+**Later (not done yet, so nobody re-decides it)**
 
-- Windows (`.msi`, winget, Scoop) and Linux (`.deb`, an apt repository, Flatpak): add them after hand testing (see "Adding an OS").
+- Package managers for Windows (winget, Scoop) and Linux (an apt repository, Flatpak); the msi and the deb themselves are released since 1.1.0.
+- An arm64 Linux deb (an arm64 runner row).
 - Apple notarization (a paid Developer ID) would remove the Gatekeeper steps and allow the official Homebrew cask.
 - Google Play (a paid account, an AAB: switch `bundleRelease` on in the workflow), F-Droid (needs a reproducible build).
 - Windows code signing (SignPath is free for open source).
@@ -101,11 +102,11 @@ One installer per OS, each built **on that OS** (jpackage cannot cross-compile; 
 # desktopApp/build/compose/binaries/main-release/{dmg,msi,deb}/
 ```
 
-Names come from `DesktopApplicationPlugin`: the app is **Nascope** (`Nascope.app`, "Nascope" in the Start menu), bundle id `io.buszi.nascope`, files `Nascope-<version>.dmg` and `.msi`, and a `.deb` (its exact file name is confirmed on the first Linux build; the release workflow and the Homebrew / winget steps depend on these names).
+Names come from `DesktopApplicationPlugin`: the app is **Nascope** (`Nascope.app`, "Nascope" in the Start menu), bundle id `io.buszi.nascope`, files `Nascope-<version>.dmg` and `Nascope-<version>.msi`, and `nascope_<version>-1_amd64.deb` (the Debian convention, lowercase; to be confirmed on the first Linux build). The Homebrew job depends on the dmg name.
 
 - **Version:** `app-version` in `gradle/libs.versions.toml` is the `packageVersion`. It must be plain `MAJOR.MINOR.PATCH` with a major of at least 1 (macOS). A release candidate such as `v1.0.0-rc1` is therefore only a git tag and a GitHub pre-release; the files inside it are still `1.0.0`.
 - **Windows upgrades:** `upgradeUuid` in the plugin identifies the product. A newer MSI upgrades an older one in place only while it stays the same, so **never change it**. The MSI installs per user (no administrator prompt).
-- **Debian maintainer:** the `Maintainer` field needs `Name <email>`; nothing validates the address. Releases take it from the `NASCOPE_DEB_MAINTAINER` environment variable (a repository secret in CI; the release workflow must pass it through) or a Gradle property. Local builds use a placeholder, so never publish a locally built deb.
+- **Debian maintainer:** the `Maintainer` field needs `Name <email>`; nothing validates the address. Releases take it from the `NASCOPE_DEB_MAINTAINER` environment variable (a repository secret; the release workflow passes it to the package step and fails the Linux row when it is missing) or a Gradle property; a blank value counts as missing. Local builds use a placeholder, so never publish a locally built deb.
 - **Runtime modules:** the packaged app ships a jlinked JRE with an explicit module list. After adding or upgrading a dependency run `./gradlew :desktopApp:suggestRuntimeModules` and update `modules(...)` in the plugin; a missing module only fails at runtime.
 - **macOS signing:** packages are ad-hoc signed by jpackage and not notarized (see the install notes in the README, TASK-6B.7).
 
@@ -136,7 +137,7 @@ On the machine of the package's OS, install it (macOS: copy `Nascope.app` out of
 Two workflows in `.github/workflows`:
 
 - **`ci.yml`** (pull requests and pushes to `main`, skipped for docs-only changes): `./gradlew assemble` and the module tests on one Ubuntu runner. A newer push cancels the older run.
-- **`release.yml`** (a pushed tag `vX.Y.Z`, or `vX.Y.Z-rc1` for a pre-release): 1. checks that the tag matches `app-version` (a `-rcN` suffix is allowed), runs the tests, builds and signs the APK on Ubuntu and checks that its certificate is the release key (the fingerprint is `EXPECTED_CERT_SHA256` in the workflow); 2. only then builds the macOS dmg (macOS minutes are the costly ones, so a failing test never starts that runner); 3. publishes a GitHub Release with `Nascope-<version>.apk`, `Nascope-<version>.dmg` and `SHA256SUMS`, with generated notes, as a pre-release when the tag has a suffix.
+- **`release.yml`** (a pushed tag `vX.Y.Z`, or `vX.Y.Z-rc1` for a pre-release): 1. checks that the tag matches `app-version` (a `-rcN` suffix is allowed), runs the tests, builds and signs the APK on Ubuntu and checks that its certificate is the release key (the fingerprint is `EXPECTED_CERT_SHA256` in the workflow); 2. only then builds the desktop packages in parallel: the dmg on macOS, the msi on Windows, the deb on Linux (macOS and Windows minutes are the costly ones, so a failing test never starts those runners); 3. publishes a GitHub Release with the apk, the dmg, the msi, the deb and `SHA256SUMS` (over every file), with generated notes, as a pre-release when the tag has a suffix.
 
 ### Repository secrets (Settings, Secrets and variables, Actions)
 
@@ -146,7 +147,7 @@ Two workflows in `.github/workflows`:
 | `NASCOPE_KEYSTORE_PASSWORD` | keystore password |
 | `NASCOPE_KEY_ALIAS` | key alias |
 | `NASCOPE_KEY_PASSWORD` | key password |
-| `NASCOPE_DEB_MAINTAINER` | only when the deb is built again (see "Adding an OS") |
+| `NASCOPE_DEB_MAINTAINER` | `Name <mail>` for the deb's Maintainer field; the Linux row fails without it. It ends up inside the public package, so use a GitHub `users.noreply` address, not a personal one |
 
 ### Cutting a release
 
@@ -160,25 +161,14 @@ A bad release is superseded by a new patch version; a published tag is never mov
 ### Notes
 
 - The macOS dmg is built on an Apple Silicon runner, so it runs on Apple Silicon Macs only (the bundled runtime is architecture specific). An Intel build needs an Intel runner row.
+- The msi is x64 (`windows-latest`); Compose downloads the WiX toolset it needs. The deb is amd64 (`ubuntu-latest`); the workflow makes sure `fakeroot` is there for jpackage.
+- Windows and Linux packages are not code signed: Windows SmartScreen asks once (README, Install).
 - Actions are pinned to major versions (`@v4`), not commit SHAs.
 - Artifacts between jobs are kept for 7 days.
 
-### Adding an OS
+### Desktop packages in the workflow
 
-Windows (`.msi`) and Linux (`.deb`) are not built yet: they are added after they have been tested by hand. Add a row to the `matrix.include` list of the `desktop` job in `release.yml`, for example:
-
-```yaml
-- name: Windows
-  runner: windows-latest
-  task: packageReleaseMsi
-  folder: msi
-- name: Linux
-  runner: ubuntu-latest
-  task: packageReleaseDeb
-  folder: deb
-```
-
-The Linux row also needs `NASCOPE_DEB_MAINTAINER` passed to the build as an environment variable (the secret). Check the artifact names afterwards: the Homebrew and winget steps (TASK-6B.7) depend on them.
+The `desktop` job of `release.yml` has one `matrix.include` row per OS: its runner, the Gradle task and the output folder under `desktopApp/build/compose/binaries/main-release/`. Today: macOS (`macos-latest`, `packageReleaseDmg`, `dmg`), Windows (`windows-latest`, `packageReleaseMsi`, `msi`) and Linux (`ubuntu-latest`, `packageReleaseDeb`, `deb`). Another architecture or format is another row; check the file names of the first build, since the Homebrew job (and later winget and Scoop) depend on them.
 
 ## Distribution channels
 
@@ -204,5 +194,5 @@ The APK on the GitHub Release is the install route. [Obtainium](https://obtainiu
 
 ### Not yet
 
-winget, Scoop, an apt repository and Flatpak wait for the Windows and Linux builds (see "Adding an OS").
+winget, Scoop, an apt repository and Flatpak (see "Later" in the checklist). Until then Windows and Linux users download the msi or the deb from the GitHub Release.
 
