@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,6 +39,7 @@ import org.koin.compose.koinInject
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.common.util.LocalContentInsets
 import io.buszi.nascope.ui.common.util.LocalWindowWidthClass
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
@@ -88,7 +91,6 @@ fun NascopeAppScaffold(
         modifier = modifier
             .fillMaxSize()
             .background(AppTheme.colors.subSurface)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && event.key == Key.Escape && navigator.canNavigateBack) {
                     navigator.navigateBack()
@@ -101,18 +103,42 @@ fun NascopeAppScaffold(
             .focusable(),
     ) {
         val windowWidthClass = maxWidth.toWindowWidthClass()
+        val isCompact = windowWidthClass == WindowWidthClass.Compact
 
-        CompositionLocalProvider(LocalWindowWidthClass provides windowWidthClass) {
+        // The bars own the insets next to them; the workspace gets the rest and decides itself how to use
+        // them, so bricks can scroll behind a navigation bar docked at the side of a rotated phone.
+        val safeDrawing = WindowInsets.safeDrawing
+        val railInsets = safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)
+        val topBarInsets = safeDrawing.only(
+            if (isCompact) WindowInsetsSides.Top + WindowInsetsSides.Horizontal else WindowInsetsSides.Top + WindowInsetsSides.End,
+        )
+        val bottomBarInsets = safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+        // Compact keeps the bottom bar, which already clears the bottom insets; wide layouts have none.
+        val contentInsets = safeDrawing.only(
+            if (isCompact) WindowInsetsSides.Horizontal else WindowInsetsSides.End + WindowInsetsSides.Bottom,
+        )
+
+        CompositionLocalProvider(
+            LocalWindowWidthClass provides windowWidthClass,
+            LocalContentInsets provides contentInsets,
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(AppTheme.colors.canvasBackground),
             ) {
-                if (windowWidthClass != WindowWidthClass.Compact) {
-                    NascopeSidebarRail(
-                        activeDestination = navigator.activeTopLevelDestination,
-                        onSelectDestination = navigator::navigateToTopLevel,
-                    )
+                if (!isCompact) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .background(AppTheme.colors.subSurface)
+                            .windowInsetsPadding(railInsets),
+                    ) {
+                        NascopeSidebarRail(
+                            activeDestination = navigator.activeTopLevelDestination,
+                            onSelectDestination = navigator::navigateToTopLevel,
+                        )
+                    }
                 }
 
                 Column(
@@ -120,12 +146,19 @@ fun NascopeAppScaffold(
                         .weight(1f)
                         .fillMaxHeight(),
                 ) {
-                    NascopeTopBar(
-                        currentRoute = navigator.currentRoute,
-                        canNavigateBack = navigator.canNavigateBack,
-                        onNavigateBack = { navigator.navigateBack() },
-                        onManageNodes = { navigator.navigateToTopLevel(TopLevelDestination.Nodes) },
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(AppTheme.colors.subSurface)
+                            .windowInsetsPadding(topBarInsets),
+                    ) {
+                        NascopeTopBar(
+                            currentRoute = navigator.currentRoute,
+                            canNavigateBack = navigator.canNavigateBack,
+                            onNavigateBack = { navigator.navigateBack() },
+                            onManageNodes = { navigator.navigateToTopLevel(TopLevelDestination.Nodes) },
+                        )
+                    }
 
                     Box(
                         modifier = Modifier
@@ -140,11 +173,18 @@ fun NascopeAppScaffold(
                         )
                     }
 
-                    if (windowWidthClass == WindowWidthClass.Compact) {
-                        NascopeBottomBar(
-                            activeDestination = navigator.activeTopLevelDestination,
-                            onSelectDestination = navigator::navigateToTopLevel,
-                        )
+                    if (isCompact) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(AppTheme.colors.subSurface)
+                                .windowInsetsPadding(bottomBarInsets),
+                        ) {
+                            NascopeBottomBar(
+                                activeDestination = navigator.activeTopLevelDestination,
+                                onSelectDestination = navigator::navigateToTopLevel,
+                            )
+                        }
                     }
                 }
             }
@@ -195,7 +235,7 @@ private fun NascopeNavDisplay(
                 if (details != null) {
                     details.Content(
                         onClose = { navigator.navigateBack() },
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().windowInsetsPadding(LocalContentInsets.current),
                     )
                 } else {
                     // A brick without details (e.g. restored state after a layout change) has nothing to show.
@@ -204,21 +244,27 @@ private fun NascopeNavDisplay(
             }
 
             entry<NavRoute.Nodes> {
-                NodesScreen(
-                    onAddServer = { navigator.navigateToConnectionEditor(null) },
-                    onEditServer = navigator::navigateToConnectionEditor,
-                )
+                Box(Modifier.fillMaxSize().windowInsetsPadding(LocalContentInsets.current)) {
+                    NodesScreen(
+                        onAddServer = { navigator.navigateToConnectionEditor(null) },
+                        onEditServer = navigator::navigateToConnectionEditor,
+                    )
+                }
             }
 
             entry<NavRoute.ConnectionEditor> { route ->
-                ConnectionEditorScreen(
-                    profileId = route.profileId,
-                    onSaved = { navigator.navigateBack() },
-                )
+                Box(Modifier.fillMaxSize().windowInsetsPadding(LocalContentInsets.current)) {
+                    ConnectionEditorScreen(
+                        profileId = route.profileId,
+                        onSaved = { navigator.navigateBack() },
+                    )
+                }
             }
 
             entry<NavRoute.Settings> {
-                SettingsScreen()
+                Box(Modifier.fillMaxSize().windowInsetsPadding(LocalContentInsets.current)) {
+                    SettingsScreen()
+                }
             }
         },
     )

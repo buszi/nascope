@@ -5,11 +5,17 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
@@ -19,6 +25,7 @@ import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
 import androidx.navigation3.ui.NavDisplay
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.common.util.LocalContentInsets
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 
 /**
@@ -112,7 +119,16 @@ data class DashboardSplitScene<T : Any>(
                     .weight(1f)
                     .fillMaxHeight(),
             ) {
-                mainEntry.Content()
+                // With the inspector docked, the dashboard no longer reaches the end edge of the window.
+                val contentInsets = LocalContentInsets.current
+                val mainInsets = if (detailEntry != null) {
+                    contentInsets.exclude(WindowInsets.safeDrawing.only(WindowInsetsSides.End))
+                } else {
+                    contentInsets
+                }
+                CompositionLocalProvider(LocalContentInsets provides mainInsets) {
+                    mainEntry.Content()
+                }
             }
 
             if (detailEntry != null) {

@@ -35,6 +35,11 @@ class DesktopApplicationPlugin : Plugin<Project> {
 
                         packageName = "io.buszi.nascope"
                         packageVersion = libs.findVersionString("app-version")
+
+                        val icons = project.layout.projectDirectory.dir("icons")
+                        macOS { iconFile.set(icons.file("nascope.icns")) }
+                        windows { iconFile.set(icons.file("nascope.ico")) }
+                        linux { iconFile.set(icons.file("nascope.png")) }
                     }
                 }
             }

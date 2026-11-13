@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,12 +17,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import io.buszi.nascope.ui.common.modifier.optionalModifier
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.common.util.LocalContentInsets
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
 import io.buszi.nascope.ui.dashboard.framework.BrickInteraction
@@ -68,12 +71,22 @@ fun AdaptiveDashboardGrid(
             computeBrickSpans(bricks.map { it.span }, metrics.columns)
         }
 
+        // Bricks scroll behind the system bars; the margin is added on top of what the bars cover.
+        val insets = LocalContentInsets.current.asPaddingValues()
+        val layoutDirection = LocalLayoutDirection.current
+        val contentPadding = PaddingValues.Absolute(
+            left = metrics.margin + insets.calculateLeftPadding(layoutDirection),
+            top = metrics.margin + insets.calculateTopPadding(),
+            right = metrics.margin + insets.calculateRightPadding(layoutDirection),
+            bottom = metrics.margin + insets.calculateBottomPadding(),
+        )
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(metrics.columns),
             modifier = Modifier
                 .fillMaxSize()
                 .testTag(TestTags.DashboardGrid),
-            contentPadding = PaddingValues(metrics.margin),
+            contentPadding = contentPadding,
             horizontalArrangement = Arrangement.spacedBy(metrics.gutter),
             verticalArrangement = Arrangement.spacedBy(metrics.gutter),
         ) {
