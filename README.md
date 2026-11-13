@@ -2,6 +2,62 @@
 
 **Nascope** is a Kotlin Multiplatform telemetry and monitoring application engineered for systems engineers, homelab operators, and infrastructure architects. It targets **Android** and **Desktop (JVM)** with a unified UI built with **Compose Multiplatform** and **Material 3**.
 
+
+<p align="center">
+  <img src="docs/screenshots/dashboard-desktop.png" alt="Nascope on a large screen: dashboard and the CPU details pane" width="760">
+</p>
+
+Live telemetry for your NAS or home server, on your phone, tablet and desktop. Nascope reads the REST API of [Glances](https://github.com/nicolargo/glances) and turns it into a dashboard of "bricks" (CPU, memory, storage, network, sensors, containers, processes, alerts), each with a details screen. No account, no cloud, no telemetry: the app talks only to the servers you add (see [PRIVACY.md](PRIVACY.md)).
+
+<p align="center">
+  <img src="docs/screenshots/dashboard-phone.png" alt="Nascope on a phone" width="260">
+</p>
+
+## Features
+
+- **Dashboard of bricks** that adapts to the screen: bottom navigation on phones, a sidebar and a details pane on tablets and desktops.
+- **System overview, CPU** (per core), **memory and swap**, **GPU**, **storage** (mounts and per-disk I/O with IOPS and latency), **network** (per interface), **sensors** (temperatures, fans), **containers** (Docker), **processes** (and programs, grouped by name, with pinning) and Glances' own **alerts**.
+- **Adapts to the server:** bricks that depend on an optional Glances plugin (GPU, alerts) are hidden when the server does not have it; the others show an "unavailable" state when their data cannot be read.
+- **Several servers** ("nodes"), a connection check that tells you what failed (host, Glances, authentication), HTTP and HTTPS, optional basic authentication.
+- **Demo mode** with moving sample data, to explore the app without a server.
+- A configurable refresh interval; polling pauses while the app is in the background.
+
+## What you need
+
+A host running Glances in web server mode, reachable from the device. Glances 4 (API v4) and Glances 3 (API v3) are supported. For example with Docker:
+
+```sh
+docker run -d --restart="always" -p 61208:61208 -e GLANCES_OPT="-w" \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro --pid host nicolargo/glances:latest-full
+```
+
+Glances serves its API on port `61208` by default. See the [Glances documentation](https://glances.readthedocs.io/en/latest/docker.html) for options (a password, the host network, other plugins). Without access to the Docker socket, Glances has no container data and the containers brick shows as unavailable.
+
+## Install
+
+Download the file for your platform from the **Releases** page of this repository: `Nascope-<version>.apk` (Android), `Nascope-<version>.dmg` (macOS on Apple Silicon). Check the download against `SHA256SUMS`. The builds are not signed by a commercial developer program, so each system asks for a confirmation on first launch; the exact steps per platform and package-manager installs are described in the install notes of each release.
+
+The Android APK is signed with this certificate (SHA-256), which you can compare with `apksigner verify --print-certs`:
+
+```
+37:B1:BD:A5:AD:60:02:0C:B0:8F:05:67:65:F4:02:F0:AC:0C:90:34:C8:AA:20:42:50:22:79:E3:76:00:CA:E2
+```
+
+## Security notes
+
+- **HTTP is allowed on purpose.** A Glances server on a home network is usually plain HTTP (an IP address or a `.local` name has no certificate), so the app does not block cleartext traffic. Prefer HTTPS whenever the server offers it, and do not use HTTP over the internet: the Glances password travels in clear text.
+- **Passwords are stored securely:** in the Android Keystore (encrypted, excluded from Android backups) and in the OS keyring on desktop (macOS Keychain, Windows Credential Manager, Linux Secret Service). Without a keyring the password lives in memory for the session only, and the editor tells you.
+- **HTTPS certificates are validated** with the system's trust store. A server with a self-signed certificate is rejected with a TLS error; there is no "trust this certificate" option yet. Install your certificate authority in the system trust store, or use a certificate from a public authority.
+- **Redirects are not followed**, so credentials cannot be sent to another host.
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE). Third-party libraries and their licenses: [THIRD_PARTY.md](THIRD_PARTY.md). Changes: [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+# Development
+
 ---
 
 ## Architecture & Module Structure

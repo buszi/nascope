@@ -59,6 +59,7 @@ class DesktopApplicationPlugin : Plugin<Project> {
                         description = "Live telemetry for your NAS, from a Glances server"
                         vendor = "Nascope"
                         copyright = "Copyright (c) 2026 Nascope"
+                        licenseFile.set(project.rootProject.layout.projectDirectory.file("LICENSE"))
 
                         // The packaged runtime is a jlinked JRE with only the modules the build can see. Modules that
                         // dependencies load reflectively are missed and fail at runtime, not at build time, so they
