@@ -1,5 +1,11 @@
 package io.buszi.nascope.ui.connection
 
+import kotlin.time.Instant
+import kotlin.test.assertNull
+import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnTrustCertificate
+import io.buszi.nascope.ui.common.model.ServerCertificateUi
+import io.buszi.nascope.ui.common.model.CertificatePromptUi
+import io.buszi.nascope.domain.model.connection.ServerCertificate
 import app.cash.turbine.turbineScope
 import io.buszi.nascope.domain.connection.GetServerProfileUseCase
 import io.buszi.nascope.domain.connection.IsPasswordMissingUseCase
@@ -31,6 +37,7 @@ import io.buszi.nascope.ui.common.model.ServerProtocolUi
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.Phase
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnAliasChange
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnAuthToggle
+import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnDismissCertificate
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnHostChange
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnPasswordChange
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnPortChange
@@ -492,6 +499,117 @@ class ConnectionEditorViewModelTest {
     }
 
     @Test
+    fun connectionEditorViewModelOffersAnUntrustedCertificateAndTrustsItForTheTestedAddress() = runTest {
+        turbineScope {
+            val savedProfile = slot<ServerProfile>()
+            every { validateServerInput(any(), any(), any()) } returns validInput
+            every { testConnection(any(), any(), any(), null) } returns
+                failedTest(Step.ReachHost, ConnectionFailure.UntrustedCertificate(certificate))
+            every { testConnection(any(), any(), any(), fingerprint) } returns successfulTest(GlancesApiVersion.V4)
+            coEvery { saveServerProfile(capture(savedProfile), any()) } returns
+                SaveServerProfileUseCase.Result(secretPersisted = true)
+
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            viewModel.onViewAction(OnProtocolSelect(ServerProtocolUi.Https))
+            viewModel.onViewAction(OnHostChange("192.168.1.20"))
+            viewModel.onViewAction(OnSubmit)
+            runCurrent()
+
+            val prompted = viewStateTurbine.expectMostRecentItem()
+            assertEquals(CertificatePromptUi(ServerCertificateUi.from(certificate), isChange = false), prompted.certificatePrompt)
+            assertEquals(Phase.Idle, prompted.phase)
+
+            viewModel.onViewAction(OnTrustCertificate)
+            runCurrent()
+
+            val finalState = viewStateTurbine.cancelAndConsumeItems().last()
+            assertEquals(Phase.Saved, finalState.phase)
+            assertNull(finalState.certificatePrompt)
+            assertEquals(ServerCertificateUi.formatFingerprint(fingerprint), finalState.trustedCertificate)
+            val tested = ServerAddress(ServerProtocol.Https, "192.168.1.20", 61208)
+            coVerify { testConnection(tested, null, null, fingerprint) }
+            assertEquals(fingerprint, savedProfile.captured.trustedCertificate)
+        }
+    }
+
+    @Test
+    fun connectionEditorViewModelWaitsForAnAnswerToTheCertificatePromptBeforeTestingAgain() = runTest {
+        turbineScope {
+            every { validateServerInput(any(), any(), any()) } returns validInput
+            every { testConnection(any(), any(), any(), any()) } returns
+                failedTest(Step.ReachHost, ConnectionFailure.UntrustedCertificate(certificate))
+
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            viewModel.onViewAction(OnSubmit)
+            runCurrent()
+
+            val prompted = viewStateTurbine.expectMostRecentItem()
+            assertEquals(false, prompted.canSubmit)
+            assertEquals(true, prompted.canAnswerCertificatePrompt)
+
+            viewModel.onViewAction(OnSubmit)
+            runCurrent()
+            verify(exactly = 1) { testConnection(any(), any(), any(), any()) }
+
+            viewModel.onViewAction(OnDismissCertificate)
+            runCurrent()
+            val dismissed = viewStateTurbine.expectMostRecentItem()
+            assertNull(dismissed.certificatePrompt)
+            assertNull(dismissed.trustedCertificate)
+            assertEquals(true, dismissed.canSubmit)
+
+            viewModel.onViewAction(OnSubmit)
+            runCurrent()
+
+            viewStateTurbine.cancelAndConsumeItems()
+            verify(exactly = 2) { testConnection(any(), any(), any(), null) }
+            coVerify(exactly = 0) { saveServerProfile(any(), any()) }
+        }
+    }
+
+    @Test
+    fun connectionEditorViewModelDropsTheOfferWhenAFieldIsEdited() = runTest {
+        turbineScope {
+            every { validateServerInput(any(), any(), any()) } returns validInput
+            every { testConnection(any(), any(), any(), any()) } returns
+                failedTest(Step.ReachHost, ConnectionFailure.CertificateChanged(certificate))
+
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            viewModel.onViewAction(OnSubmit)
+            runCurrent()
+            assertEquals(true, viewStateTurbine.expectMostRecentItem().certificatePrompt?.isChange)
+
+            viewModel.onViewAction(OnHostChange("other.local"))
+            viewModel.onViewAction(OnTrustCertificate)
+            runCurrent()
+
+            assertNull(viewStateTurbine.cancelAndConsumeItems().last().certificatePrompt)
+            verify(exactly = 1) { testConnection(any(), any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun connectionEditorViewModelShowsTheTrustedCertificateOnlyForItsAddress() = runTest {
+        turbineScope {
+            coEvery { getServerProfile(existingProfile.id) } returns existingProfile.copy(trustedCertificate = fingerprint)
+            every { validateServerInput(any(), any(), any()) } returns validInput
+
+            val editViewModel = createViewModel(profileId = "alpha")
+            val viewStateTurbine = editViewModel.viewState.testIn(this)
+            runCurrent()
+            assertEquals(ServerCertificateUi.formatFingerprint(fingerprint), viewStateTurbine.expectMostRecentItem().trustedCertificate)
+
+            editViewModel.onViewAction(OnPortChange("9443"))
+            runCurrent()
+
+            assertNull(viewStateTurbine.cancelAndConsumeItems().last().trustedCertificate)
+        }
+    }
+
+    @Test
     fun connectionEditorViewModelKeepsTheStoredSecretWhenEditingWithAnEmptyPassword() = runTest {
         turbineScope {
             coEvery { getServerProfile(existingProfile.id) } returns existingProfile
@@ -599,6 +717,7 @@ class ConnectionEditorViewModelTest {
         )
 
         private val fingerprint = CertificateFingerprint.parse("ab".repeat(32))!!
+        private val certificate = ServerCertificate(fingerprint, "CN=nas.local", "CN=nas.local", Instant.fromEpochSeconds(0))
 
         private val existingProfile = ServerProfile(
             id = ServerProfileId("alpha"),

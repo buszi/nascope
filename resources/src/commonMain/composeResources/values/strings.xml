@@ -176,6 +176,7 @@
     <string name="nav_connection_online">ONLINE</string>
     <string name="nav_connection_offline">OFFLINE</string>
     <string name="nav_connection_password_missing">NO PASSWORD</string>
+    <string name="nav_connection_certificate_untrusted">UNTRUSTED CERT</string>
     <string name="nav_mode_demo">DEMO</string>
     <string name="dashboard_header_label">SYSTEM MONITOR</string>
     <string name="dashboard_header_demo_node">Demo server</string>
@@ -343,6 +344,19 @@
     <string name="connection_field_password">PASSWORD</string>
     <string name="connection_password_keep_helper">Leave empty to keep the saved password</string>
     <string name="connection_password_missing">No password is saved for this server on this device. Enter it to reconnect.</string>
+    <string name="connection_trusted_certificate">Trusted certificate (SHA-256): %1$s</string>
+    <string name="connection_certificate_title_untrusted">Trust this certificate?</string>
+    <string name="connection_certificate_title_changed">The certificate has changed</string>
+    <string name="connection_certificate_body_untrusted">Nascope cannot verify this server's certificate, which is common for a NAS with a self-signed one. Trust it only if it is your server's: compare the fingerprint with the one your NAS or reverse proxy shows.</string>
+    <string name="connection_certificate_body_changed">This server now presents a different certificate than the one you trusted. That is expected after you renewed or replaced it; if you did not, someone may be intercepting the connection. Compare the fingerprint before you trust it.</string>
+    <string name="connection_certificate_fingerprint">SHA-256 fingerprint</string>
+    <string name="connection_certificate_subject">Issued to</string>
+    <string name="connection_certificate_issuer">Issued by</string>
+    <string name="connection_certificate_valid_until">Valid until</string>
+    <string name="connection_certificate_self_signed">SELF-SIGNED</string>
+    <string name="connection_certificate_trust">Trust this certificate</string>
+    <string name="connection_certificate_trust_new">Trust the new certificate</string>
+    <string name="connection_certificate_dismiss">Don't trust</string>
     <string name="connection_password_show">SHOW</string>
     <string name="connection_password_hide">HIDE</string>
     <string name="connection_checks_title">CONNECTION CHECKS</string>
@@ -384,6 +398,8 @@
     <string name="nodes_action_edit">Edit</string>
     <string name="nodes_action_enter_password">Enter password</string>
     <string name="nodes_password_missing">No password is saved for this server on this device.</string>
+    <string name="nodes_action_review_certificate">Review certificate</string>
+    <string name="nodes_certificate_untrusted">The server presents a certificate that is not trusted. Test the connection in the editor to review it.</string>
     <string name="nodes_action_delete">Delete</string>
     <string name="nodes_delete_prompt">Delete %1$s? Its saved password is removed too.</string>
     <string name="nodes_delete_confirm">Delete</string>

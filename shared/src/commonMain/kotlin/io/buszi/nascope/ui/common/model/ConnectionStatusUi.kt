@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.nav_connection_certificate_untrusted
 import io.buszi.nascope.resources.nav_connection_connecting
 import io.buszi.nascope.resources.nav_connection_offline
 import io.buszi.nascope.resources.nav_connection_online
@@ -24,6 +25,9 @@ enum class ConnectionStatusUi(
 
     /** No password is stored on this device for a server that needs one: entering it fixes the connection. */
     PasswordMissing(Res.string.nav_connection_password_missing, StatusLevel.Critical, pulsing = false),
+
+    /** The server's certificate is not trusted (any more): the editor's connection test offers to trust it. */
+    CertificateUntrusted(Res.string.nav_connection_certificate_untrusted, StatusLevel.Critical, pulsing = false),
     ;
 
     companion object {
@@ -34,7 +38,11 @@ enum class ConnectionStatusUi(
         fun from(data: Status): ConnectionStatusUi = when (data) {
             Status.Idle, Status.Connecting -> Connecting
             Status.Online -> Online
-            is Status.Offline -> if (data.failure == ConnectionFailure.PasswordMissing) PasswordMissing else Offline
+            is Status.Offline -> when (data.failure) {
+                ConnectionFailure.PasswordMissing -> PasswordMissing
+                is ConnectionFailure.UntrustedCertificate, is ConnectionFailure.CertificateChanged -> CertificateUntrusted
+                else -> Offline
+            }
         }
     }
 }

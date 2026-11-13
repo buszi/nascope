@@ -10,25 +10,31 @@ import io.buszi.nascope.domain.connection.TestConnectionUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase.Event
 import io.buszi.nascope.domain.connection.ValidateServerInputUseCase
 import io.buszi.nascope.domain.model.connection.CertificateFingerprint
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
+import io.buszi.nascope.domain.model.connection.ServerCertificate
 import io.buszi.nascope.domain.model.connection.ServerAuth
 import io.buszi.nascope.domain.model.connection.ServerCredentials
 import io.buszi.nascope.domain.model.connection.ServerProfile
 import io.buszi.nascope.domain.model.connection.ServerProfileId
+import io.buszi.nascope.ui.common.model.CertificatePromptUi
 import io.buszi.nascope.ui.common.model.ConnectionCheckStatusUi
 import io.buszi.nascope.ui.common.model.ConnectionCheckStepUi
 import io.buszi.nascope.ui.common.model.ConnectionCheckUi
 import io.buszi.nascope.ui.common.model.ConnectionFailureUi
 import io.buszi.nascope.ui.common.model.FormErrorUi
+import io.buszi.nascope.ui.common.model.ServerCertificateUi
 import io.buszi.nascope.ui.common.model.ServerProtocolUi
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnAliasChange
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnAuthToggle
+import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnDismissCertificate
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnHostChange
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnPasswordChange
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnPortChange
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnProtocolSelect
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnSubmit
+import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnTrustCertificate
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnUsernameChange
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -60,6 +66,9 @@ class ConnectionEditorViewModel(
 
     /** The certificate the profile trusts, valid only for the address it was trusted for. */
     private var trustedCertificate: TrustedCertificate? = null
+
+    /** The certificate the last test was refused with, which [ViewAction.OnTrustCertificate] trusts. */
+    private var offeredCertificate: TrustedCertificate? = null
     private var testJob: Job? = null
     private val editedFields = mutableSetOf<Field>()
     private var submitted = false
@@ -78,6 +87,8 @@ class ConnectionEditorViewModel(
             is OnUsernameChange -> edit(Field.Username) { copy(username = action.value) }
             is OnPasswordChange -> edit(Field.Password) { copy(password = action.value) }
             OnSubmit -> submit()
+            OnTrustCertificate -> trustOfferedCertificate()
+            OnDismissCertificate -> dismissOfferedCertificate()
         }
     }
 
@@ -104,7 +115,7 @@ class ConnectionEditorViewModel(
                     username = (auth as? ServerAuth.Basic)?.username ?: DefaultUsername,
                     passwordMissing = passwordMissing,
                     passwordFocusRequest = if (passwordMissing) it.passwordFocusRequest + 1 else it.passwordFocusRequest,
-                )
+                ).withTrustedCertificate()
             }
         }
     }
@@ -115,14 +126,17 @@ class ConnectionEditorViewModel(
         testJob?.cancel()
         testJob = null
         editedFields += field
+        offeredCertificate = null
         mutableViewState.update {
             it.change()
                 .copy(
                     phase = Phase.Idle,
                     checks = ConnectionCheckUi.initial,
                     showSecretNotPersistedNotice = false,
+                    certificatePrompt = null,
                 )
                 .withErrors()
+                .withTrustedCertificate()
         }
     }
 
@@ -133,26 +147,31 @@ class ConnectionEditorViewModel(
         val state = mutableViewState.value
         if (state.hasErrors) return
 
-        mutableViewState.update { it.copy(phase = Phase.Testing, checks = ConnectionCheckUi.initial) }
+        offeredCertificate = null
+        mutableViewState.update {
+            it.copy(phase = Phase.Testing, checks = ConnectionCheckUi.initial, certificatePrompt = null)
+        }
         testJob = viewModelScope.launch {
             val address = ServerAddress(state.protocol.toDomain(), state.host.trim(), state.port.trim().toInt())
             val credentials = if (state.authEnabled) ServerCredentials(state.username.trim(), state.password) else null
-            testConnection(address, credentials, editedProfileId, trustedCertificateFor(address)).collect(::onTestEvent)
+            testConnection(address, credentials, editedProfileId, trustedCertificateFor(address))
+                .collect { onTestEvent(it, address) }
         }
     }
 
-    private suspend fun onTestEvent(event: Event) {
+    private suspend fun onTestEvent(event: Event, address: ServerAddress) {
         when (event) {
             is Event.StepStarted -> updateCheck(event.step) { it.copy(status = ConnectionCheckStatusUi.Running) }
             is Event.StepPassed -> updateCheck(event.step) { it.copy(status = ConnectionCheckStatusUi.Passed) }
-            is Event.Failed -> onTestFailed(event)
+            is Event.Failed -> onTestFailed(event, address)
             is Event.Succeeded -> save(event.apiVersion)
         }
     }
 
-    private fun onTestFailed(event: Event.Failed) {
+    private fun onTestFailed(event: Event.Failed, address: ServerAddress) {
         val failure = ConnectionFailureUi.from(event.failure)
         updateCheck(event.step) { it.copy(status = ConnectionCheckStatusUi.Failed, failure = failure) }
+        offeredCertificate = event.failure.refusedCertificate()?.let { TrustedCertificate(address, it.fingerprint) }
         mutableViewState.update { state ->
             val needsCredentials = failure == ConnectionFailureUi.Unauthorized && !state.authEnabled
             val passwordMissing = failure == ConnectionFailureUi.PasswordMissing
@@ -162,8 +181,32 @@ class ConnectionEditorViewModel(
                 usernameFocusRequest = if (needsCredentials) state.usernameFocusRequest + 1 else state.usernameFocusRequest,
                 passwordMissing = state.passwordMissing || passwordMissing,
                 passwordFocusRequest = if (passwordMissing) state.passwordFocusRequest + 1 else state.passwordFocusRequest,
+                certificatePrompt = CertificatePromptUi.from(event.failure),
             )
         }
+    }
+
+    /** Trusts the certificate the last test was refused with, for the address it was tested at, and tests again. */
+    private fun trustOfferedCertificate() {
+        val offered = offeredCertificate ?: return
+        if (!mutableViewState.value.canAnswerCertificatePrompt) return
+        trustedCertificate = offered
+        offeredCertificate = null
+        mutableViewState.update { it.copy(certificatePrompt = null).withTrustedCertificate() }
+        submit()
+    }
+
+    /** Declines the offered certificate: nothing is trusted, and the user can test again or change the address. */
+    private fun dismissOfferedCertificate() {
+        if (!mutableViewState.value.canAnswerCertificatePrompt) return
+        offeredCertificate = null
+        mutableViewState.update { it.copy(certificatePrompt = null) }
+    }
+
+    private fun ConnectionFailure.refusedCertificate(): ServerCertificate? = when (this) {
+        is ConnectionFailure.UntrustedCertificate -> certificate
+        is ConnectionFailure.CertificateChanged -> certificate
+        else -> null
     }
 
     private suspend fun save(apiVersion: GlancesApiVersion) {
@@ -204,6 +247,13 @@ class ConnectionEditorViewModel(
         trustedCertificate?.takeIf { it.address == address }?.fingerprint
 
     private data class TrustedCertificate(val address: ServerAddress, val fingerprint: CertificateFingerprint)
+
+    /** Shows the certificate trusted for the address in the fields, if any. */
+    private fun ViewState.withTrustedCertificate(): ViewState {
+        val address = port.trim().toIntOrNull()?.let { ServerAddress(protocol.toDomain(), host.trim(), it) }
+        val fingerprint = address?.let(::trustedCertificateFor)
+        return copy(trustedCertificate = fingerprint?.let(ServerCertificateUi::formatFingerprint))
+    }
 
     private fun updateCheck(step: TestConnectionUseCase.Step, change: (ConnectionCheckUi) -> ConnectionCheckUi) {
         val stepUi = ConnectionCheckStepUi.from(step)
@@ -254,14 +304,25 @@ class ConnectionEditorViewModel(
         /** Increments whenever the password field should take focus, e.g. when the stored password is missing. */
         val passwordFocusRequest: Int = 0,
         val showSecretNotPersistedNotice: Boolean = false,
+        /** Shown after a test was refused with a certificate the user could trust. */
+        val certificatePrompt: CertificatePromptUi? = null,
+        /** Fingerprint of the certificate trusted for the address in the fields, for display. */
+        val trustedCertificate: String? = null,
     ) {
         /** Whether the fields accept input. Editing while a test runs is allowed and cancels that test. */
         val isEditable: Boolean
             get() = !isLoading && (phase == Phase.Idle || phase == Phase.Testing)
 
-        /** Whether the submit action can start a new test. */
+        /**
+         * Whether the submit action can start a new test. Not while a certificate prompt is open: the user answers
+         * it deliberately (trust, or don't), and a plain re-test would only be refused again.
+         */
         val canSubmit: Boolean
-            get() = !isLoading && phase == Phase.Idle
+            get() = !isLoading && phase == Phase.Idle && certificatePrompt == null
+
+        /** Whether the certificate prompt's answers are available. */
+        val canAnswerCertificatePrompt: Boolean
+            get() = !isLoading && phase == Phase.Idle && certificatePrompt != null
 
         /** The missing-password hint, until a password is typed or password protection is turned off. */
         val showPasswordMissing: Boolean
@@ -288,6 +349,12 @@ class ConnectionEditorViewModel(
         data class OnUsernameChange(val value: String) : ViewAction
         data class OnPasswordChange(val value: String) : ViewAction
         data object OnSubmit : ViewAction
+
+        /** Trust the certificate of [ViewState.certificatePrompt] and test again. */
+        data object OnTrustCertificate : ViewAction
+
+        /** Close [ViewState.certificatePrompt] without trusting anything. */
+        data object OnDismissCertificate : ViewAction
     }
 
     companion object {

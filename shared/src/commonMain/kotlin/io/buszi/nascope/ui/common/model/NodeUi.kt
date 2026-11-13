@@ -28,6 +28,14 @@ data class NodeUi(
     val isPasswordMissing: Boolean
         get() = connectionStatus == ConnectionStatusUi.PasswordMissing
 
+    /** The server's certificate is not trusted; the card offers to review it in the editor. */
+    val isCertificateUntrusted: Boolean
+        get() = connectionStatus == ConnectionStatusUi.CertificateUntrusted
+
+    /** Something only the editor can fix: the card leads there with a primary action instead of "Edit". */
+    val needsAttention: Boolean
+        get() = isPasswordMissing || isCertificateUntrusted
+
     companion object {
         fun from(
             data: ServerProfile,

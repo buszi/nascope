@@ -1,10 +1,13 @@
 package io.buszi.nascope.ui.common.model
 
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
+import io.buszi.nascope.domain.model.connection.ServerCertificate
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Instant
 
 class ConnectionStatusUiTest {
 
@@ -17,6 +20,18 @@ class ConnectionStatusUiTest {
             ConnectionStatusUi.PasswordMissing,
             ConnectionStatusUi.from(Status.Offline(ConnectionFailure.PasswordMissing)),
         )
+        val certificate = ServerCertificate(
+            CertificateFingerprint.parse("ab".repeat(32))!!, "CN=nas", "CN=nas", Instant.fromEpochSeconds(0),
+        )
+        assertEquals(
+            ConnectionStatusUi.CertificateUntrusted,
+            ConnectionStatusUi.from(Status.Offline(ConnectionFailure.UntrustedCertificate(certificate))),
+        )
+        assertEquals(
+            ConnectionStatusUi.CertificateUntrusted,
+            ConnectionStatusUi.from(Status.Offline(ConnectionFailure.CertificateChanged(certificate))),
+        )
+        assertEquals(ConnectionStatusUi.Offline, ConnectionStatusUi.from(Status.Offline(ConnectionFailure.TlsError)))
     }
 
     @Test

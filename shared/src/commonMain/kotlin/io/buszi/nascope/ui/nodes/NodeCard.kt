@@ -14,6 +14,8 @@ import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.nodes_action_delete
 import io.buszi.nascope.resources.nodes_action_edit
 import io.buszi.nascope.resources.nodes_action_enter_password
+import io.buszi.nascope.resources.nodes_action_review_certificate
+import io.buszi.nascope.resources.nodes_certificate_untrusted
 import io.buszi.nascope.resources.nodes_password_missing
 import io.buszi.nascope.resources.nodes_action_use
 import io.buszi.nascope.resources.nodes_delete_cancel
@@ -90,6 +92,14 @@ fun NodeCard(
                     modifier = Modifier.testTag(TestTags.nodesPasswordMissing(node.id)),
                 )
             }
+            if (node.isCertificateUntrusted) {
+                Text(
+                    text = stringResource(Res.string.nodes_certificate_untrusted),
+                    style = AppTheme.typography.bodySm,
+                    color = AppTheme.colors.critical,
+                    modifier = Modifier.testTag(TestTags.nodesCertificateUntrusted(node.id)),
+                )
+            }
 
             if (isConfirmingDelete) {
                 Text(
@@ -136,10 +146,17 @@ fun NodeCard(
                         .weight(1f)
                         .minimumTouchTarget()
                         .testTag(TestTags.nodesEdit(node.id))
-                    if (node.isPasswordMissing) {
-                        // The fix is in the editor, which opens with the password field focused.
+                    if (node.needsAttention) {
+                        // The fix is in the editor: it focuses a missing password, and its connection test offers
+                        // an untrusted certificate for review.
                         PrimaryButton(
-                            text = stringResource(Res.string.nodes_action_enter_password),
+                            text = stringResource(
+                                if (node.isPasswordMissing) {
+                                    Res.string.nodes_action_enter_password
+                                } else {
+                                    Res.string.nodes_action_review_certificate
+                                },
+                            ),
                             onClick = onEdit,
                             size = ButtonSize.Regular,
                             modifier = editModifier,

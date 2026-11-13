@@ -54,6 +54,17 @@ class NodeUiTest {
     }
 
     @Test
+    fun anUntrustedCertificateNeedsAttentionLikeAMissingPassword() {
+        val untrusted = NodeUi.from(alpha, isActive = true, connectionStatus = ConnectionStatusUi.CertificateUntrusted)
+        val missing = NodeUi.from(alpha, isActive = true, connectionStatus = ConnectionStatusUi.PasswordMissing)
+        val offline = NodeUi.from(alpha, isActive = true, connectionStatus = ConnectionStatusUi.Offline)
+
+        assertEquals(true, untrusted.isCertificateUntrusted)
+        assertEquals(false, untrusted.isPasswordMissing)
+        assertEquals(listOf(true, true, false), listOf(untrusted, missing, offline).map { it.needsAttention })
+    }
+
+    @Test
     fun onlyTheProfileWithTheActiveIdIsMarkedActive() {
         val nodes = NodeUi.from(listOf(alpha, ipv6), alpha.id, ConnectionStatusUi.Offline)
 
