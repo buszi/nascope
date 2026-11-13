@@ -175,6 +175,7 @@
     <string name="nav_connection_connecting">CONNECTING</string>
     <string name="nav_connection_online">ONLINE</string>
     <string name="nav_connection_offline">OFFLINE</string>
+    <string name="nav_connection_password_missing">NO PASSWORD</string>
     <string name="nav_mode_demo">DEMO</string>
     <string name="dashboard_header_label">SYSTEM MONITOR</string>
     <string name="dashboard_header_demo_node">Demo server</string>
@@ -341,6 +342,7 @@
     <string name="connection_field_username">USERNAME</string>
     <string name="connection_field_password">PASSWORD</string>
     <string name="connection_password_keep_helper">Leave empty to keep the saved password</string>
+    <string name="connection_password_missing">No password is saved for this server on this device. Enter it to reconnect.</string>
     <string name="connection_password_show">SHOW</string>
     <string name="connection_password_hide">HIDE</string>
     <string name="connection_checks_title">CONNECTION CHECKS</string>
@@ -378,6 +380,8 @@
     <string name="nodes_marker_active">ACTIVE</string>
     <string name="nodes_action_use">Use</string>
     <string name="nodes_action_edit">Edit</string>
+    <string name="nodes_action_enter_password">Enter password</string>
+    <string name="nodes_password_missing">No password is saved for this server on this device.</string>
     <string name="nodes_action_delete">Delete</string>
     <string name="nodes_delete_prompt">Delete %1$s? Its saved password is removed too.</string>
     <string name="nodes_delete_confirm">Delete</string>

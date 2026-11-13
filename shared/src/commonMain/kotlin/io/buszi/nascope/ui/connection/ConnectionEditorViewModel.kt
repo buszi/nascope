@@ -4,6 +4,7 @@ import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.buszi.nascope.domain.connection.GetServerProfileUseCase
+import io.buszi.nascope.domain.connection.IsPasswordMissingUseCase
 import io.buszi.nascope.domain.connection.SaveServerProfileUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase.Event
@@ -48,6 +49,7 @@ class ConnectionEditorViewModel(
     private val testConnection: TestConnectionUseCase,
     private val saveServerProfile: SaveServerProfileUseCase,
     private val getServerProfile: GetServerProfileUseCase,
+    private val isPasswordMissing: IsPasswordMissingUseCase,
 ) : ViewModel() {
 
     private val mutableViewState = MutableStateFlow(ViewState(isLoading = profileId != null, isEditMode = profileId != null))
@@ -85,6 +87,7 @@ class ConnectionEditorViewModel(
                 return@launch
             }
             val auth = profile.auth
+            val passwordMissing = isPasswordMissing(profile)
             mutableViewState.update {
                 it.copy(
                     isLoading = false,
@@ -94,6 +97,8 @@ class ConnectionEditorViewModel(
                     port = profile.address.port.toString(),
                     authEnabled = auth is ServerAuth.Basic,
                     username = (auth as? ServerAuth.Basic)?.username ?: DefaultUsername,
+                    passwordMissing = passwordMissing,
+                    passwordFocusRequest = if (passwordMissing) it.passwordFocusRequest + 1 else it.passwordFocusRequest,
                 )
             }
         }
@@ -145,10 +150,13 @@ class ConnectionEditorViewModel(
         updateCheck(event.step) { it.copy(status = ConnectionCheckStatusUi.Failed, failure = failure) }
         mutableViewState.update { state ->
             val needsCredentials = failure == ConnectionFailureUi.Unauthorized && !state.authEnabled
+            val passwordMissing = failure == ConnectionFailureUi.PasswordMissing
             state.copy(
                 phase = Phase.Idle,
                 authEnabled = state.authEnabled || needsCredentials,
                 usernameFocusRequest = if (needsCredentials) state.usernameFocusRequest + 1 else state.usernameFocusRequest,
+                passwordMissing = state.passwordMissing || passwordMissing,
+                passwordFocusRequest = if (passwordMissing) state.passwordFocusRequest + 1 else state.passwordFocusRequest,
             )
         }
     }
@@ -225,6 +233,10 @@ class ConnectionEditorViewModel(
         val isLoading: Boolean = false,
         /** Increments whenever the username field should take focus, e.g. after the server asked for credentials. */
         val usernameFocusRequest: Int = 0,
+        /** No password is stored on this device for the edited profile (restored or moved, cleared keyring). */
+        val passwordMissing: Boolean = false,
+        /** Increments whenever the password field should take focus, e.g. when the stored password is missing. */
+        val passwordFocusRequest: Int = 0,
         val showSecretNotPersistedNotice: Boolean = false,
     ) {
         /** Whether the fields accept input. Editing while a test runs is allowed and cancels that test. */
@@ -234,6 +246,10 @@ class ConnectionEditorViewModel(
         /** Whether the submit action can start a new test. */
         val canSubmit: Boolean
             get() = !isLoading && phase == Phase.Idle
+
+        /** The missing-password hint, until a password is typed or password protection is turned off. */
+        val showPasswordMissing: Boolean
+            get() = passwordMissing && authEnabled && password.isEmpty()
 
         val hasErrors: Boolean
             get() = aliasError != null || hostError != null || portError != null || usernameError != null

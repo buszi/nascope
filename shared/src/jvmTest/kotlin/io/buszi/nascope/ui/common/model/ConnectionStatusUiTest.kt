@@ -13,6 +13,10 @@ class ConnectionStatusUiTest {
         assertEquals(ConnectionStatusUi.Connecting, ConnectionStatusUi.from(Status.Connecting))
         assertEquals(ConnectionStatusUi.Online, ConnectionStatusUi.from(Status.Online))
         assertEquals(ConnectionStatusUi.Offline, ConnectionStatusUi.from(Status.Offline(ConnectionFailure.Timeout)))
+        assertEquals(
+            ConnectionStatusUi.PasswordMissing,
+            ConnectionStatusUi.from(Status.Offline(ConnectionFailure.PasswordMissing)),
+        )
     }
 
     @Test
@@ -25,6 +29,7 @@ class ConnectionStatusUiTest {
         assertEquals(StatusLevel.Operational, ConnectionStatusUi.Online.level)
         assertEquals(StatusLevel.Degraded, ConnectionStatusUi.Connecting.level)
         assertEquals(StatusLevel.Critical, ConnectionStatusUi.Offline.level)
+        assertEquals(StatusLevel.Critical, ConnectionStatusUi.PasswordMissing.level)
     }
 
     @Test
@@ -32,5 +37,6 @@ class ConnectionStatusUiTest {
         assertEquals(true, ConnectionStatusUi.Online.pulsing)
         assertEquals(true, ConnectionStatusUi.Connecting.pulsing)
         assertEquals(false, ConnectionStatusUi.Offline.pulsing)
+        assertEquals(false, ConnectionStatusUi.PasswordMissing.pulsing)
     }
 }

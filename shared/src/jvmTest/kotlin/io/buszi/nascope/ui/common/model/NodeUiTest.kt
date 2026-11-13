@@ -44,6 +44,16 @@ class NodeUiTest {
     }
 
     @Test
+    fun passwordIsMissingOnlyForThePasswordMissingStatus() {
+        val missing = NodeUi.from(alpha, isActive = true, connectionStatus = ConnectionStatusUi.PasswordMissing)
+        val offline = NodeUi.from(alpha, isActive = true, connectionStatus = ConnectionStatusUi.Offline)
+
+        assertEquals(true, missing.isPasswordMissing)
+        assertEquals(false, offline.isPasswordMissing)
+        assertEquals(false, NodeUi.from(alpha).isPasswordMissing)
+    }
+
+    @Test
     fun onlyTheProfileWithTheActiveIdIsMarkedActive() {
         val nodes = NodeUi.from(listOf(alpha, ipv6), alpha.id, ConnectionStatusUi.Offline)
 

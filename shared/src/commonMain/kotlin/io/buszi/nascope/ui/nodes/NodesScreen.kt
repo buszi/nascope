@@ -198,6 +198,32 @@ private fun NodesContentPreview() {
 
 @Preview
 @Composable
+private fun NodesContentPasswordMissingPreview() {
+    AppTheme {
+        NodesContent(
+            viewState = ViewState(
+                nodes = listOf(
+                    NodeUi(
+                        id = "alpha",
+                        alias = "alpha-node-01",
+                        host = "alpha-node-01.local",
+                        port = 61208,
+                        protocol = ServerProtocolUi.Http,
+                        isActive = true,
+                        connectionStatus = ConnectionStatusUi.PasswordMissing,
+                    ),
+                ),
+                isLoading = false,
+            ),
+            onViewAction = {},
+            onAddServer = {},
+            onEditServer = {},
+        )
+    }
+}
+
+@Preview
+@Composable
 private fun NodesContentDemoPreview() {
     AppTheme {
         NodesContent(

@@ -2,6 +2,7 @@ package io.buszi.nascope.ui.connection
 
 import app.cash.turbine.turbineScope
 import io.buszi.nascope.domain.connection.GetServerProfileUseCase
+import io.buszi.nascope.domain.connection.IsPasswordMissingUseCase
 import io.buszi.nascope.domain.connection.SaveServerProfileUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase.Event
@@ -62,6 +63,7 @@ class ConnectionEditorViewModelTest {
     private val testConnection = mockk<TestConnectionUseCase>()
     private val saveServerProfile = mockk<SaveServerProfileUseCase>()
     private val getServerProfile = mockk<GetServerProfileUseCase>()
+    private val isPasswordMissing = mockk<IsPasswordMissingUseCase>().also { coEvery { it(any()) } returns false }
 
     private val viewModel by lazy { createViewModel(profileId = null) }
 
@@ -71,6 +73,7 @@ class ConnectionEditorViewModelTest {
         testConnection = testConnection,
         saveServerProfile = saveServerProfile,
         getServerProfile = getServerProfile,
+        isPasswordMissing = isPasswordMissing,
     )
 
     @Test
@@ -385,6 +388,54 @@ class ConnectionEditorViewModelTest {
                     ),
                 ),
                 viewStateTurbine.cancelAndConsumeItems(),
+            )
+        }
+    }
+
+    @Test
+    fun connectionEditorViewModelFlagsAMissingPasswordAndFocusesItWhenLoading() = runTest {
+        turbineScope {
+            coEvery { getServerProfile(existingProfile.id) } returns existingProfile
+            coEvery { isPasswordMissing(existingProfile) } returns true
+            every { validateServerInput(any(), any(), any()) } returns validInput
+
+            val editViewModel = createViewModel(profileId = "alpha")
+            val viewStateTurbine = editViewModel.viewState.testIn(this)
+            runCurrent()
+
+            val loaded = viewStateTurbine.expectMostRecentItem()
+            assertEquals(true, loaded.passwordMissing)
+            assertEquals(true, loaded.showPasswordMissing)
+            assertEquals(1, loaded.passwordFocusRequest)
+
+            editViewModel.onViewAction(OnPasswordChange("secret"))
+            runCurrent()
+
+            assertEquals(false, viewStateTurbine.cancelAndConsumeItems().last().showPasswordMissing)
+        }
+    }
+
+    @Test
+    fun connectionEditorViewModelFlagsAMissingPasswordAndFocusesItWhenTheTestReportsIt() = runTest {
+        turbineScope {
+            coEvery { getServerProfile(existingProfile.id) } returns existingProfile
+            every { validateServerInput(any(), any(), any()) } returns validInput
+            every { testConnection(any(), any(), any()) } returns
+                failedTest(Step.Authenticate, ConnectionFailure.PasswordMissing)
+
+            val editViewModel = createViewModel(profileId = "alpha")
+            val viewStateTurbine = editViewModel.viewState.testIn(this)
+            runCurrent()
+            editViewModel.onViewAction(OnSubmit)
+            runCurrent()
+
+            val finalState = viewStateTurbine.cancelAndConsumeItems().last()
+            assertEquals(Phase.Idle, finalState.phase)
+            assertEquals(true, finalState.showPasswordMissing)
+            assertEquals(1, finalState.passwordFocusRequest)
+            assertEquals(
+                ConnectionFailureUi.PasswordMissing,
+                finalState.checks.single { it.step == ConnectionCheckStepUi.Authenticate }.failure,
             )
         }
     }

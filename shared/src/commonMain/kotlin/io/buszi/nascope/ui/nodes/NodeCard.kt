@@ -13,6 +13,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.nodes_action_delete
 import io.buszi.nascope.resources.nodes_action_edit
+import io.buszi.nascope.resources.nodes_action_enter_password
+import io.buszi.nascope.resources.nodes_password_missing
 import io.buszi.nascope.resources.nodes_action_use
 import io.buszi.nascope.resources.nodes_delete_cancel
 import io.buszi.nascope.resources.nodes_delete_confirm
@@ -80,6 +82,15 @@ fun NodeCard(
                 )
             }
 
+            if (node.isPasswordMissing) {
+                Text(
+                    text = stringResource(Res.string.nodes_password_missing),
+                    style = AppTheme.typography.bodySm,
+                    color = AppTheme.colors.critical,
+                    modifier = Modifier.testTag(TestTags.nodesPasswordMissing(node.id)),
+                )
+            }
+
             if (isConfirmingDelete) {
                 Text(
                     text = stringResource(Res.string.nodes_delete_prompt, node.alias),
@@ -121,15 +132,26 @@ fun NodeCard(
                                 .testTag(TestTags.nodesUse(node.id)),
                         )
                     }
-                    SecondaryButton(
-                        text = stringResource(Res.string.nodes_action_edit),
-                        onClick = onEdit,
-                        size = ButtonSize.Regular,
-                        modifier = Modifier
-                            .weight(1f)
-                            .minimumTouchTarget()
-                            .testTag(TestTags.nodesEdit(node.id)),
-                    )
+                    val editModifier = Modifier
+                        .weight(1f)
+                        .minimumTouchTarget()
+                        .testTag(TestTags.nodesEdit(node.id))
+                    if (node.isPasswordMissing) {
+                        // The fix is in the editor, which opens with the password field focused.
+                        PrimaryButton(
+                            text = stringResource(Res.string.nodes_action_enter_password),
+                            onClick = onEdit,
+                            size = ButtonSize.Regular,
+                            modifier = editModifier,
+                        )
+                    } else {
+                        SecondaryButton(
+                            text = stringResource(Res.string.nodes_action_edit),
+                            onClick = onEdit,
+                            size = ButtonSize.Regular,
+                            modifier = editModifier,
+                        )
+                    }
                     SecondaryButton(
                         text = stringResource(Res.string.nodes_action_delete),
                         onClick = { onViewAction(ViewAction.OnRequestDelete(node.id)) },

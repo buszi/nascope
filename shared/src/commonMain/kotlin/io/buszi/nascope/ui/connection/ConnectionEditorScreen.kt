@@ -35,6 +35,7 @@ import io.buszi.nascope.resources.connection_host_helper
 import io.buszi.nascope.resources.connection_host_placeholder
 import io.buszi.nascope.resources.connection_password_hide
 import io.buszi.nascope.resources.connection_password_keep_helper
+import io.buszi.nascope.resources.connection_password_missing
 import io.buszi.nascope.resources.connection_password_show
 import io.buszi.nascope.resources.connection_port_helper
 import io.buszi.nascope.resources.connection_secret_not_persisted
@@ -95,6 +96,10 @@ fun ConnectionEditorContent(
     val usernameFocusRequester = remember { FocusRequester() }
     LaunchedEffect(viewState.usernameFocusRequest) {
         if (viewState.usernameFocusRequest > 0) runCatching { usernameFocusRequester.requestFocus() }
+    }
+    val passwordFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(viewState.passwordFocusRequest) {
+        if (viewState.passwordFocusRequest > 0) runCatching { passwordFocusRequester.requestFocus() }
     }
 
     CenteredPanel(
@@ -211,7 +216,12 @@ fun ConnectionEditorContent(
 
             FormField(
                 label = stringResource(Res.string.connection_field_password),
-                helperText = if (viewState.isEditMode) stringResource(Res.string.connection_password_keep_helper) else null,
+                helperText = if (viewState.isEditMode && !viewState.showPasswordMissing) {
+                    stringResource(Res.string.connection_password_keep_helper)
+                } else {
+                    null
+                },
+                errorText = if (viewState.showPasswordMissing) stringResource(Res.string.connection_password_missing) else null,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 PasswordTextField(
@@ -220,6 +230,7 @@ fun ConnectionEditorContent(
                     showLabel = stringResource(Res.string.connection_password_show),
                     hideLabel = stringResource(Res.string.connection_password_hide),
                     enabled = viewState.isEditable,
+                    isError = viewState.showPasswordMissing,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Done,
@@ -228,6 +239,7 @@ fun ConnectionEditorContent(
                     keyboardActions = KeyboardActions(onDone = { onViewAction(ViewAction.OnSubmit) }),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .focusRequester(passwordFocusRequester)
                         .testTag(TestTags.ConnectionPassword),
                 )
             }
@@ -306,6 +318,23 @@ private fun ConnectionEditorContentErrorsPreview() {
                 hostError = FormErrorUi.HostContainsScheme,
                 aliasError = FormErrorUi.AliasBlank,
                 portError = FormErrorUi.PortOutOfRange,
+            ),
+            onViewAction = {},
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun ConnectionEditorContentPasswordMissingPreview() {
+    AppTheme {
+        ConnectionEditorContent(
+            viewState = ViewState(
+                alias = "NAS rack 2",
+                host = "alpha-node-01.local",
+                authEnabled = true,
+                isEditMode = true,
+                passwordMissing = true,
             ),
             onViewAction = {},
         )

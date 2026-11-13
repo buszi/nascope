@@ -33,6 +33,7 @@ object TestTags {
     fun nodesUse(id: String): String = "nodes_use_${id.slug()}"
     fun nodesEdit(id: String): String = "nodes_edit_${id.slug()}"
     fun nodesDelete(id: String): String = "nodes_delete_${id.slug()}"
+    fun nodesPasswordMissing(id: String): String = "nodes_password_missing_${id.slug()}"
     const val NodesDeleteConfirm: String = "nodes_delete_confirm"
     const val NodesDeleteCancel: String = "nodes_delete_cancel"
     const val NodesDemoNotice: String = "nodes_demo_notice"

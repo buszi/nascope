@@ -24,6 +24,10 @@ data class NodeUi(
     val address: String
         get() = if (':' in host && !host.startsWith("[")) "[$host]:$port" else "$host:$port"
 
+    /** The server needs a password that is not stored on this device; the card offers to enter it. */
+    val isPasswordMissing: Boolean
+        get() = connectionStatus == ConnectionStatusUi.PasswordMissing
+
     companion object {
         fun from(
             data: ServerProfile,
