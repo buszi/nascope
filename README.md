@@ -35,9 +35,27 @@ Glances serves its API on port `61208` by default. See the [Glances documentatio
 
 ## Install
 
-Download the file for your platform from the **Releases** page of this repository: `Nascope-<version>.apk` (Android), `Nascope-<version>.dmg` (macOS on Apple Silicon). Check the download against `SHA256SUMS`. The builds are not signed by a commercial developer program, so each system asks for a confirmation on first launch; the exact steps per platform and package-manager installs are described in the install notes of each release.
+Downloads are on the [Releases](https://github.com/buszi/nascope/releases) page, with a `SHA256SUMS` file to check them against. Nascope is not signed with a paid developer certificate, so macOS and Android ask you to confirm the first launch or install. Windows and Linux packages are not available yet.
 
-The Android APK is signed with this certificate (SHA-256), which you can compare with `apksigner verify --print-certs`:
+### macOS (Apple Silicon)
+
+With [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask buszi/tap/nascope
+```
+
+Or download `Nascope-<version>.dmg`, open it and drag **Nascope** to Applications. The app is not notarized, so the first launch is blocked: open **System Settings, Privacy & Security**, scroll down to the message about Nascope and click **Open Anyway** (macOS 15 and later; earlier versions offer **Open** in the right-click menu). From a terminal the same thing is:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Nascope.app
+```
+
+### Android
+
+Download `Nascope-<version>.apk` on the device, open it and allow "Install unknown apps" for your browser or file manager when asked. Play Protect may warn about an app from an unknown developer: choose **Install anyway**. You can follow new releases with [Obtainium](https://obtainium.imranr.dev/) by adding this repository's URL.
+
+The APK is signed with this certificate (SHA-256), which you can compare with `apksigner verify --print-certs`:
 
 ```
 37:B1:BD:A5:AD:60:02:0C:B0:8F:05:67:65:F4:02:F0:AC:0C:90:34:C8:AA:20:42:50:22:79:E3:76:00:CA:E2

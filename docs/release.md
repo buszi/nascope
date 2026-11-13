@@ -133,3 +133,29 @@ Windows (`.msi`) and Linux (`.deb`) are not built yet: they are added after they
 
 The Linux row also needs `NASCOPE_DEB_MAINTAINER` passed to the build as an environment variable (the secret). Check the artifact names afterwards: the Homebrew and winget steps (TASK-6B.7) depend on them.
 
+## Distribution channels
+
+The GitHub Release is the source of truth; every other channel only points at its files.
+
+### Homebrew tap (macOS)
+
+Users install with `brew install --cask buszi/tap/nascope`. The cask lives only in a separate repository, **`buszi/homebrew-tap`** (the `homebrew-` prefix is required), at `Casks/nascope.rb`; edit it there. This repository does not keep a copy.
+
+Set up once (done): the public repository `buszi/homebrew-tap` with `Casks/nascope.rb`, and a fine-grained personal access token limited to that repository with **Contents: read and write**, stored as the repository secret `HOMEBREW_TAP_TOKEN` of this repository. Without the secret the `homebrew` job only prints a warning.
+
+After that every release tag without a suffix (`v1.0.0`, not `v1.0.0-rc1`) makes the `homebrew` job of `release.yml` write the new `version` and the dmg's `sha256` to the tap. Release candidates never reach Homebrew.
+
+Things to know:
+
+- **Gatekeeper.** The app is ad-hoc signed and not notarized. Homebrew removed the `--no-quarantine` option (Homebrew 5.0.0) and, since 2026-09-01, its *official* cask repository disables unsigned casks, so Nascope cannot be listed there; a third-party tap is not subject to that. The cask removes the quarantine attribute in a `postflight` block (`xattr -dr com.apple.quarantine`), which works technically but is **not an officially documented Homebrew practice**: test it on a clean Mac with a release candidate's dmg (`brew install --cask ./nascope.rb` with its real `sha256`, then launch) and keep the manual "Open Anyway" steps in the README as the fallback. Revisit this if Homebrew changes how it treats third-party casks.
+- The dmg is Apple Silicon only, hence `depends_on arch: :arm64`.
+- `brew upgrade` follows the tap: it sees a new version only after the `homebrew` job has run.
+
+### Android
+
+The APK on the GitHub Release is the install route. [Obtainium](https://obtainium.imranr.dev/) can follow the repository's releases for update notifications. There is no store listing; see "Later" in the runbook for Play and F-Droid.
+
+### Not yet
+
+winget, Scoop, an apt repository and Flatpak wait for the Windows and Linux builds (see "Adding an OS").
+
