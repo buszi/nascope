@@ -32,6 +32,19 @@ class DesktopApplicationPlugin : Plugin<Project> {
                 application {
                     mainClass = "io.buszi.nascope.MainKt"
 
+                    buildTypes.release.proguard {
+                        // Applies to the *Release* tasks only (packageReleaseDistributionForCurrentOS, ...); the plain
+                        // package* tasks build the unshrunk "main" variant. On by default; -Pnascope.desktop.shrink=false
+                        // turns it off. ProGuard does not read the consumer rules shipped in dependencies, so what
+                        // libraries load through services or reflection is kept by hand in proguard-rules.pro. After
+                        // adding or upgrading a dependency, run a shrunk build and check it (docs/release.md).
+                        isEnabled.set(project.providers.gradleProperty("nascope.desktop.shrink").map(String::toBoolean).orElse(true))
+                        // Shrinking only: obfuscation and optimization break reflection-based libraries for little gain.
+                        obfuscate.set(false)
+                        optimize.set(false)
+                        configurationFiles.from(project.layout.projectDirectory.file("proguard-rules.pro"))
+                    }
+
                     nativeDistributions {
                         targetFormats(
                             TargetFormat.Dmg,

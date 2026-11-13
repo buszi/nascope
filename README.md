@@ -137,8 +137,8 @@ The essentials:
 - **Package the Desktop App** (builds the installer of the OS you are on: `.dmg` on macOS, `.msi` on Windows,
   `.deb` on Linux; jpackage cannot cross-compile, see `docs/release.md`):
   ```bash
-  ./gradlew :desktopApp:packageDistributionForCurrentOS
-  # Output: desktopApp/build/compose/binaries/main/<dmg|msi|deb>/
+  ./gradlew :desktopApp:packageReleaseDistributionForCurrentOS
+  # Output: desktopApp/build/compose/binaries/main-release/<dmg|msi|deb>/
   ```
 - **Run Tests**:
   ```bash

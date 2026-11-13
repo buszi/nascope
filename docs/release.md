@@ -50,8 +50,8 @@ The certificate must be the release key, not `CN=Android Debug`.
 One installer per OS, each built **on that OS** (jpackage cannot cross-compile; CI uses a runner per OS, TASK-6B.5):
 
 ```sh
-./gradlew :desktopApp:packageDistributionForCurrentOS
-# desktopApp/build/compose/binaries/main/{dmg,msi,deb}/
+./gradlew :desktopApp:packageReleaseDistributionForCurrentOS
+# desktopApp/build/compose/binaries/main-release/{dmg,msi,deb}/
 ```
 
 Names come from `DesktopApplicationPlugin`: the app is **Nascope** (`Nascope.app`, "Nascope" in the Start menu), bundle id `io.buszi.nascope`, files `Nascope-<version>.dmg` and `.msi`, and a `.deb` (its exact file name is confirmed on the first Linux build; the release workflow and the Homebrew / winget steps depend on these names).
@@ -71,4 +71,16 @@ On the machine of the package's OS, install it (macOS: copy `Nascope.app` out of
 3. Add the NAS over HTTPS and see the dashboard, open a details screen, delete the profile (proves the packaged runtime has what networking, TLS and the keyring need).
 4. Windows: installing a newer MSI over an older one upgrades in place (one entry in "Installed apps").
 5. Linux: `sudo apt install ./nascope_*.deb` installs, the launcher appears in the menu, `sudo apt remove nascope` removes it.
+
+### Desktop hardening decisions and notes
+
+- **Shrinking (ProGuard) is on for the release packages.** It applies to the `*Release*` tasks only (`packageReleaseDistributionForCurrentOS`, `createReleaseDistributable`); the plain `package*` tasks build the unshrunk variant. `-Pnascope.desktop.shrink=false` turns it off. It saves about 12% of the installed app (153 MB to 134 MB; the app jars go from 71 MB to 52 MB, the rest is the JRE and Skia). Unlike R8, Compose Desktop's ProGuard ignores the consumer rules shipped in dependencies, so what libraries load through service files or reflection is kept by hand in `desktopApp/proguard-rules.pro` (OkHttp `dontwarn`s, serialization, the coroutines Swing dispatcher, DataStore's protobuf, JNA and the keyring backends, Ktor's JSON provider). Only obfuscation and optimization are off.
+  - **How it was verified (macOS, shrunk build):** all 62 generated serializers are kept; the first attempt lost Ktor's JSON provider and was fixed; the owner then ran the shrunk app by hand: it loaded the saved profile from storage, polled the NAS (478 requests, all `200`, no exception in the debug log), opened details screens, edited a profile and went through onboarding on a fresh data directory.
+  - **Not verified:** Windows and Linux shrunk builds (the Credential Manager and Secret Service keyring backends, the D-Bus classes that are built reflectively; their classes are kept by rule). The first Windows / Linux release candidate from CI must go through the check list above before a release; if one of them breaks, build that OS with `-Pnascope.desktop.shrink=false` and fix the rule.
+  - **After a dependency change:** a missing rule fails at runtime, not at build time. Build a release package, launch it, connect to a server and open the details screens.
+- **Data directory:** `~/Library/Application Support/nascope` (macOS), `%APPDATA%\nascope` (Windows), `$XDG_CONFIG_HOME` or `~/.config/nascope` (Linux). It holds the profile list (hosts, ports, user names) and the preferences, never a password. On macOS and Linux the directory is created and re-tightened to owner-only (`rwx------`).
+- **Secrets:** passwords live in the OS keyring (macOS Keychain, Windows Credential Manager, Linux Secret Service), service `io.buszi.nascope`, account = profile id. If there is no keyring, or it refuses a write (locked, access denied), the password is kept in memory for the session and the editor shows the "password not saved" notice, instead of failing. After a restart such a profile has no password (see the "Missing password" item in the plan's TODO).
+- **TLS:** certificates are validated with the JVM's default trust store, there is no trust-all code. A server with a self-signed certificate fails with the "TLS error" message; **there is no per-server "trust this certificate" option yet**, so users with a private CA must install it in the OS / JVM trust store, or use HTTP on a trusted LAN. Document this in the README (TASK-6B.6); an opt-in per-server exception is a post-MVP feature.
+- **Logging:** a packaged app logs warnings and errors only (TASK-6B.2); SLF4J prints three "no provider" lines at startup, which is harmless.
+- **Not audited:** whether the packaged app writes anywhere besides the data directory (for example temporary files); the Windows installer shows no console window (Compose's default `winConsole = false`, to be seen on the first Windows build).
 
