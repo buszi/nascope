@@ -1,6 +1,6 @@
 # Release runbook
 
-Work in progress: built up task by task in Phase 6B of `PLAN.md`. This version covers Android signing and desktop packaging.
+Work in progress: built up task by task in Phase 6B of `PLAN.md`. This version covers Android signing, desktop packaging and the CI workflows.
 
 ## Android release signing
 
@@ -34,7 +34,7 @@ Put the four values in `~/.gradle/gradle.properties` (never in the repository), 
 
 ### CI
 
-The release workflow (TASK-6B.5) takes the same four values from repository secrets; the keystore itself is stored base64-encoded and decoded into a file on the runner. The `versionCode` comes from the `VERSION_CODE` environment variable (the CI run number), `1` locally.
+The release workflow takes the same four values from repository secrets; the keystore itself is stored base64-encoded and decoded into a file on the runner (see "CI and releases"). The `versionCode` comes from the `VERSION_CODE` environment variable (the CI run number), `1` locally.
 
 ### Verifying a signed APK
 
@@ -83,4 +83,53 @@ On the machine of the package's OS, install it (macOS: copy `Nascope.app` out of
 - **TLS:** certificates are validated with the JVM's default trust store, there is no trust-all code. A server with a self-signed certificate fails with the "TLS error" message; **there is no per-server "trust this certificate" option yet**, so users with a private CA must install it in the OS / JVM trust store, or use HTTP on a trusted LAN. Document this in the README (TASK-6B.6); an opt-in per-server exception is a post-MVP feature.
 - **Logging:** a packaged app logs warnings and errors only (TASK-6B.2); SLF4J prints three "no provider" lines at startup, which is harmless.
 - **Not audited:** whether the packaged app writes anywhere besides the data directory (for example temporary files); the Windows installer shows no console window (Compose's default `winConsole = false`, to be seen on the first Windows build).
+
+## CI and releases
+
+Two workflows in `.github/workflows`:
+
+- **`ci.yml`** (pull requests and pushes to `main`, skipped for docs-only changes): `./gradlew assemble` and the module tests on one Ubuntu runner. A newer push cancels the older run.
+- **`release.yml`** (a pushed tag `vX.Y.Z`, or `vX.Y.Z-rc1` for a pre-release): 1. checks that the tag matches `app-version` (a `-rcN` suffix is allowed), runs the tests, builds and signs the APK on Ubuntu and checks that its certificate is the release key (the fingerprint is `EXPECTED_CERT_SHA256` in the workflow); 2. only then builds the macOS dmg (macOS minutes are the costly ones, so a failing test never starts that runner); 3. publishes a GitHub Release with `Nascope-<version>.apk`, `Nascope-<version>.dmg` and `SHA256SUMS`, with generated notes, as a pre-release when the tag has a suffix.
+
+### Repository secrets (Settings, Secrets and variables, Actions)
+
+| Secret | Value |
+|---|---|
+| `NASCOPE_KEYSTORE_FILE` | the release keystore, base64-encoded (`base64 -i nascope-release.jks \| pbcopy`); the workflow decodes it to a file and gives Gradle that path in the same-named variable |
+| `NASCOPE_KEYSTORE_PASSWORD` | keystore password |
+| `NASCOPE_KEY_ALIAS` | key alias |
+| `NASCOPE_KEY_PASSWORD` | key password |
+| `NASCOPE_DEB_MAINTAINER` | only when the deb is built again (see "Adding an OS") |
+
+### Cutting a release
+
+```sh
+git tag v1.0.0-rc1 && git push origin v1.0.0-rc1   # a rehearsal: published as a pre-release
+git tag v1.0.0 && git push origin v1.0.0            # the real one
+```
+
+A bad release is superseded by a new patch version; a published tag is never moved. Delete a failed rehearsal's pre-release and tag by hand before reusing the name.
+
+### Notes
+
+- The macOS dmg is built on an Apple Silicon runner, so it runs on Apple Silicon Macs only (the bundled runtime is architecture specific). An Intel build needs an Intel runner row.
+- Actions are pinned to major versions (`@v4`), not commit SHAs.
+- Artifacts between jobs are kept for 7 days.
+
+### Adding an OS
+
+Windows (`.msi`) and Linux (`.deb`) are not built yet: they are added after they have been tested by hand. Add a row to the `matrix.include` list of the `desktop` job in `release.yml`, for example:
+
+```yaml
+- name: Windows
+  runner: windows-latest
+  task: packageReleaseMsi
+  folder: msi
+- name: Linux
+  runner: ubuntu-latest
+  task: packageReleaseDeb
+  folder: deb
+```
+
+The Linux row also needs `NASCOPE_DEB_MAINTAINER` passed to the build as an environment variable (the secret). Check the artifact names afterwards: the Homebrew and winget steps (TASK-6B.7) depend on them.
 
