@@ -213,6 +213,28 @@ class ConnectionEditorViewModelTest {
     }
 
     @Test
+    fun connectionEditorViewModelStoresAnEmptyPasswordForANewProfile() = runTest {
+        turbineScope {
+            val savedPassword = slot<String?>()
+            every { validateServerInput(any(), any(), any()) } returns validInput
+            every { testConnection(any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
+            coEvery { saveServerProfile(any(), captureNullable(savedPassword)) } returns
+                SaveServerProfileUseCase.Result(secretPersisted = true)
+
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            viewModel.onViewAction(OnAuthToggle(true))
+            viewModel.onViewAction(OnUsernameChange("admin"))
+            runCurrent()
+            viewModel.onViewAction(OnSubmit)
+            runCurrent()
+
+            viewStateTurbine.cancelAndConsumeItems()
+            assertEquals("", savedPassword.captured)
+        }
+    }
+
+    @Test
     fun connectionEditorViewModelSavesWithoutAuthWhenPasswordProtectionIsOff() = runTest {
         turbineScope {
             val savedProfile = slot<ServerProfile>()

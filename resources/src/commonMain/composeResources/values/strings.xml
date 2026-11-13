@@ -358,6 +358,7 @@
     <string name="connection_failure_tls_error">The secure connection failed. Check the certificate or use HTTP.</string>
     <string name="connection_failure_not_glances">This does not look like a Glances server. Check the host, port and API version.</string>
     <string name="connection_failure_unauthorized">Access denied. This server needs a valid username and password.</string>
+    <string name="connection_failure_password_missing">No password is saved for this server on this device. Enter it again.</string>
     <string name="connection_failure_unexpected">Something unexpected went wrong while connecting.</string>
     <string name="connection_error_alias_blank">Enter a name for this server</string>
     <string name="connection_error_host_blank">Enter a host name or IP address</string>

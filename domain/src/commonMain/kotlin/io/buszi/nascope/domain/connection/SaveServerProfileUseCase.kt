@@ -3,6 +3,10 @@ package io.buszi.nascope.domain.connection
 import io.buszi.nascope.domain.model.connection.ServerProfile
 
 fun interface SaveServerProfileUseCase {
+    /**
+     * [password] replaces the stored secret of a profile with Basic auth, an empty one included; `null` keeps
+     * whatever is stored (and a profile without a stored secret then reports a missing password).
+     */
     suspend operator fun invoke(profile: ServerProfile, password: String?): Result
 
     /** [secretPersisted] is `false` when the profile's password only lives in memory for this session. */

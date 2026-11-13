@@ -1,5 +1,6 @@
 package io.buszi.nascope.domain.connection.impl
 
+import com.github.michaelbull.result.mapBoth
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.shareIn
 import org.koin.core.annotation.Single
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Follows the session and, while a server is connected and the app is in the foreground, checks it every
@@ -72,10 +74,12 @@ internal class ObserveConnectionStatusUseCaseImpl(
 
     private fun check(profile: ServerProfile): Flow<Status> = flow {
         while (true) {
-            val connection = profile.toServerConnection(secretStore)
-            val failure = client.verifyAccess(connection.address, connection.apiVersion, connection.credentials)
+            val failure = profile.toServerConnection(secretStore).mapBoth(
+                success = { client.verifyAccess(it.address, it.apiVersion, it.credentials) },
+                failure = { it },
+            )
             emit(if (failure == null) Status.Online else Status.Offline(failure))
-            delay(PollIntervalMillis)
+            delay(PollIntervalMillis.milliseconds)
         }
     }
 

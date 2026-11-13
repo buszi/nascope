@@ -1,6 +1,8 @@
 package io.buszi.nascope.domain.telemetry
 
 import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.andThen
+import com.github.michaelbull.result.mapError
 import io.buszi.nascope.domain.connection.toServerConnection
 import io.buszi.nascope.domain.model.connection.ServerConnection
 import io.buszi.nascope.domain.model.connection.ServerProfile
@@ -31,7 +33,7 @@ import kotlin.time.Instant
 
 /**
  * Telemetry of one connected profile. The [ServerConnection] is rebuilt on every call, so a changed
- * password is picked up without restarting anything.
+ * password is picked up without restarting anything. A missing password fails the call without a request.
  */
 internal class LiveTelemetrySource(
     private val profile: ServerProfile,
@@ -43,7 +45,9 @@ internal class LiveTelemetrySource(
     private suspend fun <T> call(
         block: suspend GlancesTelemetryClient.(ServerConnection) -> Result<T, TelemetryFailure>,
     ): Result<T, TelemetryFailure> = withContext(dispatcher) {
-        client.block(profile.toServerConnection(secretStore))
+        profile.toServerConnection(secretStore)
+            .mapError { TelemetryFailure.Connection(it) }
+            .andThen { client.block(it) }
     }
 
     override suspend fun fetchPlugins(): Result<Set<String>, TelemetryFailure> = call { fetchPlugins(it) }

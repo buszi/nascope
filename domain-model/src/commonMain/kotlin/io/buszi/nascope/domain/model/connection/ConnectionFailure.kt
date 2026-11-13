@@ -12,5 +12,11 @@ sealed interface ConnectionFailure {
     /** Missing or wrong credentials. */
     data object Unauthorized : ConnectionFailure
 
+    /**
+     * The profile uses a password, but none is stored for it (restored or moved to another device, cleared
+     * keyring). Found before any request is sent.
+     */
+    data object PasswordMissing : ConnectionFailure
+
     data class Unexpected(val detail: String) : ConnectionFailure
 }

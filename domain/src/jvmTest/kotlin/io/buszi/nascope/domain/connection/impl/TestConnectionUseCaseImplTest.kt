@@ -214,21 +214,37 @@ class TestConnectionUseCaseImplTest {
     }
 
     @Test
-    fun testConnectionUseCaseKeepsEmptyPasswordWhenExistingProfileHasNoStoredSecret() = runTest {
+    fun testConnectionUseCaseFailsAuthenticateWithPasswordMissingWhenExistingProfileHasNoStoredSecret() = runTest {
+        turbineScope {
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
+            coEvery { secretStore.get(existingProfileId) } returns null
+
+            val eventTurbine = useCase(address, credentials.copy(password = ""), existingProfileId).testIn(this)
+            runCurrent()
+
+            assertEquals(
+                reachHostPassed + detectGlancesPassed + listOf(
+                    Event.StepStarted(Step.Authenticate),
+                    Event.Failed(Step.Authenticate, ConnectionFailure.PasswordMissing),
+                ),
+                eventTurbine.awaitItemsUntilComplete(),
+            )
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun testConnectionUseCaseUsesAStoredEmptyPasswordForExistingProfile() = runTest {
         turbineScope {
             val emptyPassword = credentials.copy(password = "")
             coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
-            coEvery { secretStore.get(existingProfileId) } returns null
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, emptyPassword) } returns
-                ConnectionFailure.Unauthorized
+            coEvery { secretStore.get(existingProfileId) } returns ""
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, emptyPassword) } returns null
 
             val eventTurbine = useCase(address, emptyPassword, existingProfileId).testIn(this)
             runCurrent()
 
-            assertEquals(
-                Event.Failed(Step.Authenticate, ConnectionFailure.Unauthorized),
-                eventTurbine.awaitItemsUntilComplete().last(),
-            )
+            assertEquals(Event.Succeeded(GlancesApiVersion.V4), eventTurbine.awaitItemsUntilComplete().last())
         }
     }
 

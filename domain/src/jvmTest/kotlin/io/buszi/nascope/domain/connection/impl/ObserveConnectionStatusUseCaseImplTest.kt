@@ -173,20 +173,36 @@ class ObserveConnectionStatusUseCaseImplTest {
     }
 
     @Test
-    fun observeConnectionStatusUseCaseChecksWithAnEmptyPasswordWhenTheSecretIsGone() = runTest {
+    fun observeConnectionStatusUseCaseReportsAMissingPasswordWithoutARequestWhenTheSecretIsGone() = runTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(protectedProfile))
             coEvery { secretStore.get(protectedProfile.id) } returns null
-            coEvery { client.verifyAccess(any(), any(), ServerCredentials("glances", "")) } returns
-                ConnectionFailure.Unauthorized
 
             val statusTurbine = useCase().testIn(this)
             runCurrent()
 
             assertEquals(
-                listOf(Status.Connecting, Status.Offline(ConnectionFailure.Unauthorized)),
+                listOf(Status.Connecting, Status.Offline(ConnectionFailure.PasswordMissing)),
                 statusTurbine.cancelAndConsumeItems(),
             )
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+        }
+    }
+
+    @Test
+    fun observeConnectionStatusUseCaseChecksWithAStoredEmptyPassword() = runTest {
+        turbineScope {
+            every { observeSession() } returns MutableStateFlow(Session.Connected(protectedProfile))
+            coEvery { secretStore.get(protectedProfile.id) } returns ""
+            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+
+            val statusTurbine = useCase().testIn(this)
+            runCurrent()
+
+            assertEquals(listOf(Status.Connecting, Status.Online), statusTurbine.cancelAndConsumeItems())
+            coVerify {
+                client.verifyAccess(protectedProfile.address, GlancesApiVersion.V3, ServerCredentials("glances", ""))
+            }
         }
     }
 

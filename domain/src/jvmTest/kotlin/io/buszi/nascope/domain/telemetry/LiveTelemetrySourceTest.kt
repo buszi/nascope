@@ -2,6 +2,7 @@ package io.buszi.nascope.domain.telemetry
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
 import io.buszi.nascope.domain.model.connection.ServerAuth
@@ -16,6 +17,7 @@ import io.buszi.nascope.network.GlancesTelemetryClient
 import io.buszi.nascope.storage.SecretStore
 import io.buszi.nascope.test.TestCoroutineRule
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import io.mockk.slot
@@ -75,6 +77,28 @@ class LiveTelemetrySourceTest {
 
         assertNull(captured.captured.credentials)
         coVerifyOrder(inverse = true) { secretStore.get(any()) }
+    }
+
+    @Test
+    fun failsWithAMissingPasswordWithoutARequestWhenTheSecretIsGone() = runTest {
+        coEvery { secretStore.get(id) } returns null
+
+        assertEquals(
+            Err(TelemetryFailure.Connection(ConnectionFailure.PasswordMissing)),
+            source(ServerAuth.Basic("glances")).fetchLoad(),
+        )
+        coVerify(exactly = 0) { client.fetchLoad(any()) }
+    }
+
+    @Test
+    fun sendsAStoredEmptyPassword() = runTest {
+        val captured = slot<ServerConnection>()
+        coEvery { secretStore.get(id) } returns ""
+        coEvery { client.fetchLoad(capture(captured)) } returns Ok(LoadAverage(1f, 1f, 1f, 4))
+
+        source(ServerAuth.Basic("glances")).fetchLoad()
+
+        assertEquals(ServerCredentials("glances", ""), captured.captured.credentials)
     }
 
     @Test

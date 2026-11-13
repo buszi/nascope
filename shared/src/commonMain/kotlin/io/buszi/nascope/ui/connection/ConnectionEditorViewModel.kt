@@ -165,8 +165,9 @@ class ConnectionEditorViewModel(
             apiVersion = apiVersion,
             auth = if (state.authEnabled) ServerAuth.Basic(state.username.trim()) else ServerAuth.None,
         )
-        // An empty password keeps the stored secret, a typed one replaces it.
-        val password = state.password.takeIf { state.authEnabled && it.isNotEmpty() }
+        // On an existing profile an empty password keeps the stored secret, a typed one replaces it. A new profile
+        // stores even an empty one, so that "no secret stored" always means the password is missing.
+        val password = state.password.takeIf { state.authEnabled && (it.isNotEmpty() || editedProfileId == null) }
 
         // Saving must not be torn apart by a cancellation: the secret and the profile are written together.
         val result = withContext(NonCancellable) { saveServerProfile(profile, password) }

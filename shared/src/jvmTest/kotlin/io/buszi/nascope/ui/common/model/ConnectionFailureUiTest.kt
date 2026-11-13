@@ -14,6 +14,7 @@ class ConnectionFailureUiTest {
         assertEquals(ConnectionFailureUi.TlsError, ConnectionFailureUi.from(ConnectionFailure.TlsError))
         assertEquals(ConnectionFailureUi.NotGlances, ConnectionFailureUi.from(ConnectionFailure.NotGlances))
         assertEquals(ConnectionFailureUi.Unauthorized, ConnectionFailureUi.from(ConnectionFailure.Unauthorized))
+        assertEquals(ConnectionFailureUi.PasswordMissing, ConnectionFailureUi.from(ConnectionFailure.PasswordMissing))
     }
 
     @Test

@@ -1,5 +1,9 @@
 package io.buszi.nascope.domain.connection.impl
 
+import com.github.michaelbull.result.Err
+import com.github.michaelbull.result.Ok
+import com.github.michaelbull.result.Result
+import com.github.michaelbull.result.mapBoth
 import io.buszi.nascope.domain.connection.TestConnectionUseCase
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
@@ -53,7 +57,10 @@ internal class TestConnectionUseCaseImpl(
         emit(TestConnectionUseCase.Event.StepPassed(detect))
 
         emit(TestConnectionUseCase.Event.StepStarted(authenticate))
-        val failure = client.verifyAccess(address, apiVersion, resolveCredentials(credentials, existingProfileId))
+        val failure = resolveCredentials(credentials, existingProfileId).mapBoth(
+            success = { client.verifyAccess(address, apiVersion, it) },
+            failure = { it },
+        )
         if (failure != null) {
             emit(TestConnectionUseCase.Event.Failed(authenticate, failure))
             return@flow
@@ -63,14 +70,19 @@ internal class TestConnectionUseCaseImpl(
         emit(TestConnectionUseCase.Event.Succeeded(apiVersion))
     }.flowOn(dispatcher)
 
-    /** An empty password on an existing profile means "keep the stored one". */
+    /**
+     * An empty password on an existing profile means "keep the stored one"; when nothing is stored, the password
+     * is missing.
+     */
     private suspend fun resolveCredentials(
         credentials: ServerCredentials?,
         existingProfileId: ServerProfileId?,
-    ): ServerCredentials? {
-        if (credentials == null || credentials.password.isNotEmpty() || existingProfileId == null) return credentials
-        val stored = secretStore.get(existingProfileId) ?: return credentials
-        return credentials.copy(password = stored)
+    ): Result<ServerCredentials?, ConnectionFailure.PasswordMissing> {
+        if (credentials == null || credentials.password.isNotEmpty() || existingProfileId == null) {
+            return Ok(credentials)
+        }
+        val stored = secretStore.get(existingProfileId) ?: return Err(ConnectionFailure.PasswordMissing)
+        return Ok(credentials.copy(password = stored))
     }
 
     private fun ConnectionFailure.isTransportFailure(): Boolean = when (this) {
