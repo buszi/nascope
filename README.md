@@ -73,7 +73,7 @@ The APK is signed with this certificate (SHA-256), which you can compare with `a
 ## Security notes
 
 - **HTTP is allowed on purpose.** A Glances server on a home network is usually plain HTTP (an IP address or a `.local` name has no certificate), so the app does not block cleartext traffic. Prefer HTTPS whenever the server offers it, and do not use HTTP over the internet: the Glances password travels in clear text.
-- **Passwords are stored securely:** in the Android Keystore (encrypted, excluded from Android backups) and in the OS keyring on desktop (macOS Keychain, Windows Credential Manager, Linux Secret Service). Without a keyring the password lives in memory for the session only, and the editor tells you.
+- **Passwords are stored securely:** in the Android Keystore (encrypted, excluded from Android backups) and in the OS keyring on desktop (macOS Keychain, Windows Credential Manager, Linux Secret Service). Without a keyring the password lives in memory for the session only, and the editor tells you. A server restored from a backup or moved to another device has no password there: the app shows "NO PASSWORD" and asks for it again.
 - **HTTPS certificates are validated** with the system's trust store. A server with a self-signed certificate is rejected with a TLS error; there is no "trust this certificate" option yet. Install your certificate authority in the system trust store, or use a certificate from a public authority.
 - **Redirects are not followed**, so credentials cannot be sent to another host.
 

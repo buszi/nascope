@@ -2,6 +2,12 @@
 
 All notable changes to Nascope. The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- A server whose password is not stored on this device (restored from a backup, moved to another device, cleared keyring) now shows "NO PASSWORD" instead of "unauthorized"; the node card offers "Enter password" and the editor opens with the password field focused.
+
 ## [1.0.0] - 2026-11-13
 
 The first release: an MVP for **Android** and **macOS** (Apple Silicon).
