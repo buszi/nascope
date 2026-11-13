@@ -24,5 +24,12 @@ internal suspend fun ServerProfile.toServerConnection(
             ServerCredentials(auth.username, password)
         }
     }
-    return Ok(ServerConnection(address = address, apiVersion = apiVersion, credentials = credentials))
+    return Ok(
+        ServerConnection(
+            address = address,
+            apiVersion = apiVersion,
+            credentials = credentials,
+            trustedCertificate = trustedCertificate,
+        ),
+    )
 }

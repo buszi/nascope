@@ -2,6 +2,7 @@ package io.buszi.nascope.domain.telemetry
 
 import com.github.michaelbull.result.Err
 import com.github.michaelbull.result.Ok
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
@@ -53,6 +54,21 @@ class LiveTelemetrySourceTest {
         assertEquals(address, captured.captured.address)
         assertEquals(GlancesApiVersion.V3, captured.captured.apiVersion)
         assertEquals(ServerCredentials("glances", "pw"), captured.captured.credentials)
+    }
+
+    @Test
+    fun passesTheTrustedCertificate() = runTest {
+        val captured = slot<ServerConnection>()
+        val fingerprint = CertificateFingerprint.parse("ab".repeat(32))!!
+        coEvery { client.fetchLoad(capture(captured)) } returns Ok(LoadAverage(1f, 1f, 1f, 4))
+        val source = LiveTelemetrySource(
+            ServerProfile(id, "nas", address, GlancesApiVersion.V3, ServerAuth.None, trustedCertificate = fingerprint),
+            client, secretStore, coroutineRule.dispatcher,
+        )
+
+        source.fetchLoad()
+
+        assertEquals(fingerprint, captured.captured.trustedCertificate)
     }
 
     @Test

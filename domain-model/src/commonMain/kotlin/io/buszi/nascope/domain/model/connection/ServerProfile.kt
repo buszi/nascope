@@ -7,4 +7,6 @@ data class ServerProfile(
     /** Detected by the connection test, never typed by the user. */
     val apiVersion: GlancesApiVersion,
     val auth: ServerAuth,
+    /** The one certificate the user chose to trust for this HTTPS server; `null` uses the platform's validation. */
+    val trustedCertificate: CertificateFingerprint? = null,
 )

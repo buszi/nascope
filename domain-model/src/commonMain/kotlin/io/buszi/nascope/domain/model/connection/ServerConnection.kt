@@ -5,4 +5,6 @@ data class ServerConnection(
     val address: ServerAddress,
     val apiVersion: GlancesApiVersion,
     val credentials: ServerCredentials?,
+    /** See [ServerProfile.trustedCertificate]. */
+    val trustedCertificate: CertificateFingerprint? = null,
 )

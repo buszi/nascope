@@ -1,5 +1,6 @@
 package io.buszi.nascope.storage
 
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
 import io.buszi.nascope.domain.model.connection.ServerAuth
@@ -17,8 +18,13 @@ internal data class ServerProfileDto(
     val port: Int,
     val apiVersion: String,
     val authUsername: String? = null,
+    /** Added in 1.1.0. Left out when `null`, so a profile without one is stored as before. */
+    val trustedCertSha256: String? = null,
 ) {
-    /** Returns `null` when the stored values no longer map to a valid profile. */
+    /**
+     * Returns `null` when the stored values no longer map to a valid profile. An unreadable fingerprint is dropped
+     * instead: the profile then falls back to the platform's validation and asks to trust the certificate again.
+     */
     fun toDomain(): ServerProfile? {
         val protocol = ServerProtocol.entries.firstOrNull { it.name == protocol } ?: return null
         val apiVersion = GlancesApiVersion.entries.firstOrNull { it.name == apiVersion } ?: return null
@@ -28,6 +34,7 @@ internal data class ServerProfileDto(
             address = ServerAddress(protocol = protocol, host = host, port = port),
             apiVersion = apiVersion,
             auth = authUsername?.let(ServerAuth::Basic) ?: ServerAuth.None,
+            trustedCertificate = trustedCertSha256?.let(CertificateFingerprint::parse),
         )
     }
 
@@ -40,6 +47,7 @@ internal data class ServerProfileDto(
             port = profile.address.port,
             apiVersion = profile.apiVersion.name,
             authUsername = (profile.auth as? ServerAuth.Basic)?.username,
+            trustedCertSha256 = profile.trustedCertificate?.sha256,
         )
     }
 }

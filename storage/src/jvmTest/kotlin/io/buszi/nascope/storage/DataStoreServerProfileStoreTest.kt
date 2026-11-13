@@ -1,5 +1,8 @@
 package io.buszi.nascope.storage
 
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
 import io.buszi.nascope.domain.model.connection.ServerAuth
@@ -13,6 +16,7 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 
 class DataStoreServerProfileStoreTest {
@@ -90,7 +94,66 @@ class DataStoreServerProfileStoreTest {
         second.close()
     }
 
+    @Test
+    fun trustedCertificateRoundTrips() = runTest {
+        val dataStore = DataStoreTestFile(file)
+        val store = DataStoreServerProfileStore(dataStore.dataStore)
+        val pinned = PROFILE_B.copy(trustedCertificate = FINGERPRINT)
+
+        store.upsert(pinned)
+
+        assertEquals(listOf(pinned), store.profiles.first())
+        dataStore.close()
+    }
+
+    @Test
+    fun aProfileWithoutATrustedCertificateIsStoredInThe100Format() = runTest {
+        val dataStore = DataStoreTestFile(file)
+        DataStoreServerProfileStore(dataStore.dataStore).upsert(PROFILE_B)
+
+        val raw = dataStore.dataStore.data.first()[PROFILES_KEY].orEmpty()
+
+        assertFalse("trustedCertSha256" in raw, raw)
+        dataStore.close()
+    }
+
+    @Test
+    fun readsProfilesWrittenBy100() = runTest {
+        val dataStore = DataStoreTestFile(file)
+        dataStore.dataStore.edit {
+            it[PROFILES_KEY] = """[{"id":"b","alias":"Beta","protocol":"Https","host":"10.0.0.2","port":8443,"apiVersion":"V3"}]"""
+        }
+
+        assertEquals(listOf(PROFILE_B), DataStoreServerProfileStore(dataStore.dataStore).profiles.first())
+        dataStore.close()
+    }
+
+    @Test
+    fun ignoresKeysWrittenByANewerVersion() = runTest {
+        val dataStore = DataStoreTestFile(file)
+        dataStore.dataStore.edit {
+            it[PROFILES_KEY] = """[{"id":"b","alias":"Beta","protocol":"Https","host":"10.0.0.2","port":8443,"apiVersion":"V3","fromTheFuture":true}]"""
+        }
+
+        assertEquals(listOf(PROFILE_B), DataStoreServerProfileStore(dataStore.dataStore).profiles.first())
+        dataStore.close()
+    }
+
+    @Test
+    fun dropsAnUnreadableTrustedCertificateButKeepsTheProfile() = runTest {
+        val dataStore = DataStoreTestFile(file)
+        dataStore.dataStore.edit {
+            it[PROFILES_KEY] = """[{"id":"b","alias":"Beta","protocol":"Https","host":"10.0.0.2","port":8443,"apiVersion":"V3","trustedCertSha256":"not-a-fingerprint"}]"""
+        }
+
+        assertEquals(listOf(PROFILE_B), DataStoreServerProfileStore(dataStore.dataStore).profiles.first())
+        dataStore.close()
+    }
+
     private companion object {
+        val PROFILES_KEY = stringPreferencesKey("profiles")
+        val FINGERPRINT = CertificateFingerprint.parse("37b1bda5ad60020cb08f056765f402f0ac0c9034c8aa2042502279e37600cae2")!!
+
         val PROFILE_A = ServerProfile(
             id = ServerProfileId("a"),
             alias = "Alpha",

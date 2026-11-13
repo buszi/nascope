@@ -55,17 +55,21 @@ internal class DataStoreServerProfileStore(
     private fun decode(json: String?): List<ServerProfileDto> {
         if (json == null) return emptyList()
         return try {
-            Json.decodeFromString(serializer, json)
+            ProfileJson.decodeFromString(serializer, json)
         } catch (_: SerializationException) {
             emptyList()
         }
     }
 
-    private fun encode(profiles: List<ServerProfileDto>): String = Json.encodeToString(serializer, profiles)
+    private fun encode(profiles: List<ServerProfileDto>): String = ProfileJson.encodeToString(serializer, profiles)
 
     private companion object {
         val PROFILES_KEY = stringPreferencesKey("profiles")
         val ACTIVE_PROFILE_KEY = stringPreferencesKey("active_profile_id")
         val serializer = ListSerializer(ServerProfileDto.serializer())
+
+        // Unknown keys are skipped, so a profile written by a newer version is still read (an unreadable list
+        // would show up as "no servers", and the next save would overwrite it).
+        val ProfileJson = Json { ignoreUnknownKeys = true }
     }
 }
