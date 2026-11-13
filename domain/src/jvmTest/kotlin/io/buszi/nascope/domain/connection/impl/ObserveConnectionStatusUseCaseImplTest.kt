@@ -74,7 +74,7 @@ class ObserveConnectionStatusUseCaseImplTest {
             runCurrent()
 
             assertEquals(listOf(Status.Idle), statusTurbine.cancelAndConsumeItems())
-            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any(), any()) }
         }
     }
 
@@ -89,7 +89,7 @@ class ObserveConnectionStatusUseCaseImplTest {
             runCurrent()
 
             assertEquals(listOf(Status.Idle), statusTurbine.cancelAndConsumeItems())
-            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any(), any()) }
         }
     }
 
@@ -97,23 +97,23 @@ class ObserveConnectionStatusUseCaseImplTest {
     fun observeConnectionStatusUseCaseConnectsThenChecksImmediatelyAndEveryFiveSeconds() = runTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
-            coEvery { client.verifyAccess(openProfile.address, GlancesApiVersion.V4, null) } returns null
+            coEvery { client.verifyAccess(openProfile.address, GlancesApiVersion.V4, null, null) } returns null
 
             val statusTurbine = useCase().testIn(this)
             runCurrent()
-            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any(), any()) }
 
             advanceTimeBy(4_999)
             runCurrent()
-            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any(), any()) }
 
             advanceTimeBy(1)
             runCurrent()
-            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any(), any()) }
 
             advanceTimeBy(5_000)
             runCurrent()
-            coVerify(exactly = 3) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 3) { client.verifyAccess(any(), any(), any(), any()) }
             assertEquals(
                 listOf(Status.Connecting, Status.Online),
                 statusTurbine.cancelAndConsumeItems(),
@@ -125,7 +125,7 @@ class ObserveConnectionStatusUseCaseImplTest {
     fun observeConnectionStatusUseCaseGoesOfflineAndRecovers() = runTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
-            coEvery { client.verifyAccess(openProfile.address, GlancesApiVersion.V4, null) } returnsMany listOf(
+            coEvery { client.verifyAccess(openProfile.address, GlancesApiVersion.V4, null, null) } returnsMany listOf(
                 null,
                 ConnectionFailure.ConnectionRefused,
                 ConnectionFailure.ConnectionRefused,
@@ -156,7 +156,7 @@ class ObserveConnectionStatusUseCaseImplTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(protectedProfile))
             coEvery { secretStore.get(protectedProfile.id) } returns "secret"
-            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+            coEvery { client.verifyAccess(any(), any(), any(), any()) } returns null
 
             val statusTurbine = useCase().testIn(this)
             runCurrent()
@@ -167,6 +167,7 @@ class ObserveConnectionStatusUseCaseImplTest {
                     protectedProfile.address,
                     GlancesApiVersion.V3,
                     ServerCredentials("glances", "secret"),
+                    null,
                 )
             }
         }
@@ -185,7 +186,7 @@ class ObserveConnectionStatusUseCaseImplTest {
                 listOf(Status.Connecting, Status.Offline(ConnectionFailure.PasswordMissing)),
                 statusTurbine.cancelAndConsumeItems(),
             )
-            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any(), any()) }
         }
     }
 
@@ -194,14 +195,14 @@ class ObserveConnectionStatusUseCaseImplTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(protectedProfile))
             coEvery { secretStore.get(protectedProfile.id) } returns ""
-            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+            coEvery { client.verifyAccess(any(), any(), any(), any()) } returns null
 
             val statusTurbine = useCase().testIn(this)
             runCurrent()
 
             assertEquals(listOf(Status.Connecting, Status.Online), statusTurbine.cancelAndConsumeItems())
             coVerify {
-                client.verifyAccess(protectedProfile.address, GlancesApiVersion.V3, ServerCredentials("glances", ""))
+                client.verifyAccess(protectedProfile.address, GlancesApiVersion.V3, ServerCredentials("glances", ""), null)
             }
         }
     }
@@ -211,8 +212,8 @@ class ObserveConnectionStatusUseCaseImplTest {
         turbineScope {
             val session = MutableStateFlow<Session>(Session.Connected(openProfile))
             every { observeSession() } returns session
-            coEvery { client.verifyAccess(openProfile.address, any(), any()) } returns null
-            coEvery { client.verifyAccess(otherProfile.address, any(), any()) } returns
+            coEvery { client.verifyAccess(openProfile.address, any(), any(), null) } returns null
+            coEvery { client.verifyAccess(otherProfile.address, any(), any(), null) } returns
                 ConnectionFailure.Timeout
 
             val statusTurbine = useCase().testIn(this)
@@ -229,8 +230,8 @@ class ObserveConnectionStatusUseCaseImplTest {
                 ),
                 statusTurbine.cancelAndConsumeItems(),
             )
-            coVerify(exactly = 1) { client.verifyAccess(openProfile.address, any(), any()) }
-            coVerify(exactly = 1) { client.verifyAccess(otherProfile.address, any(), any()) }
+            coVerify(exactly = 1) { client.verifyAccess(openProfile.address, any(), any(), null) }
+            coVerify(exactly = 1) { client.verifyAccess(otherProfile.address, any(), any(), null) }
         }
     }
 
@@ -239,7 +240,7 @@ class ObserveConnectionStatusUseCaseImplTest {
         turbineScope {
             val session = MutableStateFlow<Session>(Session.Connected(openProfile))
             every { observeSession() } returns session
-            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+            coEvery { client.verifyAccess(any(), any(), any(), any()) } returns null
 
             val statusTurbine = useCase().testIn(this)
             runCurrent()
@@ -252,7 +253,7 @@ class ObserveConnectionStatusUseCaseImplTest {
                 listOf(Status.Connecting, Status.Online, Status.Idle),
                 statusTurbine.cancelAndConsumeItems(),
             )
-            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any(), any()) }
         }
     }
 
@@ -260,7 +261,7 @@ class ObserveConnectionStatusUseCaseImplTest {
     fun observeConnectionStatusUseCaseSharesOneLoopBetweenCollectors() = runTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
-            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+            coEvery { client.verifyAccess(any(), any(), any(), any()) } returns null
 
             val firstTurbine = useCase().testIn(this)
             val secondTurbine = useCase().testIn(this)
@@ -270,7 +271,7 @@ class ObserveConnectionStatusUseCaseImplTest {
 
             assertEquals(listOf(Status.Connecting, Status.Online), firstTurbine.cancelAndConsumeItems())
             assertEquals(listOf(Status.Connecting, Status.Online), secondTurbine.cancelAndConsumeItems())
-            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any(), any()) }
         }
     }
 
@@ -278,20 +279,20 @@ class ObserveConnectionStatusUseCaseImplTest {
     fun observeConnectionStatusUseCaseStopsWhenNobodyCollectsAndRestartsFromConnecting() = runTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
-            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+            coEvery { client.verifyAccess(any(), any(), any(), any()) } returns null
 
             val firstTurbine = useCase().testIn(this)
             runCurrent()
             firstTurbine.cancelAndConsumeItems()
             advanceTimeBy(30_000)
             runCurrent()
-            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any(), any()) }
 
             val secondTurbine = useCase().testIn(this)
             runCurrent()
 
             assertEquals(listOf(Status.Connecting, Status.Online), secondTurbine.cancelAndConsumeItems())
-            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any(), any()) }
         }
     }
 
@@ -299,22 +300,22 @@ class ObserveConnectionStatusUseCaseImplTest {
     fun observeConnectionStatusUseCaseMakesNoRequestInTheBackgroundAndChecksImmediatelyOnReturn() = runTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
-            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+            coEvery { client.verifyAccess(any(), any(), any(), any()) } returns null
 
             val statusTurbine = useCase().testIn(this)
             runCurrent()
-            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any(), any()) }
 
             appForegroundState.flag.value = false
             runCurrent()
             advanceTimeBy(60_000)
             runCurrent()
-            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 1) { client.verifyAccess(any(), any(), any(), any()) }
 
             appForegroundState.flag.value = true
             runCurrent()
 
-            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 2) { client.verifyAccess(any(), any(), any(), any()) }
             assertEquals(
                 listOf(Status.Connecting, Status.Online),
                 statusTurbine.cancelAndConsumeItems(),
@@ -327,11 +328,11 @@ class ObserveConnectionStatusUseCaseImplTest {
         turbineScope {
             appForegroundState.flag.value = false
             every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
-            coEvery { client.verifyAccess(any(), any(), any()) } returns null
+            coEvery { client.verifyAccess(any(), any(), any(), any()) } returns null
 
             val statusTurbine = useCase().testIn(this)
             runCurrent()
-            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any(), any()) }
 
             appForegroundState.flag.value = true
             runCurrent()
@@ -344,7 +345,7 @@ class ObserveConnectionStatusUseCaseImplTest {
     fun observeConnectionStatusUseCaseDoesNotRestartFromConnectingWhenReturningToTheForeground() = runTest {
         turbineScope {
             every { observeSession() } returns MutableStateFlow(Session.Connected(openProfile))
-            coEvery { client.verifyAccess(any(), any(), any()) } returnsMany listOf(
+            coEvery { client.verifyAccess(any(), any(), any(), any()) } returnsMany listOf(
                 null,
                 ConnectionFailure.Timeout,
             )

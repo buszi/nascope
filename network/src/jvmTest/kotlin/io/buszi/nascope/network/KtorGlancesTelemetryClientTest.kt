@@ -68,13 +68,12 @@ class KtorGlancesTelemetryClientTest {
     private class Harness(handler: suspend io.ktor.client.engine.mock.MockRequestHandleScope.(HttpRequestData) -> io.ktor.client.request.HttpResponseData) {
         val requests = mutableListOf<HttpRequestData>()
         val logLines = mutableListOf<String>()
-        val client: GlancesTelemetryClient = KtorGlancesTelemetryClient(
-            HttpClient(MockEngine { r -> requests += r; handler(r) }) { configureGlancesClient(
-                object : io.ktor.client.plugins.logging.Logger {
-                    override fun log(message: String) { logLines += message }
-                },
-            ) },
-        )
+        private val httpClient = HttpClient(MockEngine { r -> requests += r; handler(r) }) { configureGlancesClient(
+            object : io.ktor.client.plugins.logging.Logger {
+                override fun log(message: String) { logLines += message }
+            },
+        ) }
+        val client: GlancesTelemetryClient = KtorGlancesTelemetryClient { httpClient }
     }
 
     private fun connection(version: GlancesApiVersion, credentials: ServerCredentials? = null) = ServerConnection(

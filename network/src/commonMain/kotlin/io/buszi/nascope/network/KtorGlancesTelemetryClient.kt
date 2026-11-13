@@ -47,7 +47,6 @@ import io.buszi.nascope.network.telemetry.v4.parseV4Containers
 import io.buszi.nascope.network.telemetry.v4.parseV4DiskIo
 import io.buszi.nascope.network.telemetry.v4.parseV4Network
 import io.buszi.nascope.network.telemetry.v4.parseV4Processes
-import io.ktor.client.HttpClient
 import io.ktor.http.HttpStatusCode
 import org.koin.core.annotation.Single
 import kotlin.time.Duration
@@ -55,7 +54,7 @@ import kotlin.time.Instant
 
 @Single
 internal class KtorGlancesTelemetryClient(
-    private val client: HttpClient,
+    private val clients: GlancesHttpClients,
 ) : GlancesTelemetryClient {
 
     override suspend fun fetchPlugins(server: ServerConnection): Result<Set<String>, TelemetryFailure> =
@@ -135,7 +134,7 @@ internal class KtorGlancesTelemetryClient(
         parse: (String) -> Result<T, TelemetryFailure>,
     ): Result<T, TelemetryFailure> {
         val url = server.address.apiUrl(server.apiVersion, plugin)
-        return when (val result = client.glancesGet(url, server.credentials)) {
+        return when (val result = clients.clientFor(server.trustedCertificate).glancesGet(url, server.credentials)) {
             is GlancesHttpResult.Failed -> Err(TelemetryFailure.Connection(result.failure))
             is GlancesHttpResult.Response -> when (result.status) {
                 HttpStatusCode.OK -> parse(result.body)

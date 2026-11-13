@@ -1,10 +1,10 @@
 package io.buszi.nascope.network
 
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
 import io.buszi.nascope.domain.model.connection.ServerCredentials
-import io.ktor.client.HttpClient
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -13,13 +13,18 @@ import org.koin.core.annotation.Single
 
 @Single
 internal class KtorGlancesConnectionClient(
-    private val client: HttpClient,
+    private val clients: GlancesHttpClients,
 ) : GlancesConnectionClient {
 
     override suspend fun fetchStatus(
         address: ServerAddress,
         apiVersion: GlancesApiVersion,
-    ): ConnectionFailure? = call(address.apiUrl(apiVersion, STATUS_ENDPOINT), credentials = null) { body ->
+        trustedCertificate: CertificateFingerprint?,
+    ): ConnectionFailure? = call(
+        url = address.apiUrl(apiVersion, STATUS_ENDPOINT),
+        credentials = null,
+        trustedCertificate = trustedCertificate,
+    ) { body ->
         isGlancesStatus(body)
     }
 
@@ -27,7 +32,8 @@ internal class KtorGlancesConnectionClient(
         address: ServerAddress,
         apiVersion: GlancesApiVersion,
         credentials: ServerCredentials?,
-    ): ConnectionFailure? = call(address.apiUrl(apiVersion, PROTECTED_ENDPOINT), credentials) { body ->
+        trustedCertificate: CertificateFingerprint?,
+    ): ConnectionFailure? = call(address.apiUrl(apiVersion, PROTECTED_ENDPOINT), credentials, trustedCertificate) { body ->
         body.trimStart().startsWith("[")
     }
 
@@ -35,8 +41,9 @@ internal class KtorGlancesConnectionClient(
     private suspend fun call(
         url: String,
         credentials: ServerCredentials?,
+        trustedCertificate: CertificateFingerprint?,
         isGlancesBody: (String) -> Boolean,
-    ): ConnectionFailure? = when (val result = client.glancesGet(url, credentials)) {
+    ): ConnectionFailure? = when (val result = clients.clientFor(trustedCertificate).glancesGet(url, credentials)) {
         is GlancesHttpResult.Failed -> result.failure
         is GlancesHttpResult.Response -> when (result.status) {
             HttpStatusCode.OK -> if (isGlancesBody(result.body)) null else ConnectionFailure.NotGlances

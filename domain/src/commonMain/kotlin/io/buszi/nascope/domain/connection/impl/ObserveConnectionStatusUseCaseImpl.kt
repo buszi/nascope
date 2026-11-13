@@ -75,7 +75,7 @@ internal class ObserveConnectionStatusUseCaseImpl(
     private fun check(profile: ServerProfile): Flow<Status> = flow {
         while (true) {
             val failure = profile.toServerConnection(secretStore).mapBoth(
-                success = { client.verifyAccess(it.address, it.apiVersion, it.credentials) },
+                success = { client.verifyAccess(it.address, it.apiVersion, it.credentials, it.trustedCertificate) },
                 failure = { it },
             )
             emit(if (failure == null) Status.Online else Status.Offline(failure))

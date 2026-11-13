@@ -44,8 +44,8 @@ class TestConnectionUseCaseImplTest {
     @Test
     fun testConnectionUseCaseSucceedsForGlances4() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, null) } returns null
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, null, null) } returns null
 
             val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
             runCurrent()
@@ -55,8 +55,8 @@ class TestConnectionUseCaseImplTest {
                 eventTurbine.awaitItemsUntilComplete(),
             )
             coVerifySequence {
-                client.fetchStatus(address, GlancesApiVersion.V4)
-                client.verifyAccess(address, GlancesApiVersion.V4, null)
+                client.fetchStatus(address, GlancesApiVersion.V4, null)
+                client.verifyAccess(address, GlancesApiVersion.V4, null, null)
             }
         }
     }
@@ -64,9 +64,9 @@ class TestConnectionUseCaseImplTest {
     @Test
     fun testConnectionUseCaseFallsBackToGlances3() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns ConnectionFailure.NotGlances
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V3) } returns null
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V3, null) } returns null
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns ConnectionFailure.NotGlances
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V3, null) } returns null
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V3, null, null) } returns null
 
             val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
             runCurrent()
@@ -76,9 +76,9 @@ class TestConnectionUseCaseImplTest {
                 eventTurbine.awaitItemsUntilComplete(),
             )
             coVerifySequence {
-                client.fetchStatus(address, GlancesApiVersion.V4)
-                client.fetchStatus(address, GlancesApiVersion.V3)
-                client.verifyAccess(address, GlancesApiVersion.V3, null)
+                client.fetchStatus(address, GlancesApiVersion.V4, null)
+                client.fetchStatus(address, GlancesApiVersion.V3, null)
+                client.verifyAccess(address, GlancesApiVersion.V3, null, null)
             }
         }
     }
@@ -86,9 +86,9 @@ class TestConnectionUseCaseImplTest {
     @Test
     fun testConnectionUseCaseTreatsUnauthorizedStatusAsProtectedGlances3() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns ConnectionFailure.Unauthorized
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V3) } returns ConnectionFailure.Unauthorized
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V3, credentials) } returns null
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns ConnectionFailure.Unauthorized
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V3, null) } returns ConnectionFailure.Unauthorized
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V3, credentials, null) } returns null
 
             val eventTurbine = useCase(address, credentials, existingProfileId = null).testIn(this)
             runCurrent()
@@ -104,7 +104,7 @@ class TestConnectionUseCaseImplTest {
     fun testConnectionUseCaseFailsReachHostOnEveryTransportFailure() = runTest {
         turbineScope {
             transportFailures.forEach { failure ->
-                coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns failure
+                coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns failure
 
                 val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
                 runCurrent()
@@ -117,16 +117,16 @@ class TestConnectionUseCaseImplTest {
                     eventTurbine.awaitItemsUntilComplete(),
                 )
             }
-            coVerify(exactly = transportFailures.size) { client.fetchStatus(address, GlancesApiVersion.V4) }
-            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = transportFailures.size) { client.fetchStatus(address, GlancesApiVersion.V4, null) }
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any(), any()) }
         }
     }
 
     @Test
     fun testConnectionUseCaseFailsDetectGlancesWhenNeitherVersionAnswers() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns ConnectionFailure.NotGlances
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V3) } returns ConnectionFailure.NotGlances
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns ConnectionFailure.NotGlances
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V3, null) } returns ConnectionFailure.NotGlances
 
             val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
             runCurrent()
@@ -144,8 +144,8 @@ class TestConnectionUseCaseImplTest {
     @Test
     fun testConnectionUseCaseReportsTransportFailureOfTheGlances3FallbackAsDetectFailure() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns ConnectionFailure.NotGlances
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V3) } returns ConnectionFailure.Timeout
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns ConnectionFailure.NotGlances
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V3, null) } returns ConnectionFailure.Timeout
 
             val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
             runCurrent()
@@ -163,8 +163,8 @@ class TestConnectionUseCaseImplTest {
     @Test
     fun testConnectionUseCaseFailsAuthenticateWhenCredentialsAreRejected() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials) } returns
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials, null) } returns
                 ConnectionFailure.Unauthorized
 
             val eventTurbine = useCase(address, credentials, existingProfileId = null).testIn(this)
@@ -183,24 +183,24 @@ class TestConnectionUseCaseImplTest {
     @Test
     fun testConnectionUseCaseUsesTypedPasswordAsIs() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials) } returns null
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials, null) } returns null
 
             val eventTurbine = useCase(address, credentials, existingProfileId).testIn(this)
             runCurrent()
 
             eventTurbine.awaitItemsUntilComplete()
             coVerify(exactly = 0) { secretStore.get(any()) }
-            coVerify { client.verifyAccess(address, GlancesApiVersion.V4, credentials) }
+            coVerify { client.verifyAccess(address, GlancesApiVersion.V4, credentials, null) }
         }
     }
 
     @Test
     fun testConnectionUseCaseUsesStoredSecretWhenPasswordIsEmptyForExistingProfile() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
             coEvery { secretStore.get(existingProfileId) } returns "stored"
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials.copy(password = "stored")) } returns null
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials.copy(password = "stored"), null) } returns null
 
             val eventTurbine = useCase(address, credentials.copy(password = ""), existingProfileId).testIn(this)
             runCurrent()
@@ -216,7 +216,7 @@ class TestConnectionUseCaseImplTest {
     @Test
     fun testConnectionUseCaseFailsAuthenticateWithPasswordMissingWhenExistingProfileHasNoStoredSecret() = runTest {
         turbineScope {
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
             coEvery { secretStore.get(existingProfileId) } returns null
 
             val eventTurbine = useCase(address, credentials.copy(password = ""), existingProfileId).testIn(this)
@@ -229,7 +229,7 @@ class TestConnectionUseCaseImplTest {
                 ),
                 eventTurbine.awaitItemsUntilComplete(),
             )
-            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any()) }
+            coVerify(exactly = 0) { client.verifyAccess(any(), any(), any(), any()) }
         }
     }
 
@@ -237,9 +237,9 @@ class TestConnectionUseCaseImplTest {
     fun testConnectionUseCaseUsesAStoredEmptyPasswordForExistingProfile() = runTest {
         turbineScope {
             val emptyPassword = credentials.copy(password = "")
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
             coEvery { secretStore.get(existingProfileId) } returns ""
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, emptyPassword) } returns null
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, emptyPassword, null) } returns null
 
             val eventTurbine = useCase(address, emptyPassword, existingProfileId).testIn(this)
             runCurrent()
@@ -252,8 +252,8 @@ class TestConnectionUseCaseImplTest {
     fun testConnectionUseCaseDoesNotLookUpSecretForNewProfile() = runTest {
         turbineScope {
             val emptyPassword = credentials.copy(password = "")
-            coEvery { client.fetchStatus(address, GlancesApiVersion.V4) } returns null
-            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, emptyPassword) } returns null
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V4, emptyPassword, null) } returns null
 
             val eventTurbine = useCase(address, emptyPassword, existingProfileId = null).testIn(this)
             runCurrent()

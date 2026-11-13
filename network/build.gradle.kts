@@ -1,3 +1,6 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+
 plugins {
     alias(libs.plugins.convention.kmp.library)
     alias(libs.plugins.kotlinSerialization)
@@ -7,6 +10,18 @@ plugins {
 kotlin {
     android {
         namespace = "io.buszi.nascope.network"
+    }
+
+    // Android and desktop both run OkHttp on the JVM's TLS stack: their HTTP client, TLS trust and exception
+    // mapping live once in `jvmSharedMain`.
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    applyDefaultHierarchyTemplate {
+        common {
+            group("jvmShared") {
+                withJvm()
+                withCompilations { it.platformType == KotlinPlatformType.androidJvm }
+            }
+        }
     }
 
     sourceSets {
@@ -25,16 +40,14 @@ kotlin {
             implementation(libs.koin.annotations)
         }
 
-        androidMain.dependencies {
-            implementation(libs.ktor.client.okhttp)
-        }
-
-        jvmMain.dependencies {
+        named("jvmSharedMain").dependencies {
             implementation(libs.ktor.client.okhttp)
         }
 
         jvmTest.dependencies {
             implementation(libs.ktor.client.mock)
+            implementation(libs.okhttp.tls)
+            implementation(libs.okhttp.mockwebserver3)
         }
     }
 }

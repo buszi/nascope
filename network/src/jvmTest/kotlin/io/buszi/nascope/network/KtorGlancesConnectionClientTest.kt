@@ -30,13 +30,13 @@ class KtorGlancesConnectionClientTest {
     @Test
     fun fetchStatusAcceptsGlances4JsonStatus() = runTest {
         val test = GlancesTestClient.responding(HttpStatusCode.OK, """{"version": "4.5.9"}""")
-        assertNull(test.client.fetchStatus(ADDRESS, GlancesApiVersion.V4))
+        assertNull(test.client.fetchStatus(ADDRESS, GlancesApiVersion.V4, trustedCertificate = null))
     }
 
     @Test
     fun fetchStatusAcceptsGlances3ActiveText() = runTest {
         val test = GlancesTestClient.responding(HttpStatusCode.OK, "Active")
-        assertNull(test.client.fetchStatus(ADDRESS, GlancesApiVersion.V3))
+        assertNull(test.client.fetchStatus(ADDRESS, GlancesApiVersion.V3, trustedCertificate = null))
     }
 
     @Test
@@ -44,12 +44,12 @@ class KtorGlancesConnectionClientTest {
         assertEquals(
             ConnectionFailure.NotGlances,
             GlancesTestClient.responding(HttpStatusCode.OK, "<html>hello</html>")
-                .client.fetchStatus(ADDRESS, GlancesApiVersion.V4),
+                .client.fetchStatus(ADDRESS, GlancesApiVersion.V4, trustedCertificate = null),
         )
         assertEquals(
             ConnectionFailure.NotGlances,
             GlancesTestClient.responding(HttpStatusCode.OK, """{"other": 1}""")
-                .client.fetchStatus(ADDRESS, GlancesApiVersion.V4),
+                .client.fetchStatus(ADDRESS, GlancesApiVersion.V4, trustedCertificate = null),
         )
     }
 
@@ -57,8 +57,8 @@ class KtorGlancesConnectionClientTest {
     fun fetchStatusUsesVersionedPathWithoutAuthorization() = runTest {
         val test = GlancesTestClient.responding(HttpStatusCode.OK, "Active")
 
-        test.client.fetchStatus(ADDRESS, GlancesApiVersion.V4)
-        test.client.fetchStatus(ADDRESS, GlancesApiVersion.V3)
+        test.client.fetchStatus(ADDRESS, GlancesApiVersion.V4, trustedCertificate = null)
+        test.client.fetchStatus(ADDRESS, GlancesApiVersion.V3, trustedCertificate = null)
 
         assertEquals(listOf("/api/4/status", "/api/3/status"), test.requests.map { it.url.encodedPath })
         assertTrue(test.requests.all { HttpHeaders.Authorization !in it.headers })
@@ -97,7 +97,7 @@ class KtorGlancesConnectionClientTest {
     @Test
     fun cancellationIsNotSwallowed() = runTest {
         val test = GlancesTestClient.failing(CancellationException("cancelled"))
-        assertFailsWith<CancellationException> { test.client.fetchStatus(ADDRESS, GlancesApiVersion.V4) }
+        assertFailsWith<CancellationException> { test.client.fetchStatus(ADDRESS, GlancesApiVersion.V4, trustedCertificate = null) }
     }
 
     // endregion
@@ -108,8 +108,8 @@ class KtorGlancesConnectionClientTest {
     fun verifyAccessSendsBasicAuthOnlyWhenCredentialsGiven() = runTest {
         val test = GlancesTestClient.responding(HttpStatusCode.OK, "[\"cpu\"]")
 
-        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, credentials = null)
-        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, ServerCredentials("glances", "secret"))
+        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, credentials = null, trustedCertificate = null)
+        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, ServerCredentials("glances", "secret"), trustedCertificate = null)
 
         assertFalse(HttpHeaders.Authorization in test.requests[0].headers)
         // base64("glances:secret")
@@ -120,8 +120,8 @@ class KtorGlancesConnectionClientTest {
     fun verifyAccessUsesProtectedEndpointPerVersion() = runTest {
         val test = GlancesTestClient.responding(HttpStatusCode.OK, "[]")
 
-        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, null)
-        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V3, null)
+        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, null, trustedCertificate = null)
+        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V3, null, trustedCertificate = null)
 
         assertEquals(listOf("/api/4/pluginslist", "/api/3/pluginslist"), test.requests.map { it.url.encodedPath })
     }
@@ -140,7 +140,7 @@ class KtorGlancesConnectionClientTest {
         val test = GlancesTestClient.failing(ConnectException("refused"))
         assertEquals(
             ConnectionFailure.ConnectionRefused,
-            test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, null),
+            test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, null, trustedCertificate = null),
         )
     }
 
@@ -150,7 +150,7 @@ class KtorGlancesConnectionClientTest {
     fun credentialsNeverAppearInLogs() = runTest {
         val test = GlancesTestClient.responding(HttpStatusCode.OK, "[]")
 
-        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, ServerCredentials("glances", "hunter2-secret"))
+        test.client.verifyAccess(ADDRESS, GlancesApiVersion.V4, ServerCredentials("glances", "hunter2-secret"), trustedCertificate = null)
 
         val log = test.logLines.joinToString("\n")
         assertTrue(log.isNotBlank(), "expected the request to be logged")
@@ -162,18 +162,18 @@ class KtorGlancesConnectionClientTest {
     @Test
     fun redirectsAreNotFollowed() = runTest {
         val test = GlancesTestClient.responding(HttpStatusCode.Found)
-        assertIs<ConnectionFailure.Unexpected>(test.client.fetchStatus(ADDRESS, GlancesApiVersion.V4))
+        assertIs<ConnectionFailure.Unexpected>(test.client.fetchStatus(ADDRESS, GlancesApiVersion.V4, trustedCertificate = null))
         assertEquals(1, test.requests.size)
     }
 
     private suspend fun status(code: HttpStatusCode) =
-        GlancesTestClient.responding(code).client.fetchStatus(ADDRESS, GlancesApiVersion.V4)
+        GlancesTestClient.responding(code).client.fetchStatus(ADDRESS, GlancesApiVersion.V4, trustedCertificate = null)
 
     private suspend fun statusFailing(error: Throwable) =
-        GlancesTestClient.failing(error).client.fetchStatus(ADDRESS, GlancesApiVersion.V4)
+        GlancesTestClient.failing(error).client.fetchStatus(ADDRESS, GlancesApiVersion.V4, trustedCertificate = null)
 
     private suspend fun access(code: HttpStatusCode, body: String = "") =
-        GlancesTestClient.responding(code, body).client.verifyAccess(ADDRESS, GlancesApiVersion.V4, null)
+        GlancesTestClient.responding(code, body).client.verifyAccess(ADDRESS, GlancesApiVersion.V4, null, trustedCertificate = null)
 
     private companion object {
         val ADDRESS = ServerAddress(ServerProtocol.Http, "nas.local", 61208)

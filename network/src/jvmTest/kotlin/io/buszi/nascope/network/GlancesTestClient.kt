@@ -18,22 +18,22 @@ internal class GlancesTestClient(
     val requests = mutableListOf<HttpRequestData>()
     val logLines = mutableListOf<String>()
 
-    val client = KtorGlancesConnectionClient(
-        HttpClient(
-            MockEngine { request ->
-                requests += request
-                handler(request)
-            },
-        ) {
-            configureGlancesClient(
-                object : Logger {
-                    override fun log(message: String) {
-                        logLines += message
-                    }
-                },
-            )
+    private val httpClient = HttpClient(
+        MockEngine { request ->
+            requests += request
+            handler(request)
         },
-    )
+    ) {
+        configureGlancesClient(
+            object : Logger {
+                override fun log(message: String) {
+                    logLines += message
+                }
+            },
+        )
+    }
+
+    val client = KtorGlancesConnectionClient { httpClient }
 
     companion object {
         fun responding(status: HttpStatusCode, body: String = "") = GlancesTestClient {

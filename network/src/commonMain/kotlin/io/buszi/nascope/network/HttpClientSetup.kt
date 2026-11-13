@@ -1,5 +1,6 @@
 package io.buszi.nascope.network
 
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpTimeout
@@ -12,9 +13,14 @@ import io.ktor.serialization.kotlinx.json.json
 import io.github.aakira.napier.Napier
 import kotlinx.serialization.json.Json
 
-/** Creates the app's HTTP client on this platform's engine (OkHttp). */
-internal fun createPlatformHttpClient(logger: Logger = NapierLogger): HttpClient =
-    createPlatformHttpClient { configureGlancesClient(logger) }
+/**
+ * Creates an HTTP client on this platform's engine (OkHttp) that trusts what the platform trusts, plus
+ * [trustedCertificate] when set.
+ */
+internal fun createGlancesHttpClient(
+    trustedCertificate: CertificateFingerprint?,
+    logger: Logger = NapierLogger,
+): HttpClient = createPlatformHttpClient(trustedCertificate) { configureGlancesClient(logger) }
 
 /** Routes Ktor's log lines to Napier, so the app decides where they go. */
 internal object NapierLogger : Logger {
@@ -23,7 +29,10 @@ internal object NapierLogger : Logger {
     }
 }
 
-internal expect fun createPlatformHttpClient(configure: HttpClientConfig<*>.() -> Unit): HttpClient
+internal expect fun createPlatformHttpClient(
+    trustedCertificate: CertificateFingerprint?,
+    configure: HttpClientConfig<*>.() -> Unit,
+): HttpClient
 
 internal fun HttpClientConfig<*>.configureGlancesClient(logger: Logger) {
     // Redirects are not followed: they could carry the Authorization header to another host.
