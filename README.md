@@ -1,5 +1,10 @@
 # Nascope
 
+[![CI](https://github.com/buszi/nascope/actions/workflows/ci.yml/badge.svg)](https://github.com/buszi/nascope/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/buszi/nascope?display_name=tag&sort=semver)](https://github.com/buszi/nascope/releases/latest)
+[![License](https://img.shields.io/github/license/buszi/nascope)](LICENSE)
+![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20macOS-informational)
+
 **Nascope** is a Kotlin Multiplatform telemetry and monitoring application engineered for systems engineers, homelab operators, and infrastructure architects. It targets **Android** and **Desktop (JVM)** with a unified UI built with **Compose Multiplatform** and **Material 3**.
 
 
@@ -33,6 +38,8 @@ docker run -d --restart="always" -p 61208:61208 -e GLANCES_OPT="-w" \
 
 Glances serves its API on port `61208` by default. See the [Glances documentation](https://glances.readthedocs.io/en/latest/docker.html) for options (a password, the host network, other plugins). Without access to the Docker socket, Glances has no container data and the containers brick shows as unavailable.
 
+**Behind a reverse proxy** (Caddy, nginx, Traefik, ...): if Glances is published on its own host name over HTTPS, choose **HTTPS** in the connection editor, enter that host name and use port **`443`**, not `61208`. Glances has to be served at the root of its host name: the app has no field for a path prefix such as `/glances`.
+
 ## Install
 
 Downloads are on the [Releases](https://github.com/buszi/nascope/releases) page, with a `SHA256SUMS` file to check them against. Nascope is not signed with a paid developer certificate, so macOS and Android ask you to confirm the first launch or install. Windows and Linux packages are not available yet.
@@ -54,6 +61,8 @@ xattr -dr com.apple.quarantine /Applications/Nascope.app
 ### Android
 
 Download `Nascope-<version>.apk` on the device, open it and allow "Install unknown apps" for your browser or file manager when asked. Play Protect may warn about an app from an unknown developer: choose **Install anyway**. You can follow new releases with [Obtainium](https://obtainium.imranr.dev/) by adding this repository's URL.
+
+If Android says **"App not installed"**, a differently signed build of Nascope is usually installed already, for example a debug build from a developer machine. Android checks every profile of the device, so look in a second user, a work profile and **Private space** as well, uninstall it there, and install again (the app's data goes with it). `adb install Nascope-<version>.apk` prints the exact reason (`INSTALL_FAILED_UPDATE_INCOMPATIBLE` for this case). If Play Protect offers to scan the app first, you can choose to install without scanning.
 
 The APK is signed with this certificate (SHA-256), which you can compare with `apksigner verify --print-certs`:
 
