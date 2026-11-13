@@ -1,6 +1,6 @@
 # Release runbook
 
-Work in progress: built up task by task in Phase 6B of `PLAN.md`. This version covers Android signing only.
+Work in progress: built up task by task in Phase 6B of `PLAN.md`. This version covers Android signing and desktop packaging.
 
 ## Android release signing
 
@@ -44,3 +44,31 @@ $ANDROID_HOME/build-tools/<version>/apksigner verify --print-certs \
 ```
 
 The certificate must be the release key, not `CN=Android Debug`.
+
+## Desktop packages
+
+One installer per OS, each built **on that OS** (jpackage cannot cross-compile; CI uses a runner per OS, TASK-6B.5):
+
+```sh
+./gradlew :desktopApp:packageDistributionForCurrentOS
+# desktopApp/build/compose/binaries/main/{dmg,msi,deb}/
+```
+
+Names come from `DesktopApplicationPlugin`: the app is **Nascope** (`Nascope.app`, "Nascope" in the Start menu), bundle id `io.buszi.nascope`, files `Nascope-<version>.dmg` and `.msi`, and a `.deb` (its exact file name is confirmed on the first Linux build; the release workflow and the Homebrew / winget steps depend on these names).
+
+- **Version:** `app-version` in `gradle/libs.versions.toml` is the `packageVersion`. It must be plain `MAJOR.MINOR.PATCH` with a major of at least 1 (macOS). A release candidate such as `v1.0.0-rc1` is therefore only a git tag and a GitHub pre-release; the files inside it are still `1.0.0`.
+- **Windows upgrades:** `upgradeUuid` in the plugin identifies the product. A newer MSI upgrades an older one in place only while it stays the same, so **never change it**. The MSI installs per user (no administrator prompt).
+- **Debian maintainer:** the `Maintainer` field needs `Name <email>`; nothing validates the address. Releases take it from the `NASCOPE_DEB_MAINTAINER` environment variable (a repository secret in CI; the release workflow must pass it through) or a Gradle property. Local builds use a placeholder, so never publish a locally built deb.
+- **Runtime modules:** the packaged app ships a jlinked JRE with an explicit module list. After adding or upgrading a dependency run `./gradlew :desktopApp:suggestRuntimeModules` and update `modules(...)` in the plugin; a missing module only fails at runtime.
+- **macOS signing:** packages are ad-hoc signed by jpackage and not notarized (see the install notes in the README, TASK-6B.7).
+
+### Checking a package
+
+On the machine of the package's OS, install it (macOS: copy `Nascope.app` out of the dmg) and check:
+
+1. The name, icon and menu bar / Start menu entry say "Nascope".
+2. It starts and stays up (no console window on Windows).
+3. Add the NAS over HTTPS and see the dashboard, open a details screen, delete the profile (proves the packaged runtime has what networking, TLS and the keyring need).
+4. Windows: installing a newer MSI over an older one upgrades in place (one entry in "Installed apps").
+5. Linux: `sudo apt install ./nascope_*.deb` installs, the launcher appears in the menu, `sudo apt remove nascope` removes it.
+

@@ -39,13 +39,50 @@ class DesktopApplicationPlugin : Plugin<Project> {
                             TargetFormat.Deb,
                         )
 
-                        packageName = "io.buszi.nascope"
+                        // The user-visible name: the macOS bundle ("Nascope.app"), the Windows Start menu entry,
+                        // the Linux package name (lowercased by the deb tooling).
+                        packageName = "Nascope"
                         packageVersion = libs.findVersionString("app-version")
+                        description = "Live telemetry for your NAS, from a Glances server"
+                        vendor = "Nascope"
+                        copyright = "Copyright (c) 2026 Nascope"
+
+                        // The packaged runtime is a jlinked JRE with only the modules the build can see. Modules that
+                        // dependencies load reflectively are missed and fail at runtime, not at build time, so they
+                        // are listed here. The list is the output of `./gradlew :desktopApp:suggestRuntimeModules`:
+                        // re-run it after adding or upgrading a dependency and update it.
+                        modules("java.instrument", "java.management", "jdk.security.auth", "jdk.unsupported")
 
                         val icons = project.layout.projectDirectory.dir("icons")
-                        macOS { iconFile.set(icons.file("nascope.icns")) }
-                        windows { iconFile.set(icons.file("nascope.ico")) }
-                        linux { iconFile.set(icons.file("nascope.png")) }
+
+                        macOS {
+                            bundleID = "io.buszi.nascope"
+                            iconFile.set(icons.file("nascope.icns"))
+                        }
+
+                        windows {
+                            iconFile.set(icons.file("nascope.ico"))
+                            menuGroup = "Nascope"
+                            shortcut = true
+                            // Per user: no administrator prompt, installs under %LOCALAPPDATA%.
+                            perUserInstall = true
+                            // Identifies the product across versions: a newer MSI upgrades an older one in place only
+                            // while this stays the same. Generated once. NEVER change it after a release.
+                            upgradeUuid = "942EBB92-5DC0-443C-87E0-0E71F9B96EFD"
+                        }
+
+                        linux {
+                            iconFile.set(icons.file("nascope.png"))
+                            menuGroup = "Network;Monitor;"
+                            appCategory = "net"
+                            // The deb Maintainer field needs an e-mail address. Releases get the real one from the
+                            // NASCOPE_DEB_MAINTAINER environment variable (a CI secret) or Gradle property, as
+                            // "Name <mail>"; local builds use the placeholder.
+                            debMaintainer = project.providers.environmentVariable("NASCOPE_DEB_MAINTAINER")
+                                .orElse(project.providers.gradleProperty("NASCOPE_DEB_MAINTAINER"))
+                                .orElse("Nascope <nascope@example.invalid>")
+                                .get()
+                        }
                     }
                 }
             }
