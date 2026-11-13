@@ -10,10 +10,12 @@ import org.koin.plugin.module.dsl.koinConfiguration
  * Starts logging and dependency injection. Every platform entry point calls this once, before any UI is created:
  * `Application.onCreate` on Android, the start of `main` on desktop.
  *
+ * @param isDebug `true` for a debug build: everything is logged. Release builds log warnings and errors only
+ * ([ReleaseAntilog]), so requests and other diagnostics never reach a user's device log.
  * @param platformConfiguration extra Koin configuration supplied by the platform,
  * e.g. the Android application `Context`.
  */
-fun initNascope(platformConfiguration: KoinAppDeclaration = {}) {
-    Napier.base(DebugAntilog())
+fun initNascope(isDebug: Boolean, platformConfiguration: KoinAppDeclaration = {}) {
+    Napier.base(if (isDebug) DebugAntilog() else ReleaseAntilog())
     startKoin(koinConfiguration<NascopeApp>(platformConfiguration))
 }

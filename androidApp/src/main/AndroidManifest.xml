@@ -3,6 +3,14 @@
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!--
+        usesCleartextTraffic is deliberate: a Glances server on a home LAN is usually plain HTTP (an IP address or
+        a .local name has no certificate), and its address is entered by the user at runtime, so it cannot be
+        listed in a network security config. HTTPS is offered and recommended in the connection editor; do not
+        "fix" this by disabling cleartext.
+        allowBackup stays on for the profile list, but the encrypted secrets are excluded (data_extraction_rules.xml):
+        their Keystore key does not survive a restore, so a restored profile has no stored password.
+    -->
     <application
             android:name=".NascopeApplication"
             android:allowBackup="true"

@@ -2,6 +2,7 @@ package io.buszi.nascope.convention
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.tasks.JavaExec
 import org.gradle.kotlin.dsl.configure
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.desktop.DesktopExtension
@@ -19,6 +20,11 @@ class DesktopApplicationPlugin : Plugin<Project> {
             compilerOptions {
                 jvmTarget.set(JVM_TARGET)
             }
+        }
+
+        // Full logging for `./gradlew run`; packaged distributions do not go through JavaExec and stay quiet.
+        tasks.withType(JavaExec::class.java).configureEach {
+            systemProperty("nascope.debug", "true")
         }
 
         extensions.configure<ComposeExtension> {

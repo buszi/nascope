@@ -17,6 +17,9 @@ import javax.imageio.ImageIO
 
 private const val IconResource = "/icon.png"
 
+/** Set to `true` by the Gradle `run` task only (see `DesktopApplicationPlugin`); packaged apps are release builds. */
+private const val DebugProperty = "nascope.debug"
+
 /** Matches the app shell's bar color, so the strip behind the macOS title bar blends into the top bar. */
 private val TitleBarStrip = Color(0xFF12141A)
 
@@ -30,7 +33,7 @@ fun main() {
         // Must be set before AWT starts. Dark title bar controls for the dark UI.
         System.setProperty("apple.awt.application.appearance", "NSAppearanceNameDarkAqua")
     }
-    initNascope()
+    initNascope(isDebug = System.getProperty(DebugProperty) == "true")
 
     val iconImage = checkNotNull(object {}.javaClass.getResourceAsStream(IconResource)) { "Missing $IconResource" }
         .use(ImageIO::read)

@@ -9,7 +9,7 @@ class NascopeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        initNascope {
+        initNascope(isDebug = BuildConfig.DEBUG) {
             modules(module { single<Context> { applicationContext } })
         }
     }
