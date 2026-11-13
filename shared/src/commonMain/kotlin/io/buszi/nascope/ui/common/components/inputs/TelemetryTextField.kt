@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import io.buszi.nascope.ui.common.util.keepInViewAboveKeyboard
 import io.buszi.nascope.ui.common.theme.AppTheme
 
 private const val DisabledInputAlpha = 0.5f
@@ -111,6 +112,7 @@ fun TelemetryTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier
+            .keepInViewAboveKeyboard()
             .height(AppTheme.dimensions.inputHeight)
             .background(color = activeBackground, shape = shape)
             .border(

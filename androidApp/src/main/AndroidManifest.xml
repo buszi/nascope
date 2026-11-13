@@ -24,7 +24,8 @@
         <activity
                 android:exported="true"
                 android:name=".MainActivity"
-                android:theme="@style/Theme.Nascope.Starting">
+                android:theme="@style/Theme.Nascope.Starting"
+                android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 

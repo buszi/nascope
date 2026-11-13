@@ -1,6 +1,11 @@
 package io.buszi.nascope.ui.navigation
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,7 +17,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -41,6 +45,7 @@ import androidx.navigation3.ui.NavDisplay
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.LocalContentInsets
 import io.buszi.nascope.ui.common.util.LocalWindowWidthClass
+import io.buszi.nascope.ui.common.util.safeArea
 import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
 import io.buszi.nascope.ui.connection.ConnectionEditorScreen
@@ -107,16 +112,20 @@ fun NascopeAppScaffold(
 
         // The bars own the insets next to them; the workspace gets the rest and decides itself how to use
         // them, so bricks can scroll behind a navigation bar docked at the side of a rotated phone.
-        val safeDrawing = WindowInsets.safeDrawing
-        val railInsets = safeDrawing.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)
-        val topBarInsets = safeDrawing.only(
+        val safeArea = WindowInsets.safeArea
+        val railInsets = safeArea.only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)
+        val topBarInsets = safeArea.only(
             if (isCompact) WindowInsetsSides.Top + WindowInsetsSides.Horizontal else WindowInsetsSides.Top + WindowInsetsSides.End,
         )
-        val bottomBarInsets = safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+        val bottomBarInsets = safeArea.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
         // Compact keeps the bottom bar, which already clears the bottom insets; wide layouts have none.
-        val contentInsets = safeDrawing.only(
+        val contentInsets = safeArea.only(
             if (isCompact) WindowInsetsSides.Horizontal else WindowInsetsSides.End + WindowInsetsSides.Bottom,
         )
+        // Measured height of the Compact bottom bar including the system bar under it; wide layouts have none.
+        val density = LocalDensity.current
+        var bottomBarHeight by remember { mutableStateOf(0.dp) }
+        val workspaceBottomCovered = if (isCompact) bottomBarHeight else 0.dp
 
         CompositionLocalProvider(
             LocalWindowWidthClass provides windowWidthClass,
@@ -164,6 +173,10 @@ fun NascopeAppScaffold(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
+                            // The bottom bar (and the system bar under it) already covers the bottom of the screen,
+                            // so the keyboard only overlaps the workspace by the rest: consumed here, a screen's
+                            // imePadding makes room for exactly that part.
+                            .consumeWindowInsets(PaddingValues(bottom = workspaceBottomCovered))
                             .background(AppTheme.colors.canvasBackground),
                     ) {
                         NascopeNavDisplay(
@@ -177,6 +190,7 @@ fun NascopeAppScaffold(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .onSizeChanged { bottomBarHeight = with(density) { it.height.toDp() } }
                                 .background(AppTheme.colors.subSurface)
                                 .windowInsetsPadding(bottomBarInsets),
                         ) {

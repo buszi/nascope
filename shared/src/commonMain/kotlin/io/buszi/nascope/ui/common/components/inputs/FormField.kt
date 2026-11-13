@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import io.buszi.nascope.ui.common.util.keepInViewAboveKeyboard
 import io.buszi.nascope.ui.common.theme.AppTheme
 
 /**
@@ -43,7 +44,8 @@ fun FormField(
     content: @Composable () -> Unit,
 ) {
     Column(
-        modifier = modifier,
+        // The whole field, hint or error included, stays above the keyboard while its input is focused.
+        modifier = modifier.keepInViewAboveKeyboard(),
         verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceXs),
     ) {
         Text(
