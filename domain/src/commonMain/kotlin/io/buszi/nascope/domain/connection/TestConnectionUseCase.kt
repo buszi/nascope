@@ -1,5 +1,6 @@
 package io.buszi.nascope.domain.connection
 
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
@@ -9,11 +10,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 fun interface TestConnectionUseCase {
-    /** Cold flow that completes after [Event.Failed] or [Event.Succeeded]. */
+    /**
+     * Cold flow that completes after [Event.Failed] or [Event.Succeeded]. [trustedCertificate] is trusted on top of
+     * the platform's validation: the profile's own, or one the user just accepted for [address].
+     */
     operator fun invoke(
         address: ServerAddress,
         credentials: ServerCredentials?,
         existingProfileId: ServerProfileId?,
+        trustedCertificate: CertificateFingerprint?,
     ): Flow<Event>
 
     enum class Step { ReachHost, DetectGlances, Authenticate }

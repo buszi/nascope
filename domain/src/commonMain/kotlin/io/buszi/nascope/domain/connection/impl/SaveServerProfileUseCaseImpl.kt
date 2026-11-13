@@ -3,6 +3,7 @@ package io.buszi.nascope.domain.connection.impl
 import io.buszi.nascope.domain.connection.SaveServerProfileUseCase
 import io.buszi.nascope.domain.model.connection.ServerAuth
 import io.buszi.nascope.domain.model.connection.ServerProfile
+import io.buszi.nascope.domain.model.connection.ServerProtocol
 import io.buszi.nascope.storage.AppPreferencesStore
 import io.buszi.nascope.storage.SecretStore
 import io.buszi.nascope.storage.ServerProfileStore
@@ -23,6 +24,8 @@ internal class SaveServerProfileUseCaseImpl(
         profile: ServerProfile,
         password: String?,
     ): SaveServerProfileUseCase.Result = withContext(dispatcher) {
+        // A certificate only means something over HTTPS; a profile switched to HTTP forgets it.
+        val stored = if (profile.address.protocol == ServerProtocol.Http) profile.copy(trustedCertificate = null) else profile
         val isNew = profileStore.profiles.first().none { it.id == profile.id }
 
         // The secret goes first, so a stored profile never lacks the password it was saved with.
@@ -37,7 +40,7 @@ internal class SaveServerProfileUseCaseImpl(
                 secretStore.isPersistent
             }
         }
-        profileStore.upsert(profile)
+        profileStore.upsert(stored)
 
         if (isNew) {
             profileStore.setActiveProfileId(profile.id)

@@ -5,6 +5,7 @@ import com.github.michaelbull.result.Ok
 import com.github.michaelbull.result.Result
 import com.github.michaelbull.result.mapBoth
 import io.buszi.nascope.domain.connection.TestConnectionUseCase
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
@@ -29,13 +30,14 @@ internal class TestConnectionUseCaseImpl(
         address: ServerAddress,
         credentials: ServerCredentials?,
         existingProfileId: ServerProfileId?,
+        trustedCertificate: CertificateFingerprint?,
     ): Flow<TestConnectionUseCase.Event> = flow {
         val reach = TestConnectionUseCase.Step.ReachHost
         val detect = TestConnectionUseCase.Step.DetectGlances
         val authenticate = TestConnectionUseCase.Step.Authenticate
 
         emit(TestConnectionUseCase.Event.StepStarted(reach))
-        val v4 = client.fetchStatus(address, GlancesApiVersion.V4, trustedCertificate = null)
+        val v4 = client.fetchStatus(address, GlancesApiVersion.V4, trustedCertificate)
         if (v4 != null && v4.isTransportFailure()) {
             emit(TestConnectionUseCase.Event.Failed(reach, v4))
             return@flow
@@ -46,7 +48,7 @@ internal class TestConnectionUseCaseImpl(
         val apiVersion = if (v4 == null) {
             GlancesApiVersion.V4
         } else {
-            val v3 = client.fetchStatus(address, GlancesApiVersion.V3, trustedCertificate = null)
+            val v3 = client.fetchStatus(address, GlancesApiVersion.V3, trustedCertificate)
             // A password-protected Glances 3 also protects its status endpoint, so 401 still means "found".
             if (v3 != null && v3 != ConnectionFailure.Unauthorized) {
                 emit(TestConnectionUseCase.Event.Failed(detect, v3))
@@ -58,7 +60,7 @@ internal class TestConnectionUseCaseImpl(
 
         emit(TestConnectionUseCase.Event.StepStarted(authenticate))
         val failure = resolveCredentials(credentials, existingProfileId).mapBoth(
-            success = { client.verifyAccess(address, apiVersion, it, trustedCertificate = null) },
+            success = { client.verifyAccess(address, apiVersion, it, trustedCertificate) },
             failure = { it },
         )
         if (failure != null) {
@@ -90,6 +92,8 @@ internal class TestConnectionUseCaseImpl(
         ConnectionFailure.ConnectionRefused,
         ConnectionFailure.Timeout,
         ConnectionFailure.TlsError,
+        is ConnectionFailure.UntrustedCertificate,
+        is ConnectionFailure.CertificateChanged,
         -> true
 
         else -> false

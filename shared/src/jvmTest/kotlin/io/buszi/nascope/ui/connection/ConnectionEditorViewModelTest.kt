@@ -11,6 +11,7 @@ import io.buszi.nascope.domain.connection.ValidateServerInputUseCase
 import io.buszi.nascope.domain.connection.ValidateServerInputUseCase.AliasError
 import io.buszi.nascope.domain.connection.ValidateServerInputUseCase.HostError
 import io.buszi.nascope.domain.connection.ValidateServerInputUseCase.PortError
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
@@ -39,6 +40,7 @@ import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewAction.OnUse
 import io.buszi.nascope.ui.connection.ConnectionEditorViewModel.ViewState
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifySequence
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -116,7 +118,7 @@ class ConnectionEditorViewModelTest {
                 ),
                 viewStateTurbine.cancelAndConsumeItems(),
             )
-            coVerify(exactly = 0) { testConnection(any(), any(), any()) }
+            coVerify(exactly = 0) { testConnection(any(), any(), any(), any()) }
         }
     }
 
@@ -137,7 +139,7 @@ class ConnectionEditorViewModelTest {
                 ViewState(authEnabled = true, username = "", usernameError = FormErrorUi.UsernameBlank),
                 viewStateTurbine.cancelAndConsumeItems().last(),
             )
-            coVerify(exactly = 0) { testConnection(any(), any(), any()) }
+            coVerify(exactly = 0) { testConnection(any(), any(), any(), any()) }
         }
     }
 
@@ -146,7 +148,7 @@ class ConnectionEditorViewModelTest {
         turbineScope {
             val events = MutableSharedFlow<Event>()
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns events
+            every { testConnection(any(), any(), any(), any()) } returns events
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -178,7 +180,7 @@ class ConnectionEditorViewModelTest {
             val savedProfile = slot<ServerProfile>()
             val savedPassword = slot<String?>()
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns successfulTest(GlancesApiVersion.V3)
+            every { testConnection(any(), any(), any(), any()) } returns successfulTest(GlancesApiVersion.V3)
             coEvery { saveServerProfile(capture(savedProfile), captureNullable(savedPassword)) } returns
                 SaveServerProfileUseCase.Result(secretPersisted = true)
 
@@ -210,6 +212,7 @@ class ConnectionEditorViewModelTest {
                     ServerAddress(ServerProtocol.Https, "nas.local", 8443),
                     ServerCredentials("admin", "secret"),
                     null,
+                    null,
                 )
             }
         }
@@ -220,7 +223,7 @@ class ConnectionEditorViewModelTest {
         turbineScope {
             val savedPassword = slot<String?>()
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
+            every { testConnection(any(), any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
             coEvery { saveServerProfile(any(), captureNullable(savedPassword)) } returns
                 SaveServerProfileUseCase.Result(secretPersisted = true)
 
@@ -242,7 +245,7 @@ class ConnectionEditorViewModelTest {
         turbineScope {
             val savedProfile = slot<ServerProfile>()
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
+            every { testConnection(any(), any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
             coEvery { saveServerProfile(capture(savedProfile), null) } returns
                 SaveServerProfileUseCase.Result(secretPersisted = true)
 
@@ -253,7 +256,7 @@ class ConnectionEditorViewModelTest {
 
             viewStateTurbine.cancelAndConsumeItems()
             assertEquals(ServerAuth.None, savedProfile.captured.auth)
-            coVerify { testConnection(any(), null, null) }
+            coVerify { testConnection(any(), null, null, null) }
         }
     }
 
@@ -261,7 +264,7 @@ class ConnectionEditorViewModelTest {
     fun connectionEditorViewModelWarnsWhenThePasswordIsNotStoredPersistently() = runTest {
         turbineScope {
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
+            every { testConnection(any(), any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
             coEvery { saveServerProfile(any(), any()) } returns SaveServerProfileUseCase.Result(secretPersisted = false)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
@@ -282,7 +285,7 @@ class ConnectionEditorViewModelTest {
     fun connectionEditorViewModelDoesNotSaveAndKeepsFormEditableWhenTheTestFails() = runTest {
         turbineScope {
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns failedTest(Step.ReachHost, ConnectionFailure.UnknownHost)
+            every { testConnection(any(), any(), any(), any()) } returns failedTest(Step.ReachHost, ConnectionFailure.UnknownHost)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -309,7 +312,7 @@ class ConnectionEditorViewModelTest {
     fun connectionEditorViewModelRetriesAfterAFailure() = runTest {
         turbineScope {
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returnsMany listOf(
+            every { testConnection(any(), any(), any(), any()) } returnsMany listOf(
                 failedTest(Step.ReachHost, ConnectionFailure.Timeout),
                 successfulTest(GlancesApiVersion.V4),
             )
@@ -325,7 +328,7 @@ class ConnectionEditorViewModelTest {
             val finalState = viewStateTurbine.cancelAndConsumeItems().last()
             assertEquals(Phase.Saved, finalState.phase)
             assertEquals(checks(Passed, Passed, Passed), finalState.checks)
-            verify(exactly = 2) { testConnection(any(), any(), any()) }
+            verify(exactly = 2) { testConnection(any(), any(), any(), any()) }
             coVerify(exactly = 1) { saveServerProfile(any(), any()) }
         }
     }
@@ -334,7 +337,7 @@ class ConnectionEditorViewModelTest {
     fun connectionEditorViewModelTurnsPasswordProtectionOnAndRequestsUsernameFocusWhenUnauthorized() = runTest {
         turbineScope {
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns failedTest(Step.Authenticate, ConnectionFailure.Unauthorized)
+            every { testConnection(any(), any(), any(), any()) } returns failedTest(Step.Authenticate, ConnectionFailure.Unauthorized)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -352,7 +355,7 @@ class ConnectionEditorViewModelTest {
     fun connectionEditorViewModelDoesNotRequestFocusWhenUnauthorizedWithPasswordProtectionAlreadyOn() = runTest {
         turbineScope {
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns failedTest(Step.Authenticate, ConnectionFailure.Unauthorized)
+            every { testConnection(any(), any(), any(), any()) } returns failedTest(Step.Authenticate, ConnectionFailure.Unauthorized)
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -420,7 +423,7 @@ class ConnectionEditorViewModelTest {
         turbineScope {
             coEvery { getServerProfile(existingProfile.id) } returns existingProfile
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns
+            every { testConnection(any(), any(), any(), any()) } returns
                 failedTest(Step.Authenticate, ConnectionFailure.PasswordMissing)
 
             val editViewModel = createViewModel(profileId = "alpha")
@@ -441,11 +444,59 @@ class ConnectionEditorViewModelTest {
     }
 
     @Test
+    fun connectionEditorViewModelTestsAndSavesWithTheProfilesTrustedCertificate() = runTest {
+        turbineScope {
+            val pinned = existingProfile.copy(trustedCertificate = fingerprint)
+            coEvery { getServerProfile(existingProfile.id) } returns pinned
+            every { validateServerInput(any(), any(), any()) } returns validInput
+            every { testConnection(any(), any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
+            coEvery { saveServerProfile(any(), any()) } returns SaveServerProfileUseCase.Result(secretPersisted = true)
+
+            val editViewModel = createViewModel(profileId = "alpha")
+            val viewStateTurbine = editViewModel.viewState.testIn(this)
+            runCurrent()
+            editViewModel.onViewAction(OnAliasChange("Renamed"))
+            editViewModel.onViewAction(OnSubmit)
+            runCurrent()
+
+            viewStateTurbine.cancelAndConsumeItems()
+            coVerify { testConnection(pinned.address, any(), existingProfile.id, fingerprint) }
+            coVerify { saveServerProfile(pinned.copy(alias = "Renamed"), null) }
+        }
+    }
+
+    @Test
+    fun connectionEditorViewModelUsesTheTrustedCertificateOnlyForItsAddress() = runTest {
+        turbineScope {
+            coEvery { getServerProfile(existingProfile.id) } returns existingProfile.copy(trustedCertificate = fingerprint)
+            every { validateServerInput(any(), any(), any()) } returns validInput
+            every { testConnection(any(), any(), any(), any()) } returns
+                failedTest(Step.ReachHost, ConnectionFailure.Timeout)
+
+            val editViewModel = createViewModel(profileId = "alpha")
+            val viewStateTurbine = editViewModel.viewState.testIn(this)
+            runCurrent()
+            editViewModel.onViewAction(OnHostChange("beta.local"))
+            editViewModel.onViewAction(OnSubmit)
+            runCurrent()
+            editViewModel.onViewAction(OnHostChange("alpha.local"))
+            editViewModel.onViewAction(OnSubmit)
+            runCurrent()
+
+            viewStateTurbine.cancelAndConsumeItems()
+            coVerifySequence {
+                testConnection(existingProfile.address.copy(host = "beta.local"), any(), existingProfile.id, null)
+                testConnection(existingProfile.address, any(), existingProfile.id, fingerprint)
+            }
+        }
+    }
+
+    @Test
     fun connectionEditorViewModelKeepsTheStoredSecretWhenEditingWithAnEmptyPassword() = runTest {
         turbineScope {
             coEvery { getServerProfile(existingProfile.id) } returns existingProfile
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
+            every { testConnection(any(), any(), any(), any()) } returns successfulTest(GlancesApiVersion.V4)
             coEvery { saveServerProfile(any(), any()) } returns SaveServerProfileUseCase.Result(secretPersisted = true)
 
             val editViewModel = createViewModel(profileId = "alpha")
@@ -460,6 +511,7 @@ class ConnectionEditorViewModelTest {
                     ServerAddress(ServerProtocol.Https, "alpha.local", 8443),
                     ServerCredentials("admin", ""),
                     existingProfile.id,
+                    null,
                 )
             }
             coVerify { saveServerProfile(match { it.id == existingProfile.id }, null) }
@@ -483,7 +535,7 @@ class ConnectionEditorViewModelTest {
         turbineScope {
             val events = MutableSharedFlow<Event>()
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns events
+            every { testConnection(any(), any(), any(), any()) } returns events
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -512,7 +564,7 @@ class ConnectionEditorViewModelTest {
         turbineScope {
             val events = MutableSharedFlow<Event>()
             every { validateServerInput(any(), any(), any()) } returns validInput
-            every { testConnection(any(), any(), any()) } returns events
+            every { testConnection(any(), any(), any(), any()) } returns events
 
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
@@ -522,7 +574,7 @@ class ConnectionEditorViewModelTest {
             runCurrent()
 
             viewStateTurbine.cancelAndConsumeItems()
-            verify(exactly = 1) { testConnection(any(), any(), any()) }
+            verify(exactly = 1) { testConnection(any(), any(), any(), any()) }
         }
     }
 
@@ -545,6 +597,8 @@ class ConnectionEditorViewModelTest {
             host = HostError.ContainsScheme,
             port = PortError.Blank,
         )
+
+        private val fingerprint = CertificateFingerprint.parse("ab".repeat(32))!!
 
         private val existingProfile = ServerProfile(
             id = ServerProfileId("alpha"),

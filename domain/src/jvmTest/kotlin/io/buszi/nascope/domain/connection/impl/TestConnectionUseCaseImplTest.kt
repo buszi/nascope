@@ -3,9 +3,11 @@ package io.buszi.nascope.domain.connection.impl
 import app.cash.turbine.turbineScope
 import io.buszi.nascope.domain.connection.TestConnectionUseCase.Event
 import io.buszi.nascope.domain.connection.TestConnectionUseCase.Step
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
+import io.buszi.nascope.domain.model.connection.ServerCertificate
 import io.buszi.nascope.domain.model.connection.ServerCredentials
 import io.buszi.nascope.domain.model.connection.ServerProfileId
 import io.buszi.nascope.domain.model.connection.ServerProtocol
@@ -19,6 +21,7 @@ import io.mockk.coVerifySequence
 import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -47,7 +50,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
             coEvery { client.verifyAccess(address, GlancesApiVersion.V4, null, null) } returns null
 
-            val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
+            val eventTurbine = useCase(address, credentials = null, existingProfileId = null, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(
@@ -68,7 +71,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { client.fetchStatus(address, GlancesApiVersion.V3, null) } returns null
             coEvery { client.verifyAccess(address, GlancesApiVersion.V3, null, null) } returns null
 
-            val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
+            val eventTurbine = useCase(address, credentials = null, existingProfileId = null, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(
@@ -90,7 +93,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { client.fetchStatus(address, GlancesApiVersion.V3, null) } returns ConnectionFailure.Unauthorized
             coEvery { client.verifyAccess(address, GlancesApiVersion.V3, credentials, null) } returns null
 
-            val eventTurbine = useCase(address, credentials, existingProfileId = null).testIn(this)
+            val eventTurbine = useCase(address, credentials, existingProfileId = null, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(
@@ -106,7 +109,7 @@ class TestConnectionUseCaseImplTest {
             transportFailures.forEach { failure ->
                 coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns failure
 
-                val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
+                val eventTurbine = useCase(address, credentials = null, existingProfileId = null, trustedCertificate = null).testIn(this)
                 runCurrent()
 
                 assertEquals(
@@ -123,12 +126,31 @@ class TestConnectionUseCaseImplTest {
     }
 
     @Test
+    fun testConnectionUseCaseTrustsTheGivenCertificateOnEveryRequest() = runTest {
+        turbineScope {
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V4, fingerprint) } returns ConnectionFailure.NotGlances
+            coEvery { client.fetchStatus(address, GlancesApiVersion.V3, fingerprint) } returns null
+            coEvery { client.verifyAccess(address, GlancesApiVersion.V3, credentials, fingerprint) } returns null
+
+            val eventTurbine = useCase(address, credentials, existingProfileId = null, fingerprint).testIn(this)
+            runCurrent()
+
+            assertEquals(Event.Succeeded(GlancesApiVersion.V3), eventTurbine.awaitItemsUntilComplete().last())
+            coVerifySequence {
+                client.fetchStatus(address, GlancesApiVersion.V4, fingerprint)
+                client.fetchStatus(address, GlancesApiVersion.V3, fingerprint)
+                client.verifyAccess(address, GlancesApiVersion.V3, credentials, fingerprint)
+            }
+        }
+    }
+
+    @Test
     fun testConnectionUseCaseFailsDetectGlancesWhenNeitherVersionAnswers() = runTest {
         turbineScope {
             coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns ConnectionFailure.NotGlances
             coEvery { client.fetchStatus(address, GlancesApiVersion.V3, null) } returns ConnectionFailure.NotGlances
 
-            val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
+            val eventTurbine = useCase(address, credentials = null, existingProfileId = null, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(
@@ -147,7 +169,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns ConnectionFailure.NotGlances
             coEvery { client.fetchStatus(address, GlancesApiVersion.V3, null) } returns ConnectionFailure.Timeout
 
-            val eventTurbine = useCase(address, credentials = null, existingProfileId = null).testIn(this)
+            val eventTurbine = useCase(address, credentials = null, existingProfileId = null, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(
@@ -167,7 +189,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials, null) } returns
                 ConnectionFailure.Unauthorized
 
-            val eventTurbine = useCase(address, credentials, existingProfileId = null).testIn(this)
+            val eventTurbine = useCase(address, credentials, existingProfileId = null, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(
@@ -186,7 +208,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
             coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials, null) } returns null
 
-            val eventTurbine = useCase(address, credentials, existingProfileId).testIn(this)
+            val eventTurbine = useCase(address, credentials, existingProfileId, trustedCertificate = null).testIn(this)
             runCurrent()
 
             eventTurbine.awaitItemsUntilComplete()
@@ -202,7 +224,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { secretStore.get(existingProfileId) } returns "stored"
             coEvery { client.verifyAccess(address, GlancesApiVersion.V4, credentials.copy(password = "stored"), null) } returns null
 
-            val eventTurbine = useCase(address, credentials.copy(password = ""), existingProfileId).testIn(this)
+            val eventTurbine = useCase(address, credentials.copy(password = ""), existingProfileId, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(
@@ -219,7 +241,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
             coEvery { secretStore.get(existingProfileId) } returns null
 
-            val eventTurbine = useCase(address, credentials.copy(password = ""), existingProfileId).testIn(this)
+            val eventTurbine = useCase(address, credentials.copy(password = ""), existingProfileId, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(
@@ -241,7 +263,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { secretStore.get(existingProfileId) } returns ""
             coEvery { client.verifyAccess(address, GlancesApiVersion.V4, emptyPassword, null) } returns null
 
-            val eventTurbine = useCase(address, emptyPassword, existingProfileId).testIn(this)
+            val eventTurbine = useCase(address, emptyPassword, existingProfileId, trustedCertificate = null).testIn(this)
             runCurrent()
 
             assertEquals(Event.Succeeded(GlancesApiVersion.V4), eventTurbine.awaitItemsUntilComplete().last())
@@ -255,7 +277,7 @@ class TestConnectionUseCaseImplTest {
             coEvery { client.fetchStatus(address, GlancesApiVersion.V4, null) } returns null
             coEvery { client.verifyAccess(address, GlancesApiVersion.V4, emptyPassword, null) } returns null
 
-            val eventTurbine = useCase(address, emptyPassword, existingProfileId = null).testIn(this)
+            val eventTurbine = useCase(address, emptyPassword, existingProfileId = null, trustedCertificate = null).testIn(this)
             runCurrent()
 
             eventTurbine.awaitItemsUntilComplete()
@@ -265,6 +287,8 @@ class TestConnectionUseCaseImplTest {
 
     companion object {
         private val address = ServerAddress(ServerProtocol.Http, "nas.local", 61208)
+        private val fingerprint = CertificateFingerprint.parse("ab".repeat(32))!!
+        private val certificate = ServerCertificate(fingerprint, "CN=nas.local", "CN=nas.local", Instant.fromEpochSeconds(0))
         private val credentials = ServerCredentials(username = "glances", password = "typed")
         private val existingProfileId = ServerProfileId("existing")
 
@@ -273,6 +297,8 @@ class TestConnectionUseCaseImplTest {
             ConnectionFailure.ConnectionRefused,
             ConnectionFailure.Timeout,
             ConnectionFailure.TlsError,
+            ConnectionFailure.UntrustedCertificate(certificate),
+            ConnectionFailure.CertificateChanged(certificate),
         )
 
         private val reachHostPassed = listOf(

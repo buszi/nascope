@@ -9,6 +9,7 @@ import io.buszi.nascope.domain.connection.SaveServerProfileUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase.Event
 import io.buszi.nascope.domain.connection.ValidateServerInputUseCase
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
 import io.buszi.nascope.domain.model.connection.ServerAuth
@@ -56,6 +57,9 @@ class ConnectionEditorViewModel(
     val viewState: StateFlow<ViewState> = mutableViewState.asStateFlow()
 
     private var editedProfileId: ServerProfileId? = profileId?.let(::ServerProfileId)
+
+    /** The certificate the profile trusts, valid only for the address it was trusted for. */
+    private var trustedCertificate: TrustedCertificate? = null
     private var testJob: Job? = null
     private val editedFields = mutableSetOf<Field>()
     private var submitted = false
@@ -88,6 +92,7 @@ class ConnectionEditorViewModel(
             }
             val auth = profile.auth
             val passwordMissing = isPasswordMissing(profile)
+            trustedCertificate = profile.trustedCertificate?.let { TrustedCertificate(profile.address, it) }
             mutableViewState.update {
                 it.copy(
                     isLoading = false,
@@ -132,7 +137,7 @@ class ConnectionEditorViewModel(
         testJob = viewModelScope.launch {
             val address = ServerAddress(state.protocol.toDomain(), state.host.trim(), state.port.trim().toInt())
             val credentials = if (state.authEnabled) ServerCredentials(state.username.trim(), state.password) else null
-            testConnection(address, credentials, editedProfileId).collect(::onTestEvent)
+            testConnection(address, credentials, editedProfileId, trustedCertificateFor(address)).collect(::onTestEvent)
         }
     }
 
@@ -166,12 +171,14 @@ class ConnectionEditorViewModel(
         mutableViewState.update { it.copy(phase = Phase.Saving) }
 
         val id = editedProfileId ?: ServerProfileId(Uuid.random().toString())
+        val address = ServerAddress(state.protocol.toDomain(), state.host.trim(), state.port.trim().toInt())
         val profile = ServerProfile(
             id = id,
             alias = state.alias.trim(),
-            address = ServerAddress(state.protocol.toDomain(), state.host.trim(), state.port.trim().toInt()),
+            address = address,
             apiVersion = apiVersion,
             auth = if (state.authEnabled) ServerAuth.Basic(state.username.trim()) else ServerAuth.None,
+            trustedCertificate = trustedCertificateFor(address),
         )
         // On an existing profile an empty password keeps the stored secret, a typed one replaces it. A new profile
         // stores even an empty one, so that "no secret stored" always means the password is missing.
@@ -188,6 +195,15 @@ class ConnectionEditorViewModel(
             )
         }
     }
+
+    /**
+     * The trusted certificate belongs to one protocol, host and port: once any of them is edited it no longer
+     * applies (and applies again when the edit is undone).
+     */
+    private fun trustedCertificateFor(address: ServerAddress): CertificateFingerprint? =
+        trustedCertificate?.takeIf { it.address == address }?.fingerprint
+
+    private data class TrustedCertificate(val address: ServerAddress, val fingerprint: CertificateFingerprint)
 
     private fun updateCheck(step: TestConnectionUseCase.Step, change: (ConnectionCheckUi) -> ConnectionCheckUi) {
         val stepUi = ConnectionCheckStepUi.from(step)

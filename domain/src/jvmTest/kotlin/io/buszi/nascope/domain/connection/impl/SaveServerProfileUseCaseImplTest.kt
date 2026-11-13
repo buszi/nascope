@@ -1,6 +1,7 @@
 package io.buszi.nascope.domain.connection.impl
 
 import io.buszi.nascope.domain.connection.SaveServerProfileUseCase.Result
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
 import io.buszi.nascope.domain.model.connection.ServerAuth
@@ -146,7 +147,35 @@ class SaveServerProfileUseCaseImplTest {
         assertEquals(Result(secretPersisted = false), result)
     }
 
+    @Test
+    fun saveServerProfileUseCaseKeepsTheTrustedCertificateOfAnHttpsProfile() = runTest {
+        val pinned = openProfile.copy(
+            address = openProfile.address.copy(protocol = ServerProtocol.Https),
+            trustedCertificate = fingerprint,
+        )
+        every { profileStore.profiles } returns MutableStateFlow(listOf(pinned))
+        coEvery { secretStore.remove(pinned.id) } just runs
+        coEvery { profileStore.upsert(any()) } just runs
+
+        useCase(pinned, password = null)
+
+        coVerify { profileStore.upsert(pinned) }
+    }
+
+    @Test
+    fun saveServerProfileUseCaseDropsTheTrustedCertificateOfAnHttpProfile() = runTest {
+        val pinned = openProfile.copy(trustedCertificate = fingerprint)
+        every { profileStore.profiles } returns MutableStateFlow(listOf(pinned))
+        coEvery { secretStore.remove(pinned.id) } just runs
+        coEvery { profileStore.upsert(any()) } just runs
+
+        useCase(pinned, password = null)
+
+        coVerify { profileStore.upsert(openProfile) }
+    }
+
     companion object {
+        private val fingerprint = CertificateFingerprint.parse("ab".repeat(32))!!
         private val openProfile = ServerProfile(
             id = ServerProfileId("alpha"),
             alias = "Alpha",
