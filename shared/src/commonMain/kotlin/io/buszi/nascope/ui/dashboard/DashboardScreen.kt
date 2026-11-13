@@ -1,5 +1,8 @@
 package io.buszi.nascope.ui.dashboard
 
+import io.buszi.nascope.ui.dashboard.widgets.LocalOpenActiveServerEditor
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -44,6 +47,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
     selectedBrickId: DashboardBrickId? = null,
     onOpenDetails: (DashboardBrickId) -> Unit = {},
+    onEditServer: (profileId: String) -> Unit = {},
 ) {
     val viewModel = koinViewModel<DashboardViewModel>()
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
@@ -53,6 +57,7 @@ fun DashboardScreen(
         modifier = modifier,
         selectedBrickId = selectedBrickId,
         onOpenDetails = onOpenDetails,
+        onEditServer = onEditServer,
         onViewAction = viewModel::onViewAction,
     )
 }
@@ -63,28 +68,35 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
     selectedBrickId: DashboardBrickId? = null,
     onOpenDetails: (DashboardBrickId) -> Unit = {},
+    onEditServer: (profileId: String) -> Unit = {},
     onViewAction: (ViewAction) -> Unit = {},
 ) {
-    AdaptiveDashboardGrid(
-        bricks = viewState.bricks,
-        modifier = modifier
-            .fillMaxSize()
-            .background(AppTheme.colors.canvasBackground),
-        selectedBrickId = selectedBrickId,
-        onOpenDetails = onOpenDetails,
-        header = {
-            DashboardHeader(
-                nodeName = if (viewState.sessionStatus == SessionStatusUi.Demo) {
-                    stringResource(Res.string.dashboard_header_demo_node)
-                } else {
-                    viewState.nodeName
-                },
-                status = viewState.sessionStatus,
-                alertBadge = viewState.alertBadge,
-                onRefresh = { onViewAction(ViewAction.OnRefresh) },
-            )
-        },
-    )
+    // Bricks that fail on a missing password or an untrusted certificate offer to open the server's editor.
+    val openEditor = remember(viewState.activeProfileId, onEditServer) {
+        viewState.activeProfileId?.let { id -> { onEditServer(id) } }
+    }
+    CompositionLocalProvider(LocalOpenActiveServerEditor provides openEditor) {
+        AdaptiveDashboardGrid(
+            bricks = viewState.bricks,
+            modifier = modifier
+                .fillMaxSize()
+                .background(AppTheme.colors.canvasBackground),
+            selectedBrickId = selectedBrickId,
+            onOpenDetails = onOpenDetails,
+            header = {
+                DashboardHeader(
+                    nodeName = if (viewState.sessionStatus == SessionStatusUi.Demo) {
+                        stringResource(Res.string.dashboard_header_demo_node)
+                    } else {
+                        viewState.nodeName
+                    },
+                    status = viewState.sessionStatus,
+                    alertBadge = viewState.alertBadge,
+                    onRefresh = { onViewAction(ViewAction.OnRefresh) },
+                )
+            },
+        )
+    }
 }
 
 @Composable

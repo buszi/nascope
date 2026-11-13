@@ -168,6 +168,7 @@ class DashboardViewModelTest {
 
             val states = viewStateTurbine.cancelAndConsumeItems()
             assertEquals("Alpha", states.last().nodeName)
+            assertEquals(profile.id.value, states.last().activeProfileId)
             assertEquals(
                 listOf(
                     SessionStatusUi.None,
@@ -190,6 +191,7 @@ class DashboardViewModelTest {
 
             val last = viewStateTurbine.cancelAndConsumeItems().last()
             assertEquals("", last.nodeName)
+            assertEquals(null, last.activeProfileId)
             assertEquals(SessionStatusUi.Demo, last.sessionStatus)
         }
     }

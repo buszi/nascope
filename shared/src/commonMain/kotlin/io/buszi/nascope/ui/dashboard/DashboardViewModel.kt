@@ -51,10 +51,10 @@ class DashboardViewModel(
 
     init {
         combine(observeSession(), observeConnectionStatus()) { session, status ->
-            val alias = (session as? Session.Connected)?.profile?.alias.orEmpty()
-            alias to SessionStatusUi.from(session, status)
-        }.onEach { (alias, status) ->
-            mutableViewState.update { it.copy(nodeName = alias, sessionStatus = status) }
+            val profile = (session as? Session.Connected)?.profile
+            Triple(profile?.id?.value, profile?.alias.orEmpty(), SessionStatusUi.from(session, status))
+        }.onEach { (profileId, alias, status) ->
+            mutableViewState.update { it.copy(activeProfileId = profileId, nodeName = alias, sessionStatus = status) }
         }.launchIn(viewModelScope)
 
         // Unknown plugins (loading, failed, server switched) show every brick; see `visibleWith`.
@@ -80,6 +80,8 @@ class DashboardViewModel(
     @Stable
     data class ViewState(
         val bricks: List<DashboardBrick> = emptyList(),
+        /** The active server's profile id, for opening its editor; `null` in demo mode and without a server. */
+        val activeProfileId: String? = null,
         /** The active server's alias; empty in demo mode and without a server. */
         val nodeName: String = "",
         val sessionStatus: SessionStatusUi = SessionStatusUi.None,

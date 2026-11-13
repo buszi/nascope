@@ -80,7 +80,11 @@ fun NascopeAppScaffold(
         selectedBrickId: DashboardBrickId?,
         onOpenDetails: (DashboardBrickId) -> Unit,
     ) -> Unit = { selectedBrickId, onOpenDetails ->
-        DashboardScreen(selectedBrickId = selectedBrickId, onOpenDetails = onOpenDetails)
+        DashboardScreen(
+            selectedBrickId = selectedBrickId,
+            onOpenDetails = onOpenDetails,
+            onEditServer = navigator::navigateToConnectionEditor,
+        )
     },
 ) {
     // Keyboard shortcuts (Escape) only reach this scaffold while it is in the focus path. A text field that

@@ -1,5 +1,9 @@
 package io.buszi.nascope.ui.dashboard.widgets
 
+import io.buszi.nascope.ui.common.testing.TestTags
+import androidx.compose.ui.platform.testTag
+import io.buszi.nascope.resources.nodes_action_review_certificate
+import io.buszi.nascope.resources.nodes_action_enter_password
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -266,6 +270,7 @@ fun DashboardWidget(
                     WidgetOfflineState(
                         reason = state.reason,
                         onReconnect = state.onReconnect,
+                        action = state.action,
                     )
                 }
             }
@@ -354,6 +359,7 @@ private fun WidgetErrorState(
 private fun WidgetOfflineState(
     reason: Message,
     onReconnect: (() -> Unit)?,
+    action: OfflineActionUi,
 ) {
     Column(
         modifier = Modifier
@@ -383,12 +389,31 @@ private fun WidgetOfflineState(
             style = AppTheme.typography.codeBase,
             color = AppTheme.colors.textPrimary,
         )
-        if (onReconnect != null) {
-            Spacer(modifier = Modifier.height(AppTheme.spacing.space2xs))
-            SecondaryButton(
-                text = "Reconnect Daemon",
-                onClick = onReconnect,
-            )
+        val openEditor = LocalOpenActiveServerEditor.current
+        when (action) {
+            OfflineActionUi.Reconnect -> if (onReconnect != null) {
+                Spacer(modifier = Modifier.height(AppTheme.spacing.space2xs))
+                SecondaryButton(
+                    text = "Reconnect Daemon",
+                    onClick = onReconnect,
+                )
+            }
+
+            // Retrying cannot help here: the fix is in the server's editor (no button without a server to edit).
+            OfflineActionUi.EnterPassword, OfflineActionUi.ReviewCertificate -> if (openEditor != null) {
+                Spacer(modifier = Modifier.height(AppTheme.spacing.space2xs))
+                SecondaryButton(
+                    text = stringResource(
+                        if (action == OfflineActionUi.EnterPassword) {
+                            Res.string.nodes_action_enter_password
+                        } else {
+                            Res.string.nodes_action_review_certificate
+                        },
+                    ),
+                    onClick = openEditor,
+                    modifier = Modifier.testTag(TestTags.WidgetOpenServerEditor),
+                )
+            }
         }
     }
 }

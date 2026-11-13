@@ -1,6 +1,8 @@
 package io.buszi.nascope.ui.dashboard.widgets
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.compositionLocalOf
+import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.domain.model.telemetry.TelemetryState
 import io.buszi.nascope.resources.Res
@@ -63,10 +65,12 @@ sealed interface WidgetState {
      *
      * @param reason Structured message explaining the offline condition.
      * @param onReconnect Optional callback to attempt reconnecting.
+     * @param action What the widget offers: retrying ([onReconnect]), or fixing the server's profile in the editor.
      */
     data class Offline(
         val reason: Message = Message.plain("Host unreachable"),
         val onReconnect: (() -> Unit)? = null,
+        val action: OfflineActionUi = OfflineActionUi.Reconnect,
     ) : WidgetState {
         constructor(reason: String, onReconnect: (() -> Unit)? = null) : this(
             reason = Message.plain(reason),
@@ -83,7 +87,7 @@ sealed interface WidgetState {
  * | `Loading` | `Loading` |
  * | `Ready(isStale = false)` / `Ready(isStale = true)` | `Ready` / `Stale` |
  * | `Failed(PluginUnavailable)` | `Unavailable` |
- * | `Failed(Connection)` | `Offline` with the connection failure message |
+ * | `Failed(Connection)` | `Offline` with the connection failure message and the action that fixes it |
  * | `Failed(InvalidResponse)` | `Error` |
  *
  * @param onRetry Re-triggers the telemetry fetch from the Offline / Error states.
@@ -96,6 +100,7 @@ fun TelemetryState<*>.toWidgetState(onRetry: () -> Unit): WidgetState = when (th
         is TelemetryFailure.Connection -> WidgetState.Offline(
             reason = Message.resource(ConnectionFailureUi.from(failure.failure).messageRes),
             onReconnect = onRetry,
+            action = OfflineActionUi.from(failure.failure),
         )
         is TelemetryFailure.InvalidResponse -> WidgetState.Error(
             message = Message.resource(Res.string.widget_state_invalid_response),
@@ -103,3 +108,28 @@ fun TelemetryState<*>.toWidgetState(onRetry: () -> Unit): WidgetState = when (th
         )
     }
 }
+
+/**
+ * What an offline widget offers. Retrying cannot fix a missing password or an untrusted certificate: those are
+ * fixed in the active server's editor, opened through [LocalOpenActiveServerEditor].
+ */
+enum class OfflineActionUi {
+    Reconnect,
+    EnterPassword,
+    ReviewCertificate,
+    ;
+
+    companion object {
+        fun from(data: ConnectionFailure): OfflineActionUi = when (data) {
+            ConnectionFailure.PasswordMissing -> EnterPassword
+            is ConnectionFailure.UntrustedCertificate, is ConnectionFailure.CertificateChanged -> ReviewCertificate
+            else -> Reconnect
+        }
+    }
+}
+
+/**
+ * Opens the connection editor for the active server; provided by the dashboard, `null` where there is no
+ * server to edit (demo mode, previews), in which case the editor actions are not offered.
+ */
+val LocalOpenActiveServerEditor = compositionLocalOf<(() -> Unit)?> { null }

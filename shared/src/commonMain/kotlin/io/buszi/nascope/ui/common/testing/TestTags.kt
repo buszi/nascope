@@ -26,6 +26,9 @@ object TestTags {
     const val WelcomeConnect: String = "welcome_connect"
     const val WelcomeDemo: String = "welcome_demo"
 
+    // Dashboard widgets
+    const val WidgetOpenServerEditor: String = "widget_open_server_editor"
+
     // Nodes
     const val NodesScreen: String = "nodes_screen"
     const val NodesAdd: String = "nodes_add"

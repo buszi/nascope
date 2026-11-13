@@ -1,6 +1,8 @@
 package io.buszi.nascope.ui.dashboard.widgets
 
+import io.buszi.nascope.domain.model.connection.CertificateFingerprint
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
+import io.buszi.nascope.domain.model.connection.ServerCertificate
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
 import io.buszi.nascope.domain.model.telemetry.TelemetryState
 import kotlin.test.Test
@@ -8,6 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class WidgetStateMappingTest {
 
@@ -47,6 +50,22 @@ class WidgetStateMappingTest {
         assertIs<WidgetState.Offline>(state)
         state.onReconnect!!.invoke()
         assertEquals(1, retried)
+    }
+
+    @Test
+    fun connectionFailuresOfferTheActionThatFixesThem() {
+        val certificate = ServerCertificate(
+            CertificateFingerprint.parse("ab".repeat(32))!!, "CN=nas", "CN=nas", Instant.fromEpochSeconds(0),
+        )
+        fun actionFor(failure: ConnectionFailure) =
+            assertIs<WidgetState.Offline>(TelemetryState.Failed(TelemetryFailure.Connection(failure)).toWidgetState {}).action
+
+        assertEquals(OfflineActionUi.Reconnect, actionFor(ConnectionFailure.Timeout))
+        assertEquals(OfflineActionUi.Reconnect, actionFor(ConnectionFailure.Unauthorized))
+        assertEquals(OfflineActionUi.Reconnect, actionFor(ConnectionFailure.TlsError))
+        assertEquals(OfflineActionUi.EnterPassword, actionFor(ConnectionFailure.PasswordMissing))
+        assertEquals(OfflineActionUi.ReviewCertificate, actionFor(ConnectionFailure.UntrustedCertificate(certificate)))
+        assertEquals(OfflineActionUi.ReviewCertificate, actionFor(ConnectionFailure.CertificateChanged(certificate)))
     }
 
     @Test
