@@ -4,6 +4,10 @@ All notable changes to Nascope. The format follows [Keep a Changelog](https://ke
 
 ## [Unreleased]
 
+### Added
+
+- Trust a server's own certificate: when an HTTPS server's certificate is not trusted (self-signed, private authority, expired), the connection test shows its fingerprint, subject, issuer and expiry and asks whether to trust it, for that server's address only. A certificate that later changes is reported ("UNTRUSTED CERT") and asked about again, never accepted silently.
+
 ### Changed
 
 - A server whose password is not stored on this device (restored from a backup, moved to another device, cleared keyring) now shows "NO PASSWORD" instead of "unauthorized"; the node card offers "Enter password" and the editor opens with the password field focused.
