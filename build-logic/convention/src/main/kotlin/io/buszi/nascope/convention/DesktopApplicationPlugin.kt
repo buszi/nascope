@@ -113,6 +113,16 @@ class DesktopApplicationPlugin : Plugin<Project> {
         // run, so the package is completed after jpackage instead of through its templates.
         val debPackaging = layout.projectDirectory.dir("packaging/linux")
         tasks.withType(AbstractJPackageTask::class.java).configureEach {
+            if (targetFormat == TargetFormat.Msi) {
+                // The links of the "Installed apps" / "Programs and Features" entry; the DSL has no setting for them.
+                // Free arguments reach jpackage through an argument file unquoted, where "#" starts a comment, so the
+                // values are quoted the way the plugin quotes its own.
+                freeArgs.addAll(
+                    "--about-url", "\"$HOMEPAGE\"",
+                    "--win-help-url", "\"$HOMEPAGE#what-you-need\"",
+                    "--win-update-url", "\"$HOMEPAGE/releases/latest\"",
+                )
+            }
             if (targetFormat == TargetFormat.Deb) {
                 inputs.dir(debPackaging).withPropertyName("debPackaging")
                 val finishDeb = debPackaging.file("finish-deb.sh").asFile

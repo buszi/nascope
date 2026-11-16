@@ -64,10 +64,10 @@ Download `Nascope-<version>.msi` and run it. It installs for your user only, wit
 
 ### Linux (Debian, Ubuntu and derivatives, amd64)
 
-Download `nascope_<version>-1_amd64.deb` and install it with apt, which also pulls in what it needs:
+Download `nascope_<version>_amd64.deb` and install it with apt, which also pulls in what it needs:
 
 ```sh
-sudo apt install ./nascope_<version>-1_amd64.deb
+sudo apt install ./nascope_<version>_amd64.deb
 ```
 
 **Nascope** then appears in the application menu; `sudo apt remove nascope` removes it. Passwords are stored through the Secret Service (GNOME Keyring, KWallet); without one, a password lasts for the session only and the editor says so.
