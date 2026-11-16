@@ -42,6 +42,11 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      # The release notes are the version's CHANGELOG.md section (publish job); a missing one fails here, before the
+      # expensive desktop runners start.
+      - name: Check the changelog
+        run: .github/scripts/changelog-section.sh "${{ steps.version.outputs.version }}" > /dev/null
+
       - uses: actions/setup-java@v4
         with:
           distribution: zulu
@@ -171,6 +176,17 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Only what the notes need, not the whole repository.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            CHANGELOG.md
+            .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Release notes
+        run: .github/scripts/changelog-section.sh "${{ needs.android.outputs.version }}" > "$RUNNER_TEMP/notes.md"
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -187,9 +203,12 @@ jobs:
         run: |
           FLAGS=""
           case "$GITHUB_REF_NAME" in *-*) FLAGS="--prerelease" ;; esac
+          # The changelog section, then GitHub's generated notes: with direct commits to main (no pull requests) these
+          # are only the "Full Changelog" compare link.
           gh release create "$GITHUB_REF_NAME" dist/* \
             --repo "$GITHUB_REPOSITORY" \
             --title "Nascope ${GITHUB_REF_NAME#v}" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
             --generate-notes $FLAGS
 
   homebrew:

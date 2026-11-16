@@ -9,7 +9,7 @@ Everything in this file is the detail behind these steps. A release is a git tag
 **Before tagging**
 
 1. Decide the version (`MAJOR.MINOR.PATCH`) and set `app-version` in `gradle/libs.versions.toml`. The tag must be `v` plus exactly this version (`v1.0.1` for `1.0.1`); the workflow refuses anything else.
-2. Update `CHANGELOG.md`: move the entries under the new version with today's date, and keep "Known limitations" honest.
+2. Update `CHANGELOG.md`: move the entries under the new version with today's date, and keep "Known limitations" honest. That section becomes the release notes on GitHub; the workflow fails right at the start when the version has no section.
 3. Run the full verification locally: `./gradlew assemble :domain-model:jvmTest :storage:jvmTest :network:jvmTest :domain:jvmTest :shared:jvmTest`.
 4. If the UI or storage changed, do a device pass: the `nascope-qa` skill on the three emulators, and a packaged desktop build against a real server (the check list under "Desktop packages").
 5. Commit and push `main`, and wait for the `CI` workflow to be green **on that commit**. Tag only a commit that CI has passed.
@@ -141,7 +141,7 @@ On the machine of the package's OS, install it (macOS: copy `Nascope.app` out of
 Two workflows in `.github/workflows`:
 
 - **`ci.yml`** (pull requests and pushes to `main`, skipped for docs-only changes): `./gradlew assemble` and the module tests on one Ubuntu runner. A newer push cancels the older run.
-- **`release.yml`** (a pushed tag `vX.Y.Z`, or `vX.Y.Z-rc1` for a pre-release): 1. checks that the tag matches `app-version` (a `-rcN` suffix is allowed), runs the tests, builds and signs the APK on Ubuntu and checks that its certificate is the release key (the fingerprint is `EXPECTED_CERT_SHA256` in the workflow); 2. only then builds the desktop packages in parallel: the dmg on macOS, the msi on Windows, the deb on Linux (macOS and Windows minutes are the costly ones, so a failing test never starts those runners); 3. publishes a GitHub Release with the apk, the dmg, the msi, the deb and `SHA256SUMS` (over every file), with generated notes, as a pre-release when the tag has a suffix.
+- **`release.yml`** (a pushed tag `vX.Y.Z`, or `vX.Y.Z-rc1` for a pre-release): 1. checks that the tag matches `app-version` (a `-rcN` suffix is allowed), runs the tests, builds and signs the APK on Ubuntu and checks that its certificate is the release key (the fingerprint is `EXPECTED_CERT_SHA256` in the workflow); 2. only then builds the desktop packages in parallel: the dmg on macOS, the msi on Windows, the deb on Linux (macOS and Windows minutes are the costly ones, so a failing test never starts those runners); 3. publishes a GitHub Release with the apk, the dmg, the msi, the deb and `SHA256SUMS` (over every file), with the version's `CHANGELOG.md` section as the notes (`.github/scripts/changelog-section.sh`) followed by GitHub's generated "Full Changelog" link, as a pre-release when the tag has a suffix. GitHub's generated notes alone list merged pull requests only, which this repository does not use, so 1.0.0 and 1.1.0 were published with nothing but the link.
 
 ### Repository secrets (Settings, Secrets and variables, Actions)
 

@@ -16,7 +16,7 @@ All notable changes to Nascope. The format follows [Keep a Changelog](https://ke
 
 ### Added
 
-- **Windows and Linux packages:** `Nascope-<version>.msi` (x64, per-user install) and `nascope_<version>-1_amd64.deb`, built and released next to the dmg and the APK.
+- **Windows and Linux packages:** `Nascope-<version>.msi` (x64, per-user install) and `nascope_<version>_amd64.deb`, built and released next to the dmg and the APK.
 - Trust a server's own certificate: when an HTTPS server's certificate is not trusted (self-signed, private authority, expired), the connection test shows its fingerprint, subject, issuer and expiry and asks whether to trust it, for that server's address only. A certificate that later changes is reported ("UNTRUSTED CERT") and asked about again, never accepted silently.
 
 ### Changed
