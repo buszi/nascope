@@ -32,7 +32,7 @@ class BrickHeightTest {
 
     @Test
     fun allRegisteredBricksDeclareAValidHeight() {
-        BrickRegistry().getActiveBricks().forEach { brick ->
+        BrickRegistry().allBricks.forEach { brick ->
             val resolved = brick.height.resolve(unit, gutter)
             assert(resolved >= unit) { "${brick.id} resolves to $resolved" }
         }

@@ -1,5 +1,6 @@
 package io.buszi.nascope.ui.dashboard.framework
 
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -61,18 +62,50 @@ class BrickLayoutTest {
         assertEquals(listOf(2, 2), computeBrickSpans(listOf(adaptive, adaptive), 4))
     }
 
+    /** Lays out [bricks] in the given order and fails on a hole or a full-row brick that does not have its row. */
+    private fun assertLaidOutWithoutHoles(bricks: List<DashboardBrick>, columns: Int) {
+        val spans = computeBrickSpans(bricks.map { it.span }, columns)
+        assertEquals(bricks.size, spans.size)
+        assertNoGaps(spans, columns, "${bricks.map { it.id }} at $columns columns")
+        bricks.forEachIndexed { i, brick ->
+            if (brick.span == BrickSpan.FullRow) assertEquals(columns, spans[i], "${brick.id} has its own row")
+        }
+    }
+
     @Test
     fun theRegisteredBricksLeaveNoHoleInAnySubsetAtTwoThreeAndFourColumns() {
-        val bricks = BrickRegistry().getActiveBricks()
+        val bricks = BrickRegistry().allBricks
         for (columns in 2..4) {
             for (mask in 0 until (1 shl bricks.size)) {
-                val subset = bricks.filterIndexed { i, _ -> mask and (1 shl i) != 0 }
-                val spans = computeBrickSpans(subset.map { it.span }, columns)
-                assertEquals(subset.size, spans.size)
-                assertNoGaps(spans, columns, "${subset.map { it.id }} at $columns columns")
-                subset.forEachIndexed { i, brick ->
-                    if (brick.span == BrickSpan.FullRow) assertEquals(columns, spans[i], "${brick.id} has its own row")
-                }
+                assertLaidOutWithoutHoles(bricks.filterIndexed { i, _ -> mask and (1 shl i) != 0 }, columns)
+            }
+        }
+    }
+
+    @Test
+    fun theRegisteredBricksLeaveNoHoleInAnyOrderOfUpToFiveBricksAtTwoThreeAndFourColumns() {
+        // Every ordered choice of one to five of the registered bricks (36 100 for ten bricks).
+        val bricks = BrickRegistry().allBricks
+        for (columns in 2..4) {
+            fun walk(prefix: List<DashboardBrick>) {
+                if (prefix.isNotEmpty()) assertLaidOutWithoutHoles(prefix, columns)
+                if (prefix.size < 5) bricks.filterNot { it in prefix }.forEach { walk(prefix + it) }
+            }
+            walk(emptyList())
+        }
+    }
+
+    @Test
+    fun theRegisteredBricksLeaveNoHoleInRandomOrdersOfAllAndOfSomeAtTwoThreeAndFourColumns() {
+        // Every permutation of ten bricks is too many: seeded random orders of the full set and of random subsets.
+        val bricks = BrickRegistry().allBricks
+        val random = Random(seed = 72)
+        repeat(300) {
+            val all = bricks.shuffled(random)
+            val some = bricks.filter { random.nextBoolean() }.shuffled(random)
+            for (columns in 2..4) {
+                assertLaidOutWithoutHoles(all, columns)
+                assertLaidOutWithoutHoles(some, columns)
             }
         }
     }

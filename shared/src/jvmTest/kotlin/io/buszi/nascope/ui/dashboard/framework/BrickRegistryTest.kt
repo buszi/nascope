@@ -16,8 +16,8 @@ class BrickRegistryTest {
     }
 
     @Test
-    fun activeBricksHaveUniqueIds() {
-        val ids = registry.getActiveBricks().map { it.id }
+    fun registeredBricksHaveUniqueIds() {
+        val ids = registry.allBricks.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
     }
 }

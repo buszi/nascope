@@ -49,6 +49,7 @@ class TestTagsTest {
         assertEquals("nav_rail_status", TestTags.NavRailStatus)
         assertEquals("dashboard_status", TestTags.DashboardStatus)
         assertEquals("dashboard_refresh", TestTags.DashboardRefresh)
+        assertEquals("dashboard_empty", TestTags.DashboardEmpty)
     }
 
     @Test

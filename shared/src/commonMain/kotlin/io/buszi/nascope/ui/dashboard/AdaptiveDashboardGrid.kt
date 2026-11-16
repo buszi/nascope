@@ -47,6 +47,7 @@ import io.buszi.nascope.ui.dashboard.framework.computeBrickSpans
  * @param selectedBrickId Brick whose details are currently open, rendered with the open affordance.
  * @param onOpenDetails Invoked when a brick that has details is tapped.
  * @param header Optional full-width item placed above the bricks.
+ * @param emptyContent Optional full-width item placed below the header while [bricks] is empty.
  */
 @Composable
 fun AdaptiveDashboardGrid(
@@ -55,6 +56,7 @@ fun AdaptiveDashboardGrid(
     selectedBrickId: DashboardBrickId? = null,
     onOpenDetails: (DashboardBrickId) -> Unit = {},
     header: (@Composable () -> Unit)? = null,
+    emptyContent: (@Composable () -> Unit)? = null,
 ) {
     BoxWithConstraints(modifier = modifier) {
         val effectiveWidth = if (AppTheme.windowWidthClass != WindowWidthClass.Compact) {
@@ -96,6 +98,15 @@ fun AdaptiveDashboardGrid(
                     span = { GridItemSpan(maxLineSpan) },
                 ) {
                     header()
+                }
+            }
+
+            if (emptyContent != null && bricks.isEmpty()) {
+                item(
+                    key = "dashboard_empty",
+                    span = { GridItemSpan(maxLineSpan) },
+                ) {
+                    emptyContent()
                 }
             }
 

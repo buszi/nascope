@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
+import io.buszi.nascope.domain.dashboard.ObserveDashboardLayoutUseCase
 import io.buszi.nascope.domain.model.telemetry.TelemetryState
 import io.buszi.nascope.domain.telemetry.ObserveAlertsUseCase
 import io.buszi.nascope.domain.telemetry.ObserveAvailablePluginsUseCase
@@ -16,6 +17,8 @@ import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction.OnRefresh
 import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrick
+import io.buszi.nascope.ui.dashboard.framework.arrangedBy
+import io.buszi.nascope.ui.dashboard.framework.enabledIn
 import io.buszi.nascope.ui.dashboard.framework.visibleWith
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,8 +33,9 @@ import kotlinx.coroutines.flow.update
 import org.koin.core.annotation.KoinViewModel
 
 /**
- * The dashboard container knows the bricks the server can serve, the active server and its connection status. It does not own any
- * telemetry: every brick maps its own state.
+ * The dashboard container knows the bricks to show (the stored layout's order, minus the bricks turned off and those the
+ * server cannot serve), the active server and its connection status. It does not own any telemetry: every brick maps
+ * its own state.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
@@ -39,14 +43,13 @@ class DashboardViewModel(
     private val brickRegistry: BrickRegistry,
     private val observeSession: ObserveSessionUseCase,
     private val observeConnectionStatus: ObserveConnectionStatusUseCase,
+    private val observeDashboardLayout: ObserveDashboardLayoutUseCase,
     private val observeAvailablePlugins: ObserveAvailablePluginsUseCase,
     private val observeAlerts: ObserveAlertsUseCase,
     private val refreshTelemetry: RefreshTelemetryUseCase,
 ) : ViewModel() {
 
-    private val mutableViewState = MutableStateFlow(
-        ViewState(bricks = brickRegistry.getActiveBricks()),
-    )
+    private val mutableViewState = MutableStateFlow(ViewState())
     val viewState: StateFlow<ViewState> = mutableViewState.asStateFlow()
 
     init {
@@ -57,12 +60,16 @@ class DashboardViewModel(
             mutableViewState.update { it.copy(activeProfileId = profileId, nodeName = alias, sessionStatus = status) }
         }.launchIn(viewModelScope)
 
-        // Unknown plugins (loading, failed, server switched) show every brick; see `visibleWith`.
-        observeAvailablePlugins().onEach { plugins ->
-            mutableViewState.update { it.copy(bricks = brickRegistry.getActiveBricks().visibleWith(plugins)) }
+        // Shown = registered, turned on and available, in the layout's order. Unknown plugins (loading, failed,
+        // server switched) show every brick that is on; see `visibleWith`.
+        combine(observeDashboardLayout(), observeAvailablePlugins()) { layout, plugins ->
+            brickRegistry.allBricks.arrangedBy(layout).enabledIn(layout).visibleWith(plugins)
+        }.onEach { bricks ->
+            mutableViewState.update { it.copy(bricks = bricks) }
         }.launchIn(viewModelScope)
 
-        // The badge needs the alert plugin, so it is only polled once the server is known to run it.
+        // The badge needs the alert plugin, so it is only polled once the server is known to run it. It does not
+        // depend on the Alerts brick: the chip stays when the brick is turned off.
         observeAvailablePlugins()
             .flatMapLatest { plugins -> if (plugins?.contains(AlertPlugin) == true) observeAlerts() else flowOf(null) }
             .onEach { state ->
@@ -79,7 +86,11 @@ class DashboardViewModel(
 
     @Stable
     data class ViewState(
-        val bricks: List<DashboardBrick> = emptyList(),
+        /**
+         * The bricks to show, in order; `null` until the stored layout has been read, so the default layout never
+         * flashes before a custom one. Empty when every brick is turned off or none is left after availability.
+         */
+        val bricks: List<DashboardBrick>? = null,
         /** The active server's profile id, for opening its editor; `null` in demo mode and without a server. */
         val activeProfileId: String? = null,
         /** The active server's alias; empty in demo mode and without a server. */

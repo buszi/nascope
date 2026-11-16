@@ -20,6 +20,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.dashboard_empty_body
+import io.buszi.nascope.resources.dashboard_empty_title
 import io.buszi.nascope.resources.dashboard_header_demo_node
 import io.buszi.nascope.resources.dashboard_header_alerts
 import io.buszi.nascope.resources.dashboard_header_label
@@ -28,6 +30,7 @@ import io.buszi.nascope.resources.nav_mode_demo
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.TagChip
 import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
+import io.buszi.nascope.ui.common.components.containers.TelemetryCard
 import io.buszi.nascope.ui.common.model.ConnectionStatusUi
 import io.buszi.nascope.ui.common.components.badges.StatusLevel
 import io.buszi.nascope.ui.common.model.AlertBadgeUi
@@ -76,8 +79,9 @@ fun DashboardScreen(
         viewState.activeProfileId?.let { id -> { onEditServer(id) } }
     }
     CompositionLocalProvider(LocalOpenActiveServerEditor provides openEditor) {
+        // `null` bricks: the layout is still being read (a few milliseconds), so nothing is shown below the header.
         AdaptiveDashboardGrid(
-            bricks = viewState.bricks,
+            bricks = viewState.bricks.orEmpty(),
             modifier = modifier
                 .fillMaxSize()
                 .background(AppTheme.colors.canvasBackground),
@@ -94,6 +98,11 @@ fun DashboardScreen(
                     alertBadge = viewState.alertBadge,
                     onRefresh = { onViewAction(ViewAction.OnRefresh) },
                 )
+            },
+            emptyContent = if (viewState.bricks?.isEmpty() == true) {
+                { DashboardEmptyState() }
+            } else {
+                null
             },
         )
     }
@@ -156,6 +165,23 @@ private fun DashboardHeader(
                 modifier = Modifier.testTag(TestTags.DashboardRefresh),
             )
         }
+    }
+}
+
+/** Shown when no brick is left: every brick is turned off, or the server offers none of those that are on. */
+@Composable
+private fun DashboardEmptyState(modifier: Modifier = Modifier) {
+    TelemetryCard(
+        title = stringResource(Res.string.dashboard_empty_title),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(TestTags.DashboardEmpty),
+    ) {
+        Text(
+            text = stringResource(Res.string.dashboard_empty_body),
+            style = AppTheme.typography.bodyMd,
+            color = AppTheme.colors.textSecondary,
+        )
     }
 }
 

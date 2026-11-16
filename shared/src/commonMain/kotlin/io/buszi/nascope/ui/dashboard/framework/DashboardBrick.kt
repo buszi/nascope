@@ -7,21 +7,25 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
+import io.buszi.nascope.domain.model.dashboard.DashboardBrickKey
 
 /**
  * Unique identifiers for all modular dashboard telemetry bricks.
+ *
+ * @property key The brick's name in the stored [io.buszi.nascope.domain.model.dashboard.DashboardLayout]. It is
+ * explicit and must never change (renaming an entry keeps the key), or users lose that brick's place and switch.
  */
-enum class DashboardBrickId {
-    SystemOverview,
-    CpuMatrix,
-    Gpu,
-    Alerts,
-    MemorySwap,
-    StoragePools,
-    NetworkIo,
-    SensorsThermals,
-    Containers,
-    ProcessList,
+enum class DashboardBrickId(val key: DashboardBrickKey) {
+    SystemOverview(DashboardBrickKey("system")),
+    CpuMatrix(DashboardBrickKey("cpu")),
+    Gpu(DashboardBrickKey("gpu")),
+    Alerts(DashboardBrickKey("alerts")),
+    MemorySwap(DashboardBrickKey("memory")),
+    StoragePools(DashboardBrickKey("storage")),
+    NetworkIo(DashboardBrickKey("network")),
+    SensorsThermals(DashboardBrickKey("sensors")),
+    Containers(DashboardBrickKey("containers")),
+    ProcessList(DashboardBrickKey("processes")),
 }
 
 /**
@@ -124,6 +128,9 @@ fun interface BrickDetails {
 @Stable
 interface DashboardBrick {
     val id: DashboardBrickId
+
+    /** The brick's stable key in the stored dashboard layout. */
+    val key: DashboardBrickKey get() = id.key
     val span: BrickSpan
     val height: BrickHeight get() = BrickHeight.OneUnit
     val details: BrickDetails? get() = null

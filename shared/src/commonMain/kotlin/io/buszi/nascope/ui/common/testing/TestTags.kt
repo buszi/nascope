@@ -72,6 +72,7 @@ object TestTags {
     const val DashboardStatus: String = "dashboard_status"
     const val DashboardRefresh: String = "dashboard_refresh"
     const val DashboardAlerts: String = "dashboard_alerts"
+    const val DashboardEmpty: String = "dashboard_empty"
     fun brick(id: DashboardBrickId): String = "brick_${id.name.snake()}"
 
     // Shared details frame

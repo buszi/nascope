@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 
 class BrickVisibilityTest {
 
-    private val bricks = BrickRegistry().getActiveBricks()
+    private val bricks = BrickRegistry().allBricks
 
     @Test
     fun everyBrickIsShownWhilePluginsAreUnknown() {

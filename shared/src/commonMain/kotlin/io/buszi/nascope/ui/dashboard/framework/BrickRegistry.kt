@@ -1,5 +1,6 @@
 package io.buszi.nascope.ui.dashboard.framework
 
+import io.buszi.nascope.domain.model.dashboard.DashboardLayout
 import io.buszi.nascope.ui.dashboard.widgets.alerts.AlertsBrick
 import io.buszi.nascope.ui.dashboard.widgets.containers.ContainersBrick
 import io.buszi.nascope.ui.dashboard.widgets.cpu.CpuMatrixBrick
@@ -13,14 +14,17 @@ import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewBrick
 import org.koin.core.annotation.Single
 
 /**
- * Registry providing the set of available and active dashboard bricks.
+ * Every dashboard brick this app version has.
  *
- * For now, this acts as a mock provider supplying the active list of bricks.
- * In later milestones, this will integrate with user-configured layout persistence.
+ * The list order is the default dashboard order: it is what [DashboardLayout.Default] shows, and where a brick the
+ * stored layout does not know yet is placed (see [arrangedBy]). Which bricks are shown, and in what order, is decided
+ * by `DashboardViewModel` from the stored layout and the server's plugins.
  */
 @Single
 class BrickRegistry {
-    private val bricks: List<DashboardBrick> = listOf(
+
+    /** Every registered brick, in the default order. */
+    val allBricks: List<DashboardBrick> = listOf(
         SystemOverviewBrick,
         AlertsBrick,
         CpuMatrixBrick,
@@ -33,8 +37,6 @@ class BrickRegistry {
         ProcessListBrick,
     )
 
-    fun getActiveBricks(): List<DashboardBrick> = bricks
-
-    /** Returns the brick registered under [id], or `null` if it is not available. */
-    fun findBrick(id: DashboardBrickId): DashboardBrick? = bricks.firstOrNull { it.id == id }
+    /** Returns the brick registered under [id], whether it is turned on or not, or `null` if there is none. */
+    fun findBrick(id: DashboardBrickId): DashboardBrick? = allBricks.firstOrNull { it.id == id }
 }

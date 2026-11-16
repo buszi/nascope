@@ -181,6 +181,8 @@
     <string name="dashboard_header_label">SYSTEM MONITOR</string>
     <string name="dashboard_header_demo_node">Demo server</string>
     <string name="dashboard_refresh">REFRESH</string>
+    <string name="dashboard_empty_title">NO BRICKS TO SHOW</string>
+    <string name="dashboard_empty_body">Every brick is turned off, or this server offers none of the ones that are on.</string>
     <string name="screen_settings_header">LIVE TELEMETRY</string>
     <string name="settings_refresh_interval_title">Refresh interval</string>
     <string name="settings_refresh_interval_helper">How often live metrics such as CPU, memory and network refresh. Slower metrics such as storage, sensors and containers refresh at 5 x this interval, at most every 30 seconds.</string>

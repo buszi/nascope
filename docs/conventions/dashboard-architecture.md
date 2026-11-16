@@ -47,26 +47,21 @@ Breakpoints must be evaluated using `WindowWidthClass.fromWidth(maxWidth)` rathe
 
 ## 3. Active Bricks & Ordering
 
-- The set of active bricks and their order is controlled by `DashboardViewModel`.
-- `DashboardViewModel` queries a local configuration repository (`BrickRegistry`):
+- The bricks shown and their order are decided by `DashboardViewModel` from three independent inputs: the registered bricks (`BrickRegistry.allBricks`), the user's stored layout (`ObserveDashboardLayoutUseCase`, a global `DashboardLayout` of brick keys) and the server's plugins (`ObserveAvailablePluginsUseCase`):
   ```kotlin
-  @KoinViewModel
-  class DashboardViewModel(
-      brickRegistry: BrickRegistry,
-      observeSession: ObserveSessionUseCase,
-      observeConnectionStatus: ObserveConnectionStatusUseCase,
-      private val refreshTelemetry: RefreshTelemetryUseCase,
-  ) : ViewModel() {
-      private val mutableViewState = MutableStateFlow(
-          ViewState(bricks = brickRegistry.getActiveBricks()),
-      )
-      val viewState: StateFlow<ViewState> = mutableViewState.asStateFlow()
+  combine(observeDashboardLayout(), observeAvailablePlugins()) { layout, plugins ->
+      brickRegistry.allBricks.arrangedBy(layout).enabledIn(layout).visibleWith(plugins)
   }
   ```
-- **Plugin-driven visibility:** `DashboardBrick.requiredPlugins` (default empty = always shown) names the Glances plugins a brick needs, e.g. `GpuBrick` declares `setOf("gpu")`. `DashboardViewModel` collects `ObserveAvailablePluginsUseCase` and exposes `brickRegistry.getActiveBricks().visibleWith(plugins)`: a brick is shown when the server offers all its plugins. While the plugins are unknown (loading, failed, server switched) every brick is shown, so each brick's own widget state handles the failure. Phase 7's user toggles must compose with this: shown = available and not turned off.
+- **Shown = registered and turned on and available**, in the layout's order. The inputs stay independent: turning a brick off does not touch availability, and an unavailable brick keeps its place and its switch for the day the server offers it.
+- **Layout keys:** the layout names bricks by `DashboardBrickId.key` (`DashboardBrick.key`), an explicit, stable string such as `"cpu"` or `"storage"`, never the enum `name`, so renaming an entry keeps users' layouts. `DashboardBrickKeyTest` pins every key; never change one.
+- **Resolving a layout** (`framework/BrickArrangement.kt`, pure): `arrangedBy(layout)` returns every registered brick in the layout's order. A brick the order does not name (added by a later app version, or every brick for `DashboardLayout.Default`) goes right after the nearest brick before it in the registry order that the result already holds, or first when there is none, so `Default` is exactly the registry order. A key no brick has is skipped; a key named twice counts where it is first named. `enabledIn(layout)` drops the bricks in `layout.hidden`, so a brick not named there (a new one) is on.
+- **Not loaded yet:** `ViewState.bricks` is `null` until the first layout emission (a local read), so the default layout never flashes before a custom one; the screen then shows only the header. An empty list (every brick off, or none left after availability) shows the dashboard's empty state (`TestTags.DashboardEmpty`).
+- **Plugin-driven visibility:** `DashboardBrick.requiredPlugins` (default empty = always shown) names the Glances plugins a brick needs, e.g. `GpuBrick` declares `setOf("gpu")`. `visibleWith(plugins)` shows a brick when the server offers all its plugins. While the plugins are unknown (loading, failed, server switched) every brick that is on is shown, so each brick's own widget state handles the failure.
+- A brick that is turned off is not composed, so its ViewModel is not created and its plugins are not polled (a polling loop exists only while collected).
 - **Process details, programs:** where the server lists `programlist` (Glances 4; the toggle stays hidden while the plugin list is unknown or lacks it) a PROCESSES / PROGRAMS toggle switches the table to processes grouped by program (process count, summed CPU judged per machine, memory; expanded: user, threads, RSS). Search text, sort and paging are shared; the sort falls back to CPU when its column (PID or PROCS) does not exist in the other mode. There is no state filter and no pinning in PROGRAMS mode, and pins (by PID) are untouched. The programs are collected only while PROGRAMS is selected.
 - **Storage details, disks:** a DISKS section lists each disk Glances reports, busiest (read + write) first, five per page (`DetailsPager`), each with read / write rate and sparklines, IOPS and latency when the API reports them; it is left out when `diskio` is unavailable or empty. The brick keeps the summed throughput. Partitions and virtual devices (zram, loop, nbd, device mapper, eMMC boot areas) are left out of the list (`withoutPartitionsAndVirtualDevices`; kept when nothing else is left), because a NAS reports dozens and their traffic is the disk's again; arrays (`md`) and caches (`bcache`) stay. The brick's summed figure still counts every device the host reports, so a write is counted once per layer.
-- **Alerts:** `AlertsBrick` (`requiredPlugins = setOf("alert")`, 2 columns) lists the active Glances alerts, worst first, each with its readable metric (`MEM` -> MEMORY, unknown types as Glances names them), description and running time, or "ALL CLEAR". Glances has three severities and the app three status levels, so careful and warning share the degraded colour and the chip text tells them apart. Its details show the active alerts and the recent history with min / avg / max, top processes and the time each lasted. The dashboard header shows an "N ALERTS" chip in the worst colour; `DashboardViewModel` only collects `ObserveAlertsUseCase` once the plugin list says the server runs `alert`. There is no "clear alerts" action yet (see TASK-6A.2).
+- **Alerts:** `AlertsBrick` (`requiredPlugins = setOf("alert")`, 2 columns) lists the active Glances alerts, worst first, each with its readable metric (`MEM` -> MEMORY, unknown types as Glances names them), description and running time, or "ALL CLEAR". Glances has three severities and the app three status levels, so careful and warning share the degraded colour and the chip text tells them apart. Its details show the active alerts and the recent history with min / avg / max, top processes and the time each lasted. The dashboard header shows an "N ALERTS" chip in the worst colour; `DashboardViewModel` only collects `ObserveAlertsUseCase` once the plugin list says the server runs `alert`. The chip does not depend on the Alerts brick and stays when the brick is turned off. There is no "clear alerts" action yet (see TASK-6A.2).
 - Beyond the bricks, the dashboard level only knows the active server alias, its live connection status (`SessionStatusUi`: none / demo / server + `ConnectionStatusUi`) and a refresh action (`RefreshTelemetryUseCase`). It never owns telemetry, widget states or error banners: every brick maps its own `TelemetryState` to a `WidgetState`. The header chip and the sidebar rail dot follow the connection status, and are `DEMO` / neutral in demo mode.
 - Adding, removing, or re-ordering bricks does not require changing `DashboardScreen`.
 
@@ -89,13 +84,15 @@ interface DashboardBrick {
 ```
 
 - **Brick Implementations**: Bricks are stateless descriptor definitions declared as `data object` (e.g. `data object SystemOverviewBrick : DashboardBrick`). Because Kotlin objects are language-level singletons, they must **not** be annotated with Koin's `@Single` (which would cause Koin to attempt constructor reflection on a synthetic private constructor). `BrickRegistry` provides them directly.
+- **Registry order is the default order:** `BrickRegistry.allBricks` lists every brick once, and its order is what `DashboardLayout.Default` shows and where a brick missing from a stored layout is placed. Add a new brick next to the bricks it belongs beside. `findBrick(id)` finds a brick whether it is turned on or not.
+- **A new brick** needs a new `DashboardBrickId` entry with its own new `key` (pinned in `DashboardBrickKeyTest`); it is on by default for every user.
 
 ### `BrickSpan`
 - `BrickSpan.Fixed(val cells: Int)`: The brick requests an exact number of horizontal cells (e.g. 1 or 2).
 - `BrickSpan.FullRow`: The brick stretches across all columns in the current row (`GridItemSpan(maxLineSpan)`).
 
 ### Zero Empty Spaces Policy
-- The visible bricks vary (see "Plugin-driven visibility" below), so no brick count can be relied on. `computeBrickSpans(spans, columns)` (`framework/BrickLayout.kt`, pure, unit-tested for every subset of the registered bricks at 2, 3 and 4 columns) turns the bricks' `BrickSpan`s into cell counts and `AdaptiveDashboardGrid` uses them: a brick takes the cells its span asks for, at most what is left of its row; `BrickSpan.FullRow` is a row of its own (an unfinished row before it is completed first); a row that ends unfinished is completed by widening its bricks, starting with the last. Adding a brick needs no layout arithmetic.
+- The visible bricks and their order vary (the user's layout and "Plugin-driven visibility", section 3), so no brick count or order can be relied on. `computeBrickSpans(spans, columns)` (`framework/BrickLayout.kt`, pure, unit-tested at 2, 3 and 4 columns for every subset of the registered bricks, every order of up to five of them and seeded random orders of all and of some) turns the bricks' `BrickSpan`s into cell counts and `AdaptiveDashboardGrid` uses them: a brick takes the cells its span asks for, at most what is left of its row; `BrickSpan.FullRow` is a row of its own (an unfinished row before it is completed first); a row that ends unfinished is completed by widening its bricks, starting with the last. Adding a brick needs no layout arithmetic.
 - Bricks must adapt their span to `WindowWidthClass` to avoid awkward empty cells or unbalanced gaps at the end of rows.
 - If a row has leftover space or a brick contains expansive data (e.g., storage pool breakdowns or network traffic timelines), it should report `FullRow` or an expanded cell span for wider form factors.
 

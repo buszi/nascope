@@ -5,6 +5,7 @@ import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase
 import io.buszi.nascope.domain.connection.ObserveConnectionStatusUseCase.Status
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase
 import io.buszi.nascope.domain.connection.ObserveSessionUseCase.Session
+import io.buszi.nascope.domain.dashboard.ObserveDashboardLayoutUseCase
 import io.buszi.nascope.domain.model.connection.ConnectionFailure
 import io.buszi.nascope.domain.model.connection.GlancesApiVersion
 import io.buszi.nascope.domain.model.connection.ServerAddress
@@ -12,6 +13,8 @@ import io.buszi.nascope.domain.model.connection.ServerAuth
 import io.buszi.nascope.domain.model.connection.ServerProfile
 import io.buszi.nascope.domain.model.connection.ServerProfileId
 import io.buszi.nascope.domain.model.connection.ServerProtocol
+import io.buszi.nascope.domain.model.dashboard.DashboardBrickKey
+import io.buszi.nascope.domain.model.dashboard.DashboardLayout
 import io.buszi.nascope.domain.model.telemetry.AlertState
 import io.buszi.nascope.domain.model.telemetry.GlancesAlert
 import io.buszi.nascope.domain.model.telemetry.TelemetryFailure
@@ -28,6 +31,8 @@ import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction.OnRefresh
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
 import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
+import io.buszi.nascope.ui.dashboard.framework.DashboardBrick
+import io.buszi.nascope.ui.dashboard.widgets.alerts.AlertsBrick
 import io.buszi.nascope.ui.dashboard.widgets.gpu.GpuBrick
 import io.buszi.nascope.ui.dashboard.widgets.system.SystemOverviewBrick
 import io.mockk.every
@@ -37,11 +42,13 @@ import io.mockk.runs
 import io.mockk.verifySequence
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
@@ -52,6 +59,7 @@ class DashboardViewModelTest {
     private val brickRegistry = mockk<BrickRegistry>()
     private val observeSession = mockk<ObserveSessionUseCase>()
     private val observeConnectionStatus = mockk<ObserveConnectionStatusUseCase>()
+    private val observeDashboardLayout = mockk<ObserveDashboardLayoutUseCase>()
     private val observeAvailablePlugins = mockk<ObserveAvailablePluginsUseCase>()
     private val observeAlerts = mockk<ObserveAlertsUseCase>()
     private val alertStates = MutableStateFlow<TelemetryState<ObserveAlertsUseCase.Data>>(TelemetryState.Loading)
@@ -60,16 +68,22 @@ class DashboardViewModelTest {
     private val session = MutableStateFlow<Session>(Session.NotConfigured)
     private val status = MutableStateFlow<Status>(Status.Idle)
 
+    /** The stored layout; `null` stands for "not read yet" (the use case emits nothing until then). */
+    private val layout = MutableStateFlow<DashboardLayout?>(DashboardLayout.Default)
+    private var registeredBricks: List<DashboardBrick> = listOf(SystemOverviewBrick, GpuBrick)
+
     private val viewModel by lazy {
-        every { brickRegistry.getActiveBricks() } returns listOf(SystemOverviewBrick, GpuBrick)
+        every { brickRegistry.allBricks } returns registeredBricks
         every { observeSession() } returns session
         every { observeConnectionStatus() } returns status
+        every { observeDashboardLayout() } returns layout.filterNotNull()
         every { observeAvailablePlugins() } returns plugins
         every { observeAlerts() } returns alertStates
         DashboardViewModel(
             brickRegistry = brickRegistry,
             observeSession = observeSession,
             observeConnectionStatus = observeConnectionStatus,
+            observeDashboardLayout = observeDashboardLayout,
             observeAvailablePlugins = observeAvailablePlugins,
             observeAlerts = observeAlerts,
             refreshTelemetry = refreshTelemetry,
@@ -77,15 +91,127 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun dashboardViewModelExposesActiveBricksFromRegistryWithoutASession() = runTest {
+    fun dashboardViewModelExposesTheRegisteredBricksWithTheDefaultLayoutWithoutASession() = runTest {
         turbineScope {
             val viewStateTurbine = viewModel.viewState.testIn(this)
             runCurrent()
 
             assertEquals(
-                listOf(ViewState(bricks = listOf(SystemOverviewBrick, GpuBrick))),
+                listOf(ViewState(bricks = null), ViewState(bricks = listOf(SystemOverviewBrick, GpuBrick))),
                 viewStateTurbine.cancelAndConsumeItems(),
             )
+        }
+    }
+
+    @Test
+    fun dashboardViewModelShowsNoBrickBeforeTheLayoutArrives() = runTest {
+        layout.value = null
+        plugins.value = setOf("cpu", "gpu")
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            val beforeLayout = viewStateTurbine.cancelAndConsumeItems()
+
+            assertTrue(beforeLayout.all { it.bricks == null }, "$beforeLayout")
+        }
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            layout.value = DashboardLayout(order = listOf(gpu, system), hidden = emptySet())
+            runCurrent()
+
+            // The stored layout is the first one shown: no frame with the default order before it.
+            assertEquals(
+                listOf(null, listOf(GpuBrick, SystemOverviewBrick)),
+                viewStateTurbine.cancelAndConsumeItems().map { it.bricks },
+            )
+        }
+    }
+
+    @Test
+    fun dashboardViewModelShowsTheBricksInTheLayoutsOrderAndFollowsLayoutChanges() = runTest {
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            layout.value = DashboardLayout(order = listOf(gpu, system), hidden = emptySet())
+            runCurrent()
+            layout.value = DashboardLayout(order = listOf(gpu, system), hidden = setOf(gpu))
+            runCurrent()
+            layout.value = DashboardLayout.Default
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    null,
+                    listOf(SystemOverviewBrick, GpuBrick),
+                    listOf(GpuBrick, SystemOverviewBrick),
+                    listOf(SystemOverviewBrick),
+                    listOf(SystemOverviewBrick, GpuBrick),
+                ),
+                viewStateTurbine.cancelAndConsumeItems().map { it.bricks },
+            )
+        }
+    }
+
+    @Test
+    fun dashboardViewModelFiltersACustomLayoutByAvailabilityAndKeepsItsOrder() = runTest {
+        registeredBricks = listOf(SystemOverviewBrick, AlertsBrick, GpuBrick)
+        layout.value = DashboardLayout(order = listOf(gpu, alerts, system), hidden = emptySet())
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            plugins.value = setOf("cpu", "alert")
+            runCurrent()
+            plugins.value = setOf("cpu", "gpu")
+            runCurrent()
+
+            assertEquals(
+                listOf(
+                    null,
+                    listOf(GpuBrick, AlertsBrick, SystemOverviewBrick),
+                    listOf(AlertsBrick, SystemOverviewBrick),
+                    listOf(GpuBrick, SystemOverviewBrick),
+                ),
+                viewStateTurbine.cancelAndConsumeItems().map { it.bricks },
+            )
+        }
+    }
+
+    @Test
+    fun dashboardViewModelShowsAnEmptyListWhenEveryBrickIsTurnedOffOrNoneIsLeftAfterAvailability() = runTest {
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            layout.value = DashboardLayout(order = emptyList(), hidden = setOf(system, gpu))
+            runCurrent()
+            assertEquals(emptyList(), viewStateTurbine.cancelAndConsumeItems().last().bricks)
+        }
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            layout.value = DashboardLayout(order = emptyList(), hidden = setOf(system))
+            runCurrent()
+            plugins.value = setOf("cpu")
+            runCurrent()
+            assertEquals(
+                listOf(emptyList(), listOf(GpuBrick), emptyList()),
+                viewStateTurbine.cancelAndConsumeItems().map { it.bricks },
+            )
+        }
+    }
+
+    @Test
+    fun dashboardViewModelKeepsTheAlertChipWithTheAlertsBrickTurnedOff() = runTest {
+        registeredBricks = listOf(SystemOverviewBrick, AlertsBrick, GpuBrick)
+        layout.value = DashboardLayout(order = emptyList(), hidden = setOf(alerts))
+        plugins.value = setOf("alert")
+        val critical = GlancesAlert("CPU", AlertState.Critical, 1, null, null, null, null, null, emptyList())
+        turbineScope {
+            val viewStateTurbine = viewModel.viewState.testIn(this)
+            runCurrent()
+            alertStates.value = TelemetryState.Ready(ObserveAlertsUseCase.Data(listOf(critical), emptyList(), null), false)
+            runCurrent()
+
+            val last = viewStateTurbine.cancelAndConsumeItems().last()
+            assertEquals(listOf(SystemOverviewBrick), last.bricks)
+            assertEquals(AlertBadgeUi(1, StatusLevel.Critical), last.alertBadge)
         }
     }
 
@@ -106,6 +232,7 @@ class DashboardViewModelTest {
             val shown = viewStateTurbine.cancelAndConsumeItems().map { it.bricks }
             assertEquals(
                 listOf(
+                    null,
                     listOf(SystemOverviewBrick, GpuBrick),
                     listOf(SystemOverviewBrick),
                     listOf(SystemOverviewBrick, GpuBrick),
@@ -216,9 +343,9 @@ class DashboardViewModelTest {
         viewModel.onViewAction(OnRefresh)
 
         verifySequence {
-            brickRegistry.getActiveBricks()
             observeSession()
             observeConnectionStatus()
+            observeDashboardLayout()
             observeAvailablePlugins()
             observeAvailablePlugins()
             refreshTelemetry()
@@ -226,6 +353,10 @@ class DashboardViewModelTest {
     }
 
     companion object {
+        private val system = DashboardBrickKey("system")
+        private val alerts = DashboardBrickKey("alerts")
+        private val gpu = DashboardBrickKey("gpu")
+
         private val profile = ServerProfile(
             id = ServerProfileId("alpha"),
             alias = "Alpha",
