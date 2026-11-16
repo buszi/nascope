@@ -2,11 +2,28 @@ package io.buszi.nascope.window
 
 import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import java.awt.Color as AwtColor
 
 /** The app shell's top bar color; native title bars take it (or come as close as the OS allows) to blend in. */
 internal val TitleBarColor = Color(0xFF12141A)
+
+/** The app's canvas background (`canvasBackground` in the shared theme), behind everything the app draws. */
+private val CanvasColor = Color(0xFF0B0F17)
+
+/**
+ * Paints the window's own Swing layers in the app's canvas color instead of the light look-and-feel gray. They show
+ * wherever Compose has not drawn yet: on the first frames the drawing surface does not cover the whole window, which
+ * left a light strip along the bottom edge (title bar height) on every OS.
+ */
+internal fun ComposeWindow.useCanvasBackground() {
+    val color = AwtColor(CanvasColor.toArgb())
+    background = color
+    rootPane.background = color
+    contentPane.background = color
+}
 
 /**
  * The native window frame around the app, per operating system. The app is always dark, while every OS draws its

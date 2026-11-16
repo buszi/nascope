@@ -13,6 +13,7 @@ import androidx.compose.ui.window.application
 import io.buszi.nascope.di.initNascope
 import io.buszi.nascope.window.TitleBarColor
 import io.buszi.nascope.window.WindowChrome
+import io.buszi.nascope.window.useCanvasBackground
 import java.awt.Taskbar
 import javax.imageio.ImageIO
 
@@ -40,6 +41,7 @@ fun main() {
             icon = BitmapPainter(iconImage.toComposeImageBitmap()),
         ) {
             DisposableEffect(window) {
+                window.useCanvasBackground()
                 windowChrome.style(window)
                 onDispose { }
             }
