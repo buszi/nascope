@@ -19,6 +19,8 @@ okhttp = "5.5.1"
 napier = "2.7.1"
 kotlin-result = "2.3.1"
 java-keyring = "1.0.4"
+# Native window styling on the desktop. Keep it on the version java-keyring brings in.
+jna = "5.13.0"
 
 androidx-activity = "1.13.0"
 androidx-core-splashscreen = "1.2.0"
@@ -63,6 +65,8 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 kotlin-result = { module = "com.michael-bull.kotlin-result:kotlin-result", version.ref = "kotlin-result" }
 napier = { module = "io.github.aakira:napier", version.ref = "napier" }
 java-keyring = { module = "com.github.javakeyring:java-keyring", version.ref = "java-keyring" }
+jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
+jna-platform = { module = "net.java.dev.jna:jna-platform", version.ref = "jna" }
 
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-core-splashscreen" }

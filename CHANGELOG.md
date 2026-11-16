@@ -2,6 +2,12 @@
 
 All notable changes to Nascope. The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- Windows and Linux: the title bar is dark like the rest of the app instead of white (Windows 11 matches the app's top bar exactly, Windows 10 uses its own dark gray; on Linux it needs a window manager that honors GTK's dark variant, such as GNOME).
+
 ## [1.1.0] - 2026-11-13
 
 ### Added
