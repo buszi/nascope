@@ -2,15 +2,33 @@
 
 All notable changes to Nascope. The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.1.1] - 2026-11-16
+
+Polish for the desktop apps after the first Windows and Linux packages.
+
+### Added
+
+- Windows: the "Installed apps" entry (Programs and Features) links the project website, the setup notes and the latest release.
+
+### Changed
+
+- Desktop: the window cannot be resized below 400 × 600, where the layout would no longer fit.
 
 ### Fixed
 
 - Windows and Linux: the title bar is dark like the rest of the app instead of white (Windows 11 matches the app's top bar exactly, Windows 10 uses its own dark gray; on Linux it needs a window manager that honors GTK's dark variant, such as GNOME).
-- Linux: the deb links the project website and has a full description in the software installer, and the installed app is listed in GNOME Software / KDE Discover with its icon and license. The package's maintainer field no longer repeats the name (`Nascope <Nascope <...>>`).
 - Desktop: the window no longer shows a light strip along its bottom edge while it opens.
-- Desktop: the window cannot be resized below 400 × 600, where the layout would no longer fit.
-- Windows: the "Installed apps" entry links the project website, the setup notes and the latest release.
+- Linux: the deb links the project website and has a full description in the software installer, and the installed app is listed in GNOME Software / KDE Discover with its icon and license. The package's maintainer field no longer repeats the name (`Nascope <Nascope <...>>`).
+
+### Known limitations
+
+- The Windows and Linux packages are not code signed (SmartScreen asks once) and not in a package manager yet (winget, Scoop, apt repository, Flatpak).
+- Before the deb is installed, GNOME Software shows its license as "unknown" and no icon: it reads neither from a package file. Both show once the app is installed.
+- On Windows the first launch after installing or updating takes several seconds (Microsoft Defender checks the new files); later launches are quick.
+- A certificate from a public authority reached under a name it does not cover (e.g. by IP) is a plain TLS error, with no offer to trust it.
+- Bricks that need extra Glances configuration (service checks, S.M.A.R.T. disk health) are not included.
+- No notifications, system tray, command palette or dashboard customization yet.
+- The macOS build is not notarized and runs on Apple Silicon only.
 
 ## [1.1.0] - 2026-11-13
 
