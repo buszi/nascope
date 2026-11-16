@@ -14,6 +14,7 @@ import io.buszi.nascope.di.initNascope
 import io.buszi.nascope.window.TitleBarColor
 import io.buszi.nascope.window.WindowChrome
 import io.buszi.nascope.window.useCanvasBackground
+import java.awt.Dimension
 import java.awt.Taskbar
 import javax.imageio.ImageIO
 
@@ -21,6 +22,13 @@ private const val IconResource = "/icon.png"
 
 /** Set to `true` by the Gradle `run` task only (see `DesktopApplicationPlugin`); packaged apps are release builds. */
 private const val DebugProperty = "nascope.debug"
+
+/**
+ * The smallest window the user can resize to, in AWT units (= dp at any display scale). Narrower than the phone
+ * breakpoint on purpose, so the window can still be docked beside other windows in the phone layout; any smaller and
+ * the bottom navigation and the bricks get cramped.
+ */
+private val MinWindowSize = Dimension(400, 600)
 
 fun main() {
     val windowChrome = WindowChrome.forCurrentOs()
@@ -41,6 +49,7 @@ fun main() {
             icon = BitmapPainter(iconImage.toComposeImageBitmap()),
         ) {
             DisposableEffect(window) {
+                window.minimumSize = MinWindowSize
                 window.useCanvasBackground()
                 windowChrome.style(window)
                 onDispose { }
