@@ -1,0 +1,6 @@
+Nascope reads the REST API of Glances on your NAS or home server and turns it
+into a dashboard of bricks (CPU, memory, storage, network, sensors, containers,
+processes, alerts), each with a details screen.
+
+No account, no cloud, no telemetry: the app talks only to the servers you add,
+and keeps their passwords in the system keyring.

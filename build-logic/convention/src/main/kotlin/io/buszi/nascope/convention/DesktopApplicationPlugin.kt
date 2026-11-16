@@ -7,6 +7,7 @@ import org.gradle.kotlin.dsl.configure
 import org.jetbrains.compose.ComposeExtension
 import org.jetbrains.compose.desktop.DesktopExtension
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 @Suppress("UnstableApiUsage")
@@ -90,19 +91,43 @@ class DesktopApplicationPlugin : Plugin<Project> {
                             iconFile.set(icons.file("nascope.png"))
                             menuGroup = "Network;Monitor;"
                             appCategory = "net"
-                            // The deb Maintainer field needs an e-mail address. Releases get the real one from the
-                            // NASCOPE_DEB_MAINTAINER environment variable (a CI secret) or Gradle property, as
-                            // "Name <mail>"; local builds use the placeholder. A blank value (an unset CI secret
-                            // arrives as an empty variable) counts as missing.
+                            // The deb Maintainer field needs an e-mail address; jpackage writes it as
+                            // "<vendor> <address>". Releases get the real one from the NASCOPE_DEB_MAINTAINER environment
+                            // variable (a CI secret) or Gradle property, either the bare address or "Name <address>"
+                            // (only the address is used); local builds use the placeholder. A blank value (an unset CI
+                            // secret arrives as an empty variable) counts as missing.
                             debMaintainer = project.providers.environmentVariable("NASCOPE_DEB_MAINTAINER")
                                 .filter { it.isNotBlank() }
                                 .orElse(project.providers.gradleProperty("NASCOPE_DEB_MAINTAINER").filter { it.isNotBlank() })
-                                .orElse("Nascope <nascope@example.invalid>")
+                                .orElse("nascope@example.invalid")
+                                .map { it.substringAfter('<').substringBefore('>').trim() }
                                 .get()
                         }
                     }
                 }
             }
         }
+
+        // jpackage's deb has no Homepage field, no long description and no AppStream metadata; finish-deb.sh adds them
+        // (see the script for what software centers make of it). Compose wipes jpackage's resource directory on every
+        // run, so the package is completed after jpackage instead of through its templates.
+        val debPackaging = layout.projectDirectory.dir("packaging/linux")
+        tasks.withType(AbstractJPackageTask::class.java).configureEach {
+            if (targetFormat == TargetFormat.Deb) {
+                inputs.dir(debPackaging).withPropertyName("debPackaging")
+                val finishDeb = debPackaging.file("finish-deb.sh").asFile
+                val packageDir = destinationDir
+                doLast {
+                    packageDir.get().asFile.listFiles { file -> file.extension == "deb" }.orEmpty().forEach { deb ->
+                        val process = ProcessBuilder(finishDeb.path, deb.path, HOMEPAGE).inheritIO().start()
+                        check(process.waitFor() == 0) { "finish-deb.sh failed for $deb" }
+                    }
+                }
+            }
+        }
+    }
+
+    private companion object {
+        const val HOMEPAGE = "https://github.com/buszi/nascope"
     }
 }

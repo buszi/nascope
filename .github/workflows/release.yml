@@ -133,18 +133,18 @@ jobs:
           NASCOPE_DEB_MAINTAINER: ${{ secrets.NASCOPE_DEB_MAINTAINER }}
         run: |
           if [ -z "$NASCOPE_DEB_MAINTAINER" ]; then
-            echo "::error::Secret NASCOPE_DEB_MAINTAINER is not set (\"Name <mail>\" for the deb Maintainer field)"
+            echo "::error::Secret NASCOPE_DEB_MAINTAINER is not set (the e-mail address for the deb Maintainer field)"
             exit 1
           fi
 
-      # jpackage builds the deb with dpkg-deb under fakeroot.
+      # jpackage builds the deb with dpkg-deb under fakeroot; finish-deb.sh rebuilds it with dpkg-deb.
       - name: Linux packaging tools
         if: runner.os == 'Linux'
         run: command -v fakeroot >/dev/null || (sudo apt-get update && sudo apt-get install -y fakeroot)
 
       - name: Package
         env:
-          # The deb Maintainer field ("Name <mail>"); only the Linux package uses it.
+          # The deb Maintainer field's e-mail address; only the Linux package uses it.
           NASCOPE_DEB_MAINTAINER: ${{ secrets.NASCOPE_DEB_MAINTAINER }}
         run: ./gradlew :desktopApp:${{ matrix.task }}
 
@@ -176,7 +176,7 @@ jobs:
           path: dist
           merge-multiple: true
 
-      # Every published file: the deb is named by the Debian convention (nascope_<version>-1_amd64.deb).
+      # Every published file: the deb is named by the Debian convention (nascope_<version>_amd64.deb).
       - name: Checksums
         working-directory: dist
         run: sha256sum -- * | tee SHA256SUMS

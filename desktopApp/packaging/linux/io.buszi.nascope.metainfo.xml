@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata: what Linux software centers (GNOME Software, KDE Discover) show for the installed app.
+  finish-deb.sh fills in the @...@ placeholders and adds it to the deb; check it with `appstreamcli validate`.
+-->
+<component type="desktop-application">
+  <id>io.buszi.nascope</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+
+  <name>Nascope</name>
+  <summary>Live telemetry for your NAS, from a Glances server</summary>
+  <developer id="io.buszi">
+    <name>Nascope</name>
+  </developer>
+
+  <description>
+    <p>
+      Live telemetry for your NAS or home server. Nascope reads the REST API of Glances and turns it into a dashboard
+      of bricks, each with a details screen:
+    </p>
+    <ul>
+      <li>System overview, CPU per core, memory and swap, GPU</li>
+      <li>Storage mounts with per-disk I/O, network per interface</li>
+      <li>Sensors, Docker containers, processes and Glances alerts</li>
+    </ul>
+    <p>
+      No account, no cloud, no telemetry: the app talks only to the servers you add, and keeps their passwords in the
+      system keyring.
+    </p>
+  </description>
+
+  <!-- The desktop file jpackage installs (<package>-<launcher>.desktop). -->
+  <launchable type="desktop-id">nascope-Nascope.desktop</launchable>
+  <icon type="stock">io.buszi.nascope</icon>
+  <!-- Same as the desktop file's Categories (menuGroup in DesktopApplicationPlugin). -->
+  <categories>
+    <category>Network</category>
+    <category>Monitor</category>
+  </categories>
+
+  <url type="homepage">@HOMEPAGE@</url>
+  <url type="bugtracker">@HOMEPAGE@/issues</url>
+  <url type="vcs-browser">@HOMEPAGE@</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>The dashboard with the CPU details pane</caption>
+      <image>https://raw.githubusercontent.com/buszi/nascope/main/docs/screenshots/dashboard-desktop.png</image>
+    </screenshot>
+  </screenshots>
+
+  <content_rating type="oars-1.1"/>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <releases>
+    <release version="@VERSION@" date="@DATE@"/>
+  </releases>
+</component>

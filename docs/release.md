@@ -25,7 +25,7 @@ For a rehearsal use a suffix, `v1.0.0-rc1`: it is published as a pre-release and
 
 **After the workflow**
 
-1. The Release page has `Nascope-<version>.apk`, `Nascope-<version>.dmg`, `Nascope-<version>.msi`, `nascope_<version>-1_amd64.deb` and `SHA256SUMS`, and is marked "Latest" (or "Pre-release" for a suffix).
+1. The Release page has `Nascope-<version>.apk`, `Nascope-<version>.dmg`, `Nascope-<version>.msi`, `nascope_<version>_amd64.deb` and `SHA256SUMS`, and is marked "Latest" (or "Pre-release" for a suffix).
 2. Download the files and check them: `shasum -a 256 -c SHA256SUMS`, and `apksigner verify --print-certs Nascope-<version>.apk` shows the certificate fingerprint from the README.
 3. Install the APK on a device or emulator and start it; open the dmg (or `brew install --cask buszi/tap/nascope`), go through the first launch and connect to a server. Install the msi on Windows and the deb on Linux and go through "Checking a package" below (a must for the first release candidate of an OS: its shrunk build has not been run before).
 4. A real release (no suffix) added a commit "nascope <version>" to `buszi/homebrew-tap`; `brew update && brew upgrade --cask nascope` picks it up.
@@ -102,11 +102,12 @@ One installer per OS, each built **on that OS** (jpackage cannot cross-compile; 
 # desktopApp/build/compose/binaries/main-release/{dmg,msi,deb}/
 ```
 
-Names come from `DesktopApplicationPlugin`: the app is **Nascope** (`Nascope.app`, "Nascope" in the Start menu), bundle id `io.buszi.nascope`, files `Nascope-<version>.dmg` and `Nascope-<version>.msi`, and `nascope_<version>-1_amd64.deb` (the Debian convention, lowercase; to be confirmed on the first Linux build). The Homebrew job depends on the dmg name.
+Names come from `DesktopApplicationPlugin`: the app is **Nascope** (`Nascope.app`, "Nascope" in the Start menu), bundle id `io.buszi.nascope`, files `Nascope-<version>.dmg` and `Nascope-<version>.msi`, and `nascope_<version>_amd64.deb` (the Debian convention, lowercase, as released since 1.1.0). The Homebrew job depends on the dmg name.
 
 - **Version:** `app-version` in `gradle/libs.versions.toml` is the `packageVersion`. It must be plain `MAJOR.MINOR.PATCH` with a major of at least 1 (macOS). A release candidate such as `v1.0.0-rc1` is therefore only a git tag and a GitHub pre-release; the files inside it are still `1.0.0`.
 - **Windows upgrades:** `upgradeUuid` in the plugin identifies the product. A newer MSI upgrades an older one in place only while it stays the same, so **never change it**. The MSI installs per user (no administrator prompt).
-- **Debian maintainer:** the `Maintainer` field needs `Name <email>`; nothing validates the address. Releases take it from the `NASCOPE_DEB_MAINTAINER` environment variable (a repository secret; the release workflow passes it to the package step and fails the Linux row when it is missing) or a Gradle property; a blank value counts as missing. Local builds use a placeholder, so never publish a locally built deb.
+- **Debian maintainer:** jpackage writes the `Maintainer` field as `Nascope <address>` (the vendor and an e-mail address); nothing validates the address. Releases take it from the `NASCOPE_DEB_MAINTAINER` environment variable (a repository secret; the release workflow passes it to the package step and fails the Linux row when it is missing) or a Gradle property, as the bare address or `Name <address>` (only the address is used; 1.1.0 passed both and shipped `Nascope <Nascope <...>>`); a blank value counts as missing. Local builds use a placeholder, so never publish a locally built deb.
+- **Debian metadata:** jpackage's deb lacks what software centers read, so the deb tasks finish it with `desktopApp/packaging/linux/finish-deb.sh`: a `Homepage` field and a long description in the control file, AppStream metainfo (`io.buszi.nascope.metainfo.xml`, check it with `appstreamcli validate`) and the icon in the hicolor theme. Before installation GNOME Software shows only the control fields: PackageKit reports every deb's license as "unknown" and reads no icon from a package file. Once installed, the app is listed with its icon, license and links.
 - **Runtime modules:** the packaged app ships a jlinked JRE with an explicit module list. After adding or upgrading a dependency run `./gradlew :desktopApp:suggestRuntimeModules` and update `modules(...)` in the plugin; a missing module only fails at runtime.
 - **macOS signing:** packages are ad-hoc signed by jpackage and not notarized (see the install notes in the README, TASK-6B.7).
 
@@ -147,7 +148,7 @@ Two workflows in `.github/workflows`:
 | `NASCOPE_KEYSTORE_PASSWORD` | keystore password |
 | `NASCOPE_KEY_ALIAS` | key alias |
 | `NASCOPE_KEY_PASSWORD` | key password |
-| `NASCOPE_DEB_MAINTAINER` | `Name <mail>` for the deb's Maintainer field; the Linux row fails without it. It ends up inside the public package, so use a GitHub `users.noreply` address, not a personal one |
+| `NASCOPE_DEB_MAINTAINER` | the e-mail address for the deb's Maintainer field (`Name <mail>` works too, only the address is used); the Linux row fails without it. It ends up inside the public package, so use a GitHub `users.noreply` address, not a personal one |
 
 ### Cutting a release
 
