@@ -10,6 +10,8 @@ import io.buszi.nascope.domain.connection.SetActiveServerUseCase
 import io.buszi.nascope.domain.connection.SetDemoModeUseCase
 import io.buszi.nascope.domain.connection.TestConnectionUseCase
 import io.buszi.nascope.domain.connection.ValidateServerInputUseCase
+import io.buszi.nascope.domain.dashboard.ObserveDashboardLayoutUseCase
+import io.buszi.nascope.domain.dashboard.SetDashboardLayoutUseCase
 import io.buszi.nascope.domain.foreground.SetAppForegroundUseCase
 import io.buszi.nascope.domain.settings.ObserveRefreshIntervalUseCase
 import io.buszi.nascope.domain.settings.SetRefreshIntervalUseCase
@@ -75,5 +77,13 @@ class KoinGraphTest {
         assertNotNull(koin.get<ObserveAvailablePluginsUseCase>())
         assertNotNull(koin.get<ObserveAlertsUseCase>())
         assertNotNull(koin.get<ObserveProgramsUseCase>())
+    }
+
+    @Test
+    fun resolvesDashboardLayoutUseCases() {
+        val koin = startKoin(koinConfiguration<NascopeApp>()).koin
+
+        assertNotNull(koin.get<ObserveDashboardLayoutUseCase>())
+        assertNotNull(koin.get<SetDashboardLayoutUseCase>())
     }
 }
