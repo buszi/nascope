@@ -19,6 +19,7 @@ To keep documentation focused and modular, conventions are split into dedicated 
 | **ViewModel & MVI Architecture** | [`docs/conventions/viewmodel-mvi.md`](./conventions/viewmodel-mvi.md) | Implementing ViewModels, `ViewState`, `ViewAction`, state holders, and Koin injection. |
 | **Widget & Screen Composition** | [`docs/conventions/widget-composition.md`](./conventions/widget-composition.md) | Connecting ViewModels to UI, stateful vs stateless composables, `WidgetHeader`, cards. |
 | **Unit Testing** | [`docs/conventions/unit-testing.md`](./conventions/unit-testing.md) | Writing JVM unit tests with `TestCoroutineRule`, Turbine, Mockk, and companion test fixtures. |
+| **Desktop Snapshots** | [`docs/desktop-snapshots.md`](./desktop-snapshots.md) | Looking at the desktop UI from a task: offscreen PNGs of the real app at exact widths, scripted clicks, no OS permission. |
 | **Task Workflow** | [`docs/conventions/task-workflow.md`](./conventions/task-workflow.md) | Implementing tasks from `PLAN.md`, verification commands, showcase updates, commit rules. |
 
 ---

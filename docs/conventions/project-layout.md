@@ -17,6 +17,7 @@ See [`module-architecture.md`](./module-architecture.md) for responsibilities an
 | `test-utils/` | Shared JVM test helpers (`io.buszi.nascope.test`): `TestCoroutineRule`, Turbine extensions. Added as a `jvmTest` dependency only. |
 | `resources/` | Compose resources (strings, drawables, fonts). |
 | `shared/` | UI, ViewModels, navigation, design system, Koin application root. |
+| `desktopApp/` | Desktop entry point and native window chrome (`src/main/`); the offscreen snapshot harness in its own source set (`src/snapshot/`, never packaged, see [`docs/desktop-snapshots.md`](../desktop-snapshots.md)) with sample scripts in `snapshots/`. |
 
 ---
 

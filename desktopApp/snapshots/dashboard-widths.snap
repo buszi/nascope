@@ -1,0 +1,21 @@
+# The demo dashboard at the three width classes, plus a tall Expanded shot of every brick.
+# ./gradlew :desktopApp:snapshot -Psnapshot.script=desktopApp/snapshots/dashboard-widths.snap
+demo on
+layout default
+
+size 1440 900
+wait 3000
+shot expanded
+tree expanded
+
+size 1000 800
+wait 800
+shot medium
+
+size 420 860
+wait 800
+shot compact
+
+size 1440 2400
+wait 800
+shot expanded-all
