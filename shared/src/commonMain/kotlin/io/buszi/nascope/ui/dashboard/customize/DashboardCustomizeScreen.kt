@@ -85,6 +85,7 @@ import io.buszi.nascope.ui.common.model.DashboardCustomizeUi
 import io.buszi.nascope.ui.common.modifier.optionalModifier
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
+import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.minimumTouchTarget
 import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewState
@@ -274,7 +275,14 @@ private fun BrickEditorRow(
                     .border(AppTheme.dimensions.hairlineBorder, AppTheme.colors.focusHighlight, AppTheme.shapes.base)
             }
             .testTag(TestTags.customizeRow(row.key))
-            .padding(vertical = AppTheme.spacing.spaceXs),
+            // Compact already grows the handle and the switch to the 48 dp touch target, which spaces the rows.
+            .padding(
+                vertical = if (AppTheme.windowWidthClass == WindowWidthClass.Compact) {
+                    AppTheme.spacing.spaceXs
+                } else {
+                    AppTheme.spacing.spaceSm
+                },
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceSm),
     ) {

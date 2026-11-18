@@ -57,7 +57,7 @@ Building blocks for forms such as the connection editor. All of them use tokens 
 | Component | Use it for | Notes |
 | :--- | :--- | :--- |
 | `FormField` | Label above any input, optional helper and error text below. | An error replaces the helper (`AppTheme.colors.critical`) and is announced as a polite live region. Wrap `TelemetryTextField`, `PasswordTextField` or `SegmentedSelector` in it. |
-| `TelemetrySwitch` | On/off setting, optionally with a label. | Same surface language as `SelectableChip` / `TelemetryTextField`: `inputBackground` track, Electric Violet when on, focus ring. The whole row is the touch target. |
+| `TelemetrySwitch` | On/off setting, optionally with a label. | Material 3 `Switch` (its thumb motion and state layer, its 52 x 32 dp size) coloured in the surface language of `SelectableChip` / `TelemetryTextField`: `inputBackground` track, Electric Violet when on, `focusHighlight` border on hover and focus. The whole row is the touch target (the `Switch` only draws); the 48 dp minimum applies on Compact only. |
 | `PasswordTextField` | Secrets. | `TelemetryTextField` with masking and a trailing show/hide action. Labels are passed in (`showLabel`, `hideLabel`) so strings stay in `strings.xml`. |
 | `SegmentedSelector` | 2-3 exclusive options (e.g. `HTTP` / `HTTPS`). | A new component: `SelectableChip`s are separate pills with gaps and do not read as one control. Use `SelectableChip` for filter/sort chips, `SegmentedSelector` for a single choice inside a form. Pass `optionTestTag` to tag each segment. |
 
