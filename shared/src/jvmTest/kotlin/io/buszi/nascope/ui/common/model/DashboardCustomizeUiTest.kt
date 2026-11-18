@@ -106,6 +106,68 @@ class DashboardCustomizeUiTest {
     }
 
     @Test
+    fun movedTakesARowUpAndDownShiftingTheRowsBetween() {
+        val ui = DashboardCustomizeUi.from(bricks, DashboardLayout.Default, null)
+
+        assertEquals(listOf(SystemOverview, Gpu, Alerts), ui.moved(from = 2, to = 1).rows.map { it.id })
+        assertEquals(listOf(Alerts, SystemOverview, Gpu), ui.moved(from = 0, to = 1).rows.map { it.id })
+        assertEquals(listOf(Gpu, SystemOverview, Alerts), ui.moved(from = 2, to = 0).rows.map { it.id })
+        assertEquals(listOf(Alerts, Gpu, SystemOverview), ui.moved(from = 0, to = 2).rows.map { it.id })
+    }
+
+    @Test
+    fun movedToTheSamePlaceOrOutsideTheRowsChangesNothing() {
+        val ui = DashboardCustomizeUi.from(bricks, DashboardLayout.Default, null)
+
+        assertEquals(ui, ui.moved(from = 1, to = 1))
+        assertEquals(ui, ui.moved(from = 0, to = -1))
+        assertEquals(ui, ui.moved(from = 2, to = 3))
+        assertEquals(ui, ui.moved(from = -1, to = 0))
+        assertEquals(ui, ui.moved(from = 3, to = 2))
+    }
+
+    @Test
+    fun movedCarriesARowThatIsOffOrNotOfferedWithItsState() {
+        val ui = DashboardCustomizeUi.from(bricks, layout(hidden = setOf(Gpu)), availablePlugins = setOf("alert"))
+
+        val moved = ui.moved(from = 2, to = 0)
+
+        assertEquals(BrickRow(id = Gpu, isEnabled = false, isOffered = false), moved.rows.first())
+        assertEquals(
+            DashboardLayout(order = listOf(Gpu.key, SystemOverview.key, Alerts.key), hidden = setOf(Gpu.key)),
+            moved.toLayout(),
+        )
+    }
+
+    @Test
+    fun inOrderOfKeepsEveryRowsStateAndPutsUnnamedRowsLast() {
+        val ui = DashboardCustomizeUi.from(bricks, layout(hidden = setOf(Alerts)), availablePlugins = setOf("alert"))
+
+        val reordered = ui.inOrderOf(listOf(Gpu, Alerts))
+
+        assertEquals(
+            listOf(
+                BrickRow(id = Gpu, isOffered = false),
+                BrickRow(id = Alerts, isEnabled = false),
+                BrickRow(id = SystemOverview),
+            ),
+            reordered.rows,
+        )
+        assertEquals(ui, ui.inOrderOf(ui.rows.map { it.id }))
+    }
+
+    @Test
+    fun onlyTheFirstRowCannotMoveUpAndOnlyTheLastCannotMoveDown() {
+        val ui = DashboardCustomizeUi.from(bricks, DashboardLayout.Default, null)
+
+        assertEquals(listOf(false, true, true), ui.rows.indices.map(ui::canMoveUp))
+        assertEquals(listOf(true, true, false), ui.rows.indices.map(ui::canMoveDown))
+        assertFalse(ui.canMoveUp(3))
+        assertFalse(ui.canMoveDown(-1))
+        assertFalse(DashboardCustomizeUi(rows = listOf(BrickRow(Gpu))).let { it.canMoveUp(0) || it.canMoveDown(0) })
+    }
+
+    @Test
     fun toLayoutListsEveryRowsKeyInOrderAndTheOffOnesAsHidden() {
         val ui = DashboardCustomizeUi.from(bricks, layout(Gpu, SystemOverview, Alerts), null).withEnabled(Alerts, false)
 

@@ -11,6 +11,12 @@ import io.buszi.nascope.ui.common.model.DashboardCustomizeUi
 import io.buszi.nascope.ui.common.model.DashboardCustomizeUi.BrickRow
 import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnCancelReset
 import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnConfirmReset
+import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnDragCancel
+import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnDragMove
+import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnDragStart
+import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnDrop
+import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnMoveDown
+import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnMoveUp
 import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnRequestReset
 import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewAction.OnToggleBrick
 import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeViewModel.ViewState
@@ -149,6 +155,177 @@ class DashboardCustomizeViewModelTest {
         runCurrent()
 
         assertEquals(emptyList(), writes)
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelWritesTheCompleteNewOrderOnAMove() = runTest {
+        stored.value = DashboardLayout(order = emptyList(), hidden = setOf(Gpu.key))
+        viewModel.viewState.value
+        runCurrent()
+
+        viewModel.onViewAction(OnMoveUp(Gpu))
+        runCurrent()
+        viewModel.onViewAction(OnMoveUp(Gpu))
+        runCurrent()
+        viewModel.onViewAction(OnMoveDown(SystemOverview))
+        runCurrent()
+
+        assertEquals(
+            listOf(
+                DashboardLayout(order = listOf(SystemOverview.key, Gpu.key, Alerts.key), hidden = setOf(Gpu.key)),
+                DashboardLayout(order = listOf(Gpu.key, SystemOverview.key, Alerts.key), hidden = setOf(Gpu.key)),
+                DashboardLayout(order = listOf(Gpu.key, Alerts.key, SystemOverview.key), hidden = setOf(Gpu.key)),
+            ),
+            writes,
+        )
+        assertEquals(
+            rows(BrickRow(Gpu, isEnabled = false), BrickRow(Alerts), BrickRow(SystemOverview)),
+            viewModel.viewState.value.customize?.rows,
+        )
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelKeepsEveryMoveMadeBeforeTheStoreAnswers() = runTest {
+        viewModel.viewState.value
+        runCurrent()
+        storeAnswers = false
+
+        viewModel.onViewAction(OnMoveUp(Gpu))
+        viewModel.onViewAction(OnMoveUp(Gpu))
+        runCurrent()
+
+        assertEquals(listOf(Gpu.key, SystemOverview.key, Alerts.key), writes.last().order)
+        assertEquals(listOf(Gpu, SystemOverview, Alerts), viewModel.viewState.value.customize?.rows?.map { it.id })
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelWritesNothingForAMovePastAnEnd() = runTest {
+        viewModel.viewState.value
+        runCurrent()
+
+        viewModel.onViewAction(OnMoveUp(SystemOverview))
+        viewModel.onViewAction(OnMoveDown(Gpu))
+        runCurrent()
+
+        assertEquals(emptyList(), writes)
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelMovesRowsDuringADragAndWritesOnceOnDrop() = runTest {
+        viewModel.viewState.value
+        runCurrent()
+
+        viewModel.onViewAction(OnDragStart)
+        viewModel.onViewAction(OnDragMove(Gpu, offset = -1))
+        runCurrent()
+        assertEquals(listOf(SystemOverview, Gpu, Alerts), viewModel.viewState.value.customize?.rows?.map { it.id })
+        viewModel.onViewAction(OnDragMove(Gpu, offset = -1))
+        runCurrent()
+        assertEquals(listOf(Gpu, SystemOverview, Alerts), viewModel.viewState.value.customize?.rows?.map { it.id })
+        assertEquals(emptyList(), writes)
+
+        viewModel.onViewAction(OnDrop)
+        runCurrent()
+
+        assertEquals(listOf(DashboardLayout(order = listOf(Gpu.key, SystemOverview.key, Alerts.key), hidden = emptySet())), writes)
+        assertEquals(listOf(Gpu, SystemOverview, Alerts), viewModel.viewState.value.customize?.rows?.map { it.id })
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelWritesNothingForADropBackInPlace() = runTest {
+        viewModel.viewState.value
+        runCurrent()
+
+        viewModel.onViewAction(OnDragStart)
+        viewModel.onViewAction(OnDragMove(Alerts, offset = 1))
+        viewModel.onViewAction(OnDragMove(Alerts, offset = -1))
+        viewModel.onViewAction(OnDrop)
+        runCurrent()
+
+        assertEquals(emptyList(), writes)
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelRestoresTheStoredOrderOnACancelledDrag() = runTest {
+        viewModel.viewState.value
+        runCurrent()
+
+        viewModel.onViewAction(OnDragStart)
+        viewModel.onViewAction(OnDragMove(SystemOverview, offset = 1))
+        viewModel.onViewAction(OnDragCancel)
+        runCurrent()
+        viewModel.onViewAction(OnDrop)
+        runCurrent()
+
+        assertEquals(emptyList(), writes)
+        assertEquals(listOf(SystemOverview, Alerts, Gpu), viewModel.viewState.value.customize?.rows?.map { it.id })
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelKeepsTheDraggedListWhenTheLayoutChangesElsewhereAndKeepsThatChangeOnDrop() = runTest {
+        viewModel.viewState.value
+        runCurrent()
+
+        viewModel.onViewAction(OnDragStart)
+        viewModel.onViewAction(OnDragMove(Gpu, offset = -1))
+        runCurrent()
+        // Another window turns Alerts off meanwhile.
+        stored.value = DashboardLayout(order = emptyList(), hidden = setOf(Alerts.key))
+        runCurrent()
+        assertEquals(
+            rows(BrickRow(SystemOverview), BrickRow(Gpu), BrickRow(Alerts)),
+            viewModel.viewState.value.customize?.rows,
+        )
+
+        viewModel.onViewAction(OnDrop)
+        runCurrent()
+
+        assertEquals(
+            listOf(DashboardLayout(order = listOf(SystemOverview.key, Gpu.key, Alerts.key), hidden = setOf(Alerts.key))),
+            writes,
+        )
+        assertEquals(
+            rows(BrickRow(SystemOverview), BrickRow(Gpu), BrickRow(Alerts, isEnabled = false)),
+            viewModel.viewState.value.customize?.rows,
+        )
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelIgnoresDragMovesOutsideADragAndEditsDuringOne() = runTest {
+        viewModel.viewState.value
+        runCurrent()
+
+        viewModel.onViewAction(OnDragMove(Gpu, offset = -1))
+        runCurrent()
+        assertEquals(listOf(SystemOverview, Alerts, Gpu), viewModel.viewState.value.customize?.rows?.map { it.id })
+
+        viewModel.onViewAction(OnDragStart)
+        viewModel.onViewAction(OnToggleBrick(Alerts, enabled = false))
+        viewModel.onViewAction(OnMoveUp(Gpu))
+        runCurrent()
+
+        assertEquals(emptyList(), writes)
+        assertTrue(viewModel.viewState.value.customize!!.rows.all { it.isEnabled })
+    }
+
+    @Test
+    fun dashboardCustomizeViewModelResetBringsBackTheRegistryOrder() = runTest {
+        viewModel.viewState.value
+        runCurrent()
+        viewModel.onViewAction(OnMoveDown(SystemOverview))
+        viewModel.onViewAction(OnToggleBrick(Alerts, enabled = false))
+        runCurrent()
+        assertEquals(listOf(Alerts, SystemOverview, Gpu), viewModel.viewState.value.customize?.rows?.map { it.id })
+
+        viewModel.onViewAction(OnRequestReset)
+        viewModel.onViewAction(OnConfirmReset)
+        runCurrent()
+
+        assertEquals(DashboardLayout.Default, writes.last())
+        assertEquals(
+            DashboardCustomizeUi(rows = rows(BrickRow(SystemOverview), BrickRow(Alerts), BrickRow(Gpu))),
+            viewModel.viewState.value.customize,
+        )
     }
 
     @Test

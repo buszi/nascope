@@ -189,8 +189,11 @@
     <string name="customize_title">DASHBOARD // CUSTOMIZE</string>
     <string name="customize_subtitle">%1$d of %2$d bricks on</string>
     <string name="customize_bricks_section">BRICKS</string>
-    <string name="customize_bricks_helper">Changes apply to the dashboard at once and are kept on this device for every server.</string>
+    <string name="customize_bricks_helper">Drag a brick by its handle to change the order. Changes apply to the dashboard at once and are kept on this device for every server.</string>
     <string name="customize_not_offered">Not offered by this server</string>
+    <string name="customize_drag_handle">Reorder %1$s</string>
+    <string name="customize_move_up">Move %1$s up</string>
+    <string name="customize_move_down">Move %1$s down</string>
     <string name="customize_reset_section">LAYOUT</string>
     <string name="customize_reset">Reset to default</string>
     <string name="customize_reset_helper">Turns every brick back on, in the built-in order.</string>

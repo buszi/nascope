@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -58,6 +59,7 @@ import org.jetbrains.compose.resources.stringResource
  * @param subtitle Optional one-line summary rendered below [title].
  * @param statusTag Optional status badge rendered next to the close action.
  * @param widgetState State of the brick's telemetry; [WidgetState.Stale] adds a stale tag next to [statusTag].
+ * @param scrollState Scroll state of the sections' column, for a screen that scrolls it itself (e.g. while dragging).
  * @param content Sections of the details screen.
  */
 @Composable
@@ -69,6 +71,7 @@ fun DetailsScaffold(
     subtitle: String? = null,
     statusTag: (@Composable () -> Unit)? = null,
     widgetState: WidgetState = WidgetState.Ready,
+    scrollState: ScrollState = rememberScrollState(),
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier = modifier.fillMaxSize().testTag(testTag)) {
@@ -127,7 +130,7 @@ fun DetailsScaffold(
                 .weight(1f)
                 .fillMaxWidth()
                 .testTag(TestTags.DetailsScroll)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(AppTheme.spacing.margin),
             verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd),
             content = content,

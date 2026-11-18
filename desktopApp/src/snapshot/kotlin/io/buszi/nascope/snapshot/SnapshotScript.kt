@@ -22,7 +22,8 @@ import io.buszi.nascope.domain.model.dashboard.DashboardLayout
  * - `scrollto <containerTag> <testTag>`: scrolls the container (e.g. `dashboard_grid`) until the node with that test
  *   tag is composed; lazy lists only compose what is on screen, so `click` and `tree` see nothing below the fold.
  * - `drag <testTag> <dx> <dy>`: drags with the mouse from the node's centre by dx / dy dp.
- * - `key <name>`: presses a key on the focused node (`tab`, `enter`, `space`, `escape`, `up`, `down`, `left`, `right`).
+ * - `key <name>`: presses a key on the focused node (`tab`, `enter`, `space`, `escape`, `up`, `down`, `left`, `right`);
+ *   an `alt+` prefix holds Alt down meanwhile (e.g. `alt+up`).
  */
 internal object SnapshotScript {
 
@@ -41,9 +42,10 @@ internal object SnapshotScript {
     data class ClickText(override val line: Int, val text: String) : Command
     data class ScrollTo(override val line: Int, val containerTag: String, val tag: String) : Command
     data class Drag(override val line: Int, val tag: String, val dx: Float, val dy: Float) : Command
-    data class Key(override val line: Int, val name: String) : Command
+    data class Key(override val line: Int, val name: String, val alt: Boolean = false) : Command
 
     val KeyNames = setOf("tab", "enter", "space", "escape", "up", "down", "left", "right")
+    private const val AltPrefix = "alt+"
 
     /** @throws IllegalArgumentException naming the first line that cannot be read. */
     fun parse(text: String): List<Command> = text.lines().mapIndexedNotNull { index, raw ->
@@ -101,8 +103,9 @@ internal object SnapshotScript {
             }
             "key" -> {
                 arity(1)
-                require(args[0] in KeyNames) { "line $line: keys are $KeyNames" }
-                Key(line, args[0])
+                val name = args[0].removePrefix(AltPrefix)
+                require(name in KeyNames) { "line $line: keys are $KeyNames, optionally with `$AltPrefix`" }
+                Key(line, name, alt = args[0].startsWith(AltPrefix))
             }
             else -> throw IllegalArgumentException("line $line: unknown command `${words[0]}`")
         }

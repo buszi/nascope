@@ -28,6 +28,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performMouseInput
+import androidx.compose.ui.test.withKeyDown
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.test.printToString
@@ -152,7 +153,9 @@ internal class SnapshotRunner(
                 }
             }
             is SnapshotScript.Key -> interact(scene) {
-                onRoot().performKeyInput { pressKey(command.key()) }
+                onRoot().performKeyInput {
+                    if (command.alt) withKeyDown(Key.AltLeft) { pressKey(command.key()) } else pressKey(command.key())
+                }
             }
         }
     }

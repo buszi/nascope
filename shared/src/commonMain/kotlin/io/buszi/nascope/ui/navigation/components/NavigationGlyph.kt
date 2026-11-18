@@ -38,6 +38,7 @@ enum class NavigationGlyphType {
     Back,
     Close,
     Customize,
+    DragHandle,
 }
 
 /**
@@ -84,6 +85,7 @@ fun NavigationGlyph(
             NavigationGlyphType.Back -> drawBackGlyph(tint = tint, strokeWidth = strokeWidth)
             NavigationGlyphType.Close -> drawCloseGlyph(tint = tint, strokeWidth = strokeWidth)
             NavigationGlyphType.Customize -> drawCustomizeGlyph(tint = tint, strokeWidth = strokeWidth)
+            NavigationGlyphType.DragHandle -> drawDragHandleGlyph(tint = tint, strokeWidth = strokeWidth)
         }
     }
 }
@@ -256,6 +258,16 @@ private fun DrawScope.drawCustomizeGlyph(tint: Color, strokeWidth: Float) {
         radius = strokeWidth * 0.7f,
         center = Offset(size.width * 0.56f, size.height * 0.92f),
     )
+}
+
+/** A 3 x 3 grid of dots: the handle a row is dragged by. */
+private fun DrawScope.drawDragHandleGlyph(tint: Color, strokeWidth: Float) {
+    val positions = listOf(0.30f, 0.50f, 0.70f)
+    positions.forEach { x ->
+        positions.forEach { y ->
+            drawCircle(color = tint, radius = strokeWidth * 0.95f, center = Offset(size.width * x, size.height * y))
+        }
+    }
 }
 
 @Preview

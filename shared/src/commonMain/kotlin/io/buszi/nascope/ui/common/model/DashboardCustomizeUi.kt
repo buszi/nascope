@@ -11,7 +11,8 @@ import io.buszi.nascope.ui.dashboard.framework.visibleWith
 /**
  * What the dashboard editor shows: a row per registered brick, in the layout's order, whether turned on or not.
  *
- * Edits are functions returning a new value; [toLayout] turns the rows back into the complete layout to store.
+ * Edits ([withEnabled], [moved]) are functions returning a new value; [toLayout] turns the rows back into the complete
+ * layout to store.
  *
  * @property rows Every registered brick, first to last.
  * @property isCustomized Whether the stored layout differs from [DashboardLayout.Default], so "Reset to default" has
@@ -29,6 +30,31 @@ data class DashboardCustomizeUi(
     /** The same rows with the brick [id] turned on or off; it keeps its place. An unknown [id] changes nothing. */
     fun withEnabled(id: DashboardBrickId, enabled: Boolean): DashboardCustomizeUi =
         copy(rows = rows.map { if (it.id == id) it.copy(isEnabled = enabled) else it })
+
+    /**
+     * The same rows with the one at [from] moved to [to], the rows between shifting by one. Every row counts, turned
+     * off or not offered, since the rows are the whole order. An index outside the rows changes nothing.
+     */
+    fun moved(from: Int, to: Int): DashboardCustomizeUi {
+        if (from == to || from !in rows.indices || to !in rows.indices) return this
+        val reordered = rows.toMutableList().apply { add(to, removeAt(from)) }
+        return copy(rows = reordered)
+    }
+
+    /**
+     * The same rows, each with its own state, in the order of the bricks in [order]. Rows [order] does not name keep
+     * their relative order after the named ones.
+     */
+    fun inOrderOf(order: List<DashboardBrickId>): DashboardCustomizeUi {
+        val position = order.withIndex().associate { (index, id) -> id to index }
+        return copy(rows = rows.sortedBy { position[it.id] ?: Int.MAX_VALUE })
+    }
+
+    /** Whether the row at [index] has a row above it to swap with. */
+    fun canMoveUp(index: Int): Boolean = index in 1..rows.lastIndex
+
+    /** Whether the row at [index] has a row below it to swap with. */
+    fun canMoveDown(index: Int): Boolean = index in 0..<rows.lastIndex
 
     /** The complete layout: every row's key in the rows' order, and the rows turned off as hidden. */
     fun toLayout(): DashboardLayout = DashboardLayout(

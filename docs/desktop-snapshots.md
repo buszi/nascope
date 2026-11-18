@@ -43,7 +43,7 @@ One command per line, `#` starts a comment. The full reference is the KDoc of `S
 | `click <tag>` / `clicktext <text>` | Clicks the one node with that test tag / containing that text. |
 | `scrollto <container> <tag>` | Scrolls a scrollable container (e.g. `dashboard_grid`) until the tagged node exists, and brings it to the top. |
 | `drag <tag> <dx> <dy>` | A mouse drag from the node's centre by dx / dy dp. |
-| `key <name>` | `tab`, `enter`, `space`, `escape`, `up`, `down`, `left`, `right` on the focused node. |
+| `key <name>` | `tab`, `enter`, `space`, `escape`, `up`, `down`, `left`, `right` on the focused node; `alt+` before the name holds Alt down (e.g. `alt+up`). |
 
 Test tags are the ones in `TestTags` (the same the QA bench uses). Lazy lists compose only what is on screen: `click` and `tree` see nothing below the fold until `scrollto`, and a tall `size` (e.g. `1440 2400`) shows a whole dashboard in one shot.
 

@@ -96,6 +96,7 @@ class TestTagsTest {
         assertEquals("customize_screen", TestTags.CustomizeScreen)
         assertEquals("customize_row_cpu", TestTags.customizeRow(DashboardBrickId.CpuMatrix.key.value))
         assertEquals("customize_switch_processes", TestTags.customizeSwitch(DashboardBrickId.ProcessList.key.value))
+        assertEquals("customize_handle_processes", TestTags.customizeHandle(DashboardBrickId.ProcessList.key.value))
         assertEquals("customize_reset", TestTags.CustomizeReset)
         assertEquals("customize_reset_confirm", TestTags.CustomizeResetConfirm)
         assertEquals("customize_reset_cancel", TestTags.CustomizeResetCancel)
@@ -104,7 +105,8 @@ class TestTagsTest {
     @Test
     fun everyBrickHasUniqueEditorTags() {
         val keys = DashboardBrickId.entries.map { it.key.value }
-        val tags = keys.map(TestTags::customizeRow) + keys.map(TestTags::customizeSwitch)
+        val tags = keys.map(TestTags::customizeRow) + keys.map(TestTags::customizeSwitch) +
+            keys.map(TestTags::customizeHandle)
 
         assertEquals(tags.size, tags.toSet().size)
     }

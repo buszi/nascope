@@ -81,6 +81,7 @@ object TestTags {
     const val CustomizeScreen: String = "customize_screen"
     fun customizeRow(brickKey: String): String = "customize_row_${brickKey.slug()}"
     fun customizeSwitch(brickKey: String): String = "customize_switch_${brickKey.slug()}"
+    fun customizeHandle(brickKey: String): String = "customize_handle_${brickKey.slug()}"
     const val CustomizeReset: String = "customize_reset"
     const val CustomizeResetConfirm: String = "customize_reset_confirm"
     const val CustomizeResetCancel: String = "customize_reset_cancel"
