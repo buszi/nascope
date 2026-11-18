@@ -50,6 +50,8 @@ class TestTagsTest {
         assertEquals("dashboard_status", TestTags.DashboardStatus)
         assertEquals("dashboard_refresh", TestTags.DashboardRefresh)
         assertEquals("dashboard_empty", TestTags.DashboardEmpty)
+        assertEquals("dashboard_customize", TestTags.DashboardCustomize)
+        assertEquals("dashboard_empty_customize", TestTags.DashboardEmptyCustomize)
     }
 
     @Test
@@ -87,5 +89,23 @@ class TestTagsTest {
         assertEquals("network_interface_eth0", TestTags.networkInterface("eth0"))
         assertEquals("process_row_1042", TestTags.processRow(1042))
         assertEquals("cpu_core_11", TestTags.cpuCore(11))
+    }
+
+    @Test
+    fun dashboardEditorTagsUseTheBrickKey() {
+        assertEquals("customize_screen", TestTags.CustomizeScreen)
+        assertEquals("customize_row_cpu", TestTags.customizeRow(DashboardBrickId.CpuMatrix.key.value))
+        assertEquals("customize_switch_processes", TestTags.customizeSwitch(DashboardBrickId.ProcessList.key.value))
+        assertEquals("customize_reset", TestTags.CustomizeReset)
+        assertEquals("customize_reset_confirm", TestTags.CustomizeResetConfirm)
+        assertEquals("customize_reset_cancel", TestTags.CustomizeResetCancel)
+    }
+
+    @Test
+    fun everyBrickHasUniqueEditorTags() {
+        val keys = DashboardBrickId.entries.map { it.key.value }
+        val tags = keys.map(TestTags::customizeRow) + keys.map(TestTags::customizeSwitch)
+
+        assertEquals(tags.size, tags.toSet().size)
     }
 }

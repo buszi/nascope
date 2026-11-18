@@ -37,6 +37,7 @@ enum class NavigationGlyphType {
     Settings,
     Back,
     Close,
+    Customize,
 }
 
 /**
@@ -82,6 +83,7 @@ fun NavigationGlyph(
             NavigationGlyphType.Settings -> drawSettingsGlyph(tint = tint, strokeWidth = strokeWidth)
             NavigationGlyphType.Back -> drawBackGlyph(tint = tint, strokeWidth = strokeWidth)
             NavigationGlyphType.Close -> drawCloseGlyph(tint = tint, strokeWidth = strokeWidth)
+            NavigationGlyphType.Customize -> drawCustomizeGlyph(tint = tint, strokeWidth = strokeWidth)
         }
     }
 }
@@ -222,6 +224,37 @@ private fun DrawScope.drawCloseGlyph(tint: Color, strokeWidth: Float) {
         end = Offset(inset, size.height - inset),
         strokeWidth = strokeWidth,
         cap = StrokeCap.Round,
+    )
+}
+
+/** Three bricks of the dashboard glyph, the fourth replaced by a pencil: editing the dashboard. */
+private fun DrawScope.drawCustomizeGlyph(tint: Color, strokeWidth: Float) {
+    val cellSize = Size(size.width * 0.32f, size.height * 0.32f)
+    val corner = CornerRadius(size.width * 0.06f)
+    listOf(
+        Offset(size.width * 0.14f, size.height * 0.14f),
+        Offset(size.width * 0.54f, size.height * 0.14f),
+        Offset(size.width * 0.14f, size.height * 0.54f),
+    ).forEach { topLeft ->
+        drawRoundRect(
+            color = tint,
+            topLeft = topLeft,
+            size = cellSize,
+            cornerRadius = corner,
+            style = Stroke(width = strokeWidth * 0.85f),
+        )
+    }
+    drawLine(
+        color = tint,
+        start = Offset(size.width * 0.60f, size.height * 0.88f),
+        end = Offset(size.width * 0.88f, size.height * 0.60f),
+        strokeWidth = strokeWidth * 1.4f,
+        cap = StrokeCap.Round,
+    )
+    drawCircle(
+        color = tint,
+        radius = strokeWidth * 0.7f,
+        center = Offset(size.width * 0.56f, size.height * 0.92f),
     )
 }
 

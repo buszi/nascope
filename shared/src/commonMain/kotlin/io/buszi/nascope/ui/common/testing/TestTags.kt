@@ -73,7 +73,17 @@ object TestTags {
     const val DashboardRefresh: String = "dashboard_refresh"
     const val DashboardAlerts: String = "dashboard_alerts"
     const val DashboardEmpty: String = "dashboard_empty"
+    const val DashboardCustomize: String = "dashboard_customize"
+    const val DashboardEmptyCustomize: String = "dashboard_empty_customize"
     fun brick(id: DashboardBrickId): String = "brick_${id.name.snake()}"
+
+    // Dashboard editor; per-brick tags use the brick's stable layout key (`DashboardBrickId.key`)
+    const val CustomizeScreen: String = "customize_screen"
+    fun customizeRow(brickKey: String): String = "customize_row_${brickKey.slug()}"
+    fun customizeSwitch(brickKey: String): String = "customize_switch_${brickKey.slug()}"
+    const val CustomizeReset: String = "customize_reset"
+    const val CustomizeResetConfirm: String = "customize_reset_confirm"
+    const val CustomizeResetCancel: String = "customize_reset_cancel"
 
     // Shared details frame
     fun details(id: DashboardBrickId): String = "details_${id.name.snake()}"

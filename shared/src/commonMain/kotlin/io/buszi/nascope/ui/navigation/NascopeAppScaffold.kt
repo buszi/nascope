@@ -50,6 +50,7 @@ import io.buszi.nascope.ui.common.util.WindowWidthClass
 import io.buszi.nascope.ui.common.util.toWindowWidthClass
 import io.buszi.nascope.ui.connection.ConnectionEditorScreen
 import io.buszi.nascope.ui.dashboard.DashboardScreen
+import io.buszi.nascope.ui.dashboard.customize.DashboardCustomizeScreen
 import io.buszi.nascope.ui.dashboard.framework.BrickRegistry
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
 import io.buszi.nascope.ui.navigation.components.NascopeBottomBar
@@ -84,6 +85,7 @@ fun NascopeAppScaffold(
             selectedBrickId = selectedBrickId,
             onOpenDetails = onOpenDetails,
             onEditServer = navigator::navigateToConnectionEditor,
+            onCustomize = navigator::navigateToCustomize,
         )
     },
 ) {
@@ -259,6 +261,15 @@ private fun NascopeNavDisplay(
                     // A brick without details (e.g. restored state after a layout change) has nothing to show.
                     LaunchedEffect(route) { navigator.navigateBack() }
                 }
+            }
+
+            entry<NavRoute.DashboardCustomize>(
+                metadata = DashboardSplitSceneStrategy.detailPane(),
+            ) {
+                DashboardCustomizeScreen(
+                    onClose = { navigator.navigateBack() },
+                    modifier = Modifier.fillMaxSize().windowInsetsPadding(LocalContentInsets.current),
+                )
             }
 
             entry<NavRoute.Nodes> {

@@ -17,10 +17,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.buszi.nascope.resources.Res
+import io.buszi.nascope.resources.dashboard_customize
 import io.buszi.nascope.resources.dashboard_empty_body
+import io.buszi.nascope.resources.dashboard_empty_customize
 import io.buszi.nascope.resources.dashboard_empty_title
 import io.buszi.nascope.resources.dashboard_header_demo_node
 import io.buszi.nascope.resources.dashboard_header_alerts
@@ -29,6 +33,7 @@ import io.buszi.nascope.resources.dashboard_refresh
 import io.buszi.nascope.resources.nav_mode_demo
 import io.buszi.nascope.ui.common.components.badges.StatusChip
 import io.buszi.nascope.ui.common.components.badges.TagChip
+import io.buszi.nascope.ui.common.components.buttons.ButtonSize
 import io.buszi.nascope.ui.common.components.buttons.SecondaryButton
 import io.buszi.nascope.ui.common.components.containers.TelemetryCard
 import io.buszi.nascope.ui.common.model.ConnectionStatusUi
@@ -38,6 +43,9 @@ import io.buszi.nascope.ui.common.model.SessionStatusUi
 import io.buszi.nascope.ui.common.testing.TestTags
 import io.buszi.nascope.ui.common.theme.AppTheme
 import io.buszi.nascope.ui.common.util.WindowWidthClass
+import io.buszi.nascope.ui.common.util.minimumTouchTarget
+import io.buszi.nascope.ui.navigation.components.NavigationGlyph
+import io.buszi.nascope.ui.navigation.components.NavigationGlyphType
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewAction
 import io.buszi.nascope.ui.dashboard.DashboardViewModel.ViewState
 import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
@@ -51,6 +59,7 @@ fun DashboardScreen(
     selectedBrickId: DashboardBrickId? = null,
     onOpenDetails: (DashboardBrickId) -> Unit = {},
     onEditServer: (profileId: String) -> Unit = {},
+    onCustomize: () -> Unit = {},
 ) {
     val viewModel = koinViewModel<DashboardViewModel>()
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
@@ -61,6 +70,7 @@ fun DashboardScreen(
         selectedBrickId = selectedBrickId,
         onOpenDetails = onOpenDetails,
         onEditServer = onEditServer,
+        onCustomize = onCustomize,
         onViewAction = viewModel::onViewAction,
     )
 }
@@ -72,6 +82,7 @@ fun DashboardScreen(
     selectedBrickId: DashboardBrickId? = null,
     onOpenDetails: (DashboardBrickId) -> Unit = {},
     onEditServer: (profileId: String) -> Unit = {},
+    onCustomize: () -> Unit = {},
     onViewAction: (ViewAction) -> Unit = {},
 ) {
     // Bricks that fail on a missing password or an untrusted certificate offer to open the server's editor.
@@ -97,10 +108,11 @@ fun DashboardScreen(
                     status = viewState.sessionStatus,
                     alertBadge = viewState.alertBadge,
                     onRefresh = { onViewAction(ViewAction.OnRefresh) },
+                    onCustomize = onCustomize,
                 )
             },
             emptyContent = if (viewState.bricks?.isEmpty() == true) {
-                { DashboardEmptyState() }
+                { DashboardEmptyState(onCustomize = onCustomize) }
             } else {
                 null
             },
@@ -114,6 +126,7 @@ private fun DashboardHeader(
     status: SessionStatusUi,
     alertBadge: AlertBadgeUi?,
     onRefresh: () -> Unit,
+    onCustomize: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -164,24 +177,56 @@ private fun DashboardHeader(
                 onClick = onRefresh,
                 modifier = Modifier.testTag(TestTags.DashboardRefresh),
             )
+            CustomizeAction(onClick = onCustomize)
         }
+    }
+}
+
+/** Opens (or, beside the dashboard, closes) the dashboard editor; an icon next to refresh. */
+@Composable
+private fun CustomizeAction(onClick: () -> Unit) {
+    val label = stringResource(Res.string.dashboard_customize)
+    SecondaryButton(
+        onClick = onClick,
+        modifier = Modifier
+            .semantics { contentDescription = label }
+            .testTag(TestTags.DashboardCustomize),
+    ) {
+        NavigationGlyph(
+            type = NavigationGlyphType.Customize,
+            tint = AppTheme.colors.textPrimary,
+            iconSize = AppTheme.spacing.spaceLg,
+        )
     }
 }
 
 /** Shown when no brick is left: every brick is turned off, or the server offers none of those that are on. */
 @Composable
-private fun DashboardEmptyState(modifier: Modifier = Modifier) {
+private fun DashboardEmptyState(
+    onCustomize: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     TelemetryCard(
         title = stringResource(Res.string.dashboard_empty_title),
         modifier = modifier
             .fillMaxWidth()
             .testTag(TestTags.DashboardEmpty),
     ) {
-        Text(
-            text = stringResource(Res.string.dashboard_empty_body),
-            style = AppTheme.typography.bodyMd,
-            color = AppTheme.colors.textSecondary,
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(AppTheme.spacing.spaceMd)) {
+            Text(
+                text = stringResource(Res.string.dashboard_empty_body),
+                style = AppTheme.typography.bodyMd,
+                color = AppTheme.colors.textSecondary,
+            )
+            SecondaryButton(
+                text = stringResource(Res.string.dashboard_empty_customize),
+                onClick = onCustomize,
+                size = ButtonSize.Regular,
+                modifier = Modifier
+                    .minimumTouchTarget()
+                    .testTag(TestTags.DashboardEmptyCustomize),
+            )
+        }
     }
 }
 

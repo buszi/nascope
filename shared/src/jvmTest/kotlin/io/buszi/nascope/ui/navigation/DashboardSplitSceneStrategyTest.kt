@@ -24,6 +24,11 @@ class DashboardSplitSceneStrategyTest {
         metadata = DashboardSplitSceneStrategy.detailPane(),
     ) {}
 
+    private val customizeEntry = NavEntry<NavKey>(
+        key = NavRoute.DashboardCustomize,
+        metadata = DashboardSplitSceneStrategy.detailPane(),
+    ) {}
+
     private val nodesEntry = NavEntry<NavKey>(
         key = NavRoute.Nodes,
     ) {}
@@ -74,5 +79,25 @@ class DashboardSplitSceneStrategyTest {
         val strategy = DashboardSplitSceneStrategy<NavKey>(WindowWidthClass.Expanded)
 
         assertNull(with(strategy) { scope.calculateScene(listOf(dashboardEntry, nodesEntry)) })
+    }
+
+    @Test
+    fun theDashboardEditorIsADetailPaneBesideTheDashboardWithTheSameSceneKey() {
+        for (widthClass in listOf(WindowWidthClass.Expanded, WindowWidthClass.Medium)) {
+            val strategy = DashboardSplitSceneStrategy<NavKey>(widthClass)
+
+            val editorScene = assertIs<DashboardSplitScene<NavKey>>(
+                with(strategy) { scope.calculateScene(listOf(dashboardEntry, customizeEntry)) },
+            )
+            val detailsScene = assertIs<DashboardSplitScene<NavKey>>(
+                with(strategy) { scope.calculateScene(listOf(dashboardEntry, detailsEntry)) },
+            )
+
+            assertEquals(customizeEntry, editorScene.detailEntry)
+            // Switching between the editor and details keeps the scene, so the dashboard does not re-animate.
+            assertEquals(detailsScene.key, editorScene.key)
+        }
+        val compact = DashboardSplitSceneStrategy<NavKey>(WindowWidthClass.Compact)
+        assertNull(with(compact) { scope.calculateScene(listOf(dashboardEntry, customizeEntry)) })
     }
 }

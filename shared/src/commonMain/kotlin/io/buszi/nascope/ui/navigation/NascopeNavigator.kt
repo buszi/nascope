@@ -12,7 +12,8 @@ import io.buszi.nascope.ui.dashboard.framework.DashboardBrickId
  * State-driven Navigation 3 backstack controller for Nascope.
  *
  * Manages top-level destination switching (`Dashboard`, `Nodes`, `Settings`),
- * contextual brick detail drill-downs (`Details(brickId)`), the connection editor on top of
+ * contextual brick detail drill-downs (`Details(brickId)`) and the dashboard editor (`DashboardCustomize`), which
+ * share the one pane entry above the dashboard, the connection editor on top of
  * `Nodes` (`ConnectionEditor(profileId)`), and back navigation
  * while keeping [NavRoute.Dashboard] anchored at the root of the backstack.
  */
@@ -74,7 +75,7 @@ class NascopeNavigator(
      * Opens, updates, or toggles the detail route for [brickId].
      *
      * If the details for [brickId] are already open, tapping the same brick toggles
-     * the panel closed and returns to full dashboard view. If a different brick was
+     * the panel closed and returns to full dashboard view. If a different brick or the dashboard editor was
      * open, replaces the top entry with the new brick details.
      */
     fun navigateToDetails(brickId: DashboardBrickId) {
@@ -85,7 +86,27 @@ class NascopeNavigator(
             return
         }
 
-        if (current is NavRoute.Details && backStack.isNotEmpty()) {
+        openDashboardPane(target)
+    }
+
+    /**
+     * Opens the dashboard editor, or closes it when it is already open (the same header action toggles it).
+     *
+     * Like [navigateToDetails], it takes the one pane entry above the dashboard: open brick details are replaced, not
+     * stacked, so back always returns to the dashboard.
+     */
+    fun navigateToCustomize() {
+        if (currentRoute == NavRoute.DashboardCustomize) {
+            navigateBack()
+            return
+        }
+        openDashboardPane(NavRoute.DashboardCustomize)
+    }
+
+    /** Puts [target] in the pane entry above the dashboard, replacing open details or the editor. */
+    private fun openDashboardPane(target: NavRoute) {
+        val current = currentRoute
+        if ((current is NavRoute.Details || current == NavRoute.DashboardCustomize) && backStack.isNotEmpty()) {
             backStack[backStack.lastIndex] = target
         } else {
             if (backStack.isEmpty() || backStack.first() != NavRoute.Dashboard) {

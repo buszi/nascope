@@ -29,6 +29,10 @@ sealed interface NavRoute : NavKey {
     @Serializable
     data class Details(val brickId: DashboardBrickId) : NavRoute
 
+    /** The dashboard editor: which bricks are shown. Takes the inspector pane like [Details]. */
+    @Serializable
+    data object DashboardCustomize : NavRoute
+
     /** Multi-server node management destination. */
     @Serializable
     data object Nodes : NavRoute
@@ -68,11 +72,11 @@ enum class TopLevelDestination(
 /**
  * Resolves the [TopLevelDestination] associated with this [NavRoute].
  *
- * [NavRoute.Details] belongs to the [TopLevelDestination.Dashboard] hierarchy and
+ * [NavRoute.Details] and [NavRoute.DashboardCustomize] belong to the [TopLevelDestination.Dashboard] hierarchy and
  * [NavRoute.ConnectionEditor] to the [TopLevelDestination.Nodes] hierarchy.
  */
 fun NavRoute.toTopLevelDestination(): TopLevelDestination = when (this) {
-    NavRoute.Dashboard, is NavRoute.Details -> TopLevelDestination.Dashboard
+    NavRoute.Dashboard, is NavRoute.Details, NavRoute.DashboardCustomize -> TopLevelDestination.Dashboard
     NavRoute.Nodes, is NavRoute.ConnectionEditor -> TopLevelDestination.Nodes
     NavRoute.Settings -> TopLevelDestination.Settings
 }
@@ -85,6 +89,7 @@ val NavRouteSavedStateConfiguration: SavedStateConfiguration = SavedStateConfigu
         polymorphic(NavKey::class) {
             subclass(NavRoute.Dashboard::class)
             subclass(NavRoute.Details::class)
+            subclass(NavRoute.DashboardCustomize::class)
             subclass(NavRoute.Nodes::class)
             subclass(NavRoute.ConnectionEditor::class)
             subclass(NavRoute.Settings::class)

@@ -169,6 +169,7 @@
     <string name="nav_destination_settings">SETTINGS</string>
     <string name="nav_breadcrumb_dashboard">TELEMETRY // DASHBOARD</string>
     <string name="nav_breadcrumb_details">TELEMETRY // DETAILS // %1$s</string>
+    <string name="nav_breadcrumb_customize">TELEMETRY // DASHBOARD // CUSTOMIZE</string>
     <string name="nav_breadcrumb_nodes">CLUSTER // NODES</string>
     <string name="nav_breadcrumb_settings">SYSTEM // SETTINGS</string>
     <string name="nav_action_back">BACK</string>
@@ -183,6 +184,19 @@
     <string name="dashboard_refresh">REFRESH</string>
     <string name="dashboard_empty_title">NO BRICKS TO SHOW</string>
     <string name="dashboard_empty_body">Every brick is turned off, or this server offers none of the ones that are on.</string>
+    <string name="dashboard_customize">Customize dashboard</string>
+    <string name="dashboard_empty_customize">CUSTOMIZE</string>
+    <string name="customize_title">DASHBOARD // CUSTOMIZE</string>
+    <string name="customize_subtitle">%1$d of %2$d bricks on</string>
+    <string name="customize_bricks_section">BRICKS</string>
+    <string name="customize_bricks_helper">Changes apply to the dashboard at once and are kept on this device for every server.</string>
+    <string name="customize_not_offered">Not offered by this server</string>
+    <string name="customize_reset_section">LAYOUT</string>
+    <string name="customize_reset">Reset to default</string>
+    <string name="customize_reset_helper">Turns every brick back on, in the built-in order.</string>
+    <string name="customize_reset_prompt">Reset the dashboard? Every brick is turned back on in the built-in order.</string>
+    <string name="customize_reset_confirm">Reset</string>
+    <string name="customize_reset_cancel">Cancel</string>
     <string name="screen_settings_header">LIVE TELEMETRY</string>
     <string name="settings_refresh_interval_title">Refresh interval</string>
     <string name="settings_refresh_interval_helper">How often live metrics such as CPU, memory and network refresh. Slower metrics such as storage, sensors and containers refresh at 5 x this interval, at most every 30 seconds.</string>

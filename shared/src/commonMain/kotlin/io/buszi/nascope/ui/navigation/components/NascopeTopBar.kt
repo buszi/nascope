@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import io.buszi.nascope.resources.Res
 import io.buszi.nascope.resources.nav_action_back
 import io.buszi.nascope.resources.nav_breadcrumb_connection_editor
+import io.buszi.nascope.resources.nav_breadcrumb_customize
 import io.buszi.nascope.resources.nav_breadcrumb_dashboard
 import io.buszi.nascope.resources.nav_breadcrumb_details
 import io.buszi.nascope.resources.nav_breadcrumb_nodes
@@ -89,6 +90,7 @@ fun NascopeTopBarContent(
             Res.string.nav_breadcrumb_details,
             currentRoute.brickId.title(compact = windowWidthClass == WindowWidthClass.Compact),
         )
+        NavRoute.DashboardCustomize -> stringResource(Res.string.nav_breadcrumb_customize)
         NavRoute.Nodes -> stringResource(Res.string.nav_breadcrumb_nodes)
         is NavRoute.ConnectionEditor -> stringResource(Res.string.nav_breadcrumb_connection_editor)
         NavRoute.Settings -> stringResource(Res.string.nav_breadcrumb_settings)

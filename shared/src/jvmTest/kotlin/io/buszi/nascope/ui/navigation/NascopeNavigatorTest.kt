@@ -160,4 +160,63 @@ class NascopeNavigatorTest {
         navigator.navigateToTopLevel(TopLevelDestination.Dashboard)
         assertEquals(listOf<NavKey>(NavRoute.Dashboard), navigator.backStack.toList())
     }
+
+    @Test
+    fun theDashboardEditorOpensAboveTheDashboardAndBelongsToTheDashboardDestination() {
+        val navigator = createNavigator()
+
+        navigator.navigateToCustomize()
+
+        assertEquals(NavRoute.DashboardCustomize, navigator.currentRoute)
+        assertEquals(TopLevelDestination.Dashboard, navigator.activeTopLevelDestination)
+        assertNull(navigator.selectedBrickId)
+        assertEquals(listOf<NavKey>(NavRoute.Dashboard, NavRoute.DashboardCustomize), navigator.backStack.toList())
+    }
+
+    @Test
+    fun openingTheDashboardEditorOverDetailsReplacesThem() {
+        val navigator = createNavigator()
+        navigator.navigateToDetails(DashboardBrickId.CpuMatrix)
+
+        navigator.navigateToCustomize()
+
+        assertNull(navigator.selectedBrickId)
+        assertEquals(listOf<NavKey>(NavRoute.Dashboard, NavRoute.DashboardCustomize), navigator.backStack.toList())
+    }
+
+    @Test
+    fun backFromTheDashboardEditorReturnsToTheDashboard() {
+        val navigator = createNavigator()
+        navigator.navigateToDetails(DashboardBrickId.CpuMatrix)
+        navigator.navigateToCustomize()
+
+        assertTrue(navigator.navigateBack())
+
+        assertEquals(NavRoute.Dashboard, navigator.currentRoute)
+        assertFalse(navigator.canNavigateBack)
+    }
+
+    @Test
+    fun openingDetailsReplacesTheDashboardEditor() {
+        val navigator = createNavigator()
+        navigator.navigateToCustomize()
+
+        navigator.navigateToDetails(DashboardBrickId.StoragePools)
+
+        assertEquals(DashboardBrickId.StoragePools, navigator.selectedBrickId)
+        assertEquals(
+            listOf<NavKey>(NavRoute.Dashboard, NavRoute.Details(DashboardBrickId.StoragePools)),
+            navigator.backStack.toList(),
+        )
+    }
+
+    @Test
+    fun theCustomizeActionTogglesTheEditorClosed() {
+        val navigator = createNavigator()
+        navigator.navigateToCustomize()
+
+        navigator.navigateToCustomize()
+
+        assertEquals(listOf<NavKey>(NavRoute.Dashboard), navigator.backStack.toList())
+    }
 }
