@@ -2,6 +2,34 @@
 
 All notable changes to Nascope. The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] - 2026-11-18
+
+Your dashboard, your order: choose which bricks to show and arrange them.
+
+### Added
+
+- **Customize the dashboard:** a new editor, opened from the button next to REFRESH, lists every brick with a switch and a drag handle. Turn bricks off that you do not need and drag the rest into the order you want; the dashboard follows each change at once. On tablets and desktops the editor opens next to the live dashboard, on phones it fills the screen.
+- The order and the bricks turned off are kept on the device, survive a restart and apply to every server. "Reset to default" (it asks first) brings back the built-in order with every brick on.
+- Reordering without a mouse or touch: Alt+↑ / Alt+↓ on a focused handle, and "Move up" / "Move down" actions for screen readers.
+- When every brick is turned off, the dashboard says so and offers a button to open the editor.
+
+### Changed
+
+- Switches use Material Design's motion (the thumb grows when on and when pressed, a highlight on hover and focus), in the app's colors. They are a little larger than before.
+- A brick that is turned off costs nothing: it is not shown, and its data is not requested from the server. The "N ALERTS" chip in the header stays when the Alerts brick is off.
+
+### Known limitations
+
+- The layout is the same for every server; there are no presets and no layout per screen size.
+- Bricks keep their designed size; only their order and visibility can be changed.
+- The Windows and Linux packages are not code signed (SmartScreen asks once) and not in a package manager yet (winget, Scoop, apt repository, Flatpak).
+- Before the deb is installed, GNOME Software shows its license as "unknown" and no icon: it reads neither from a package file. Both show once the app is installed.
+- On Windows the first launch after installing or updating takes several seconds (Microsoft Defender checks the new files); later launches are quick.
+- A certificate from a public authority reached under a name it does not cover (e.g. by IP) is a plain TLS error, with no offer to trust it.
+- Bricks that need extra Glances configuration (service checks, S.M.A.R.T. disk health) are not included.
+- No notifications, system tray or command palette yet.
+- The macOS build is not notarized and runs on Apple Silicon only.
+
 ## [1.1.1] - 2026-11-16
 
 Polish for the desktop apps after the first Windows and Linux packages.

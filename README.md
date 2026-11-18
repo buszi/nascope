@@ -22,10 +22,15 @@ Live telemetry for your NAS or home server, on your phone, tablet and desktop. N
 
 - **Dashboard of bricks** that adapts to the screen: bottom navigation on phones, a sidebar and a details pane on tablets and desktops.
 - **System overview, CPU** (per core), **memory and swap**, **GPU**, **storage** (mounts and per-disk I/O with IOPS and latency), **network** (per interface), **sensors** (temperatures, fans), **containers** (Docker), **processes** (and programs, grouped by name, with pinning) and Glances' own **alerts**.
+- **Your dashboard, your order:** turn bricks on and off and drag them into the order you want, in an editor next to the live dashboard (full screen on phones). The layout is kept on the device and used for every server; "Reset to default" brings back the built-in one.
 - **Adapts to the server:** bricks that depend on an optional Glances plugin (GPU, alerts) are hidden when the server does not have it; the others show an "unavailable" state when their data cannot be read.
 - **Several servers** ("nodes"), a connection check that tells you what failed (host, Glances, authentication), HTTP and HTTPS, optional basic authentication.
 - **Demo mode** with moving sample data, to explore the app without a server.
 - A configurable refresh interval; polling pauses while the app is in the background.
+
+<p align="center">
+  <img src="docs/screenshots/dashboard-customize.png" alt="The dashboard editor next to the live dashboard: a switch and a drag handle per brick" width="760">
+</p>
 
 ## What you need
 
@@ -196,7 +201,7 @@ Nascope is designed as a premier showcase of Compose Multiplatform adaptivity, p
 The dashboard is conceived as a modular surface built from independent, reusable "bricks" (widgets):
 - **Encapsulated Scope**: Each brick (System, CPU Matrix, Memory & Swap, Storage Pools, Network I/O, Sensors/Thermals, Containers, Process List) owns its rendering, loading state, visual thresholds, and error fallbacks.
 - **Fluid Grid Spans**: Bricks define minimum and preferred column spans to naturally wrap and reflow across window breakpoints.
-- **User Customization**: Users will be able to customize their telemetry cockpit by toggling visibility, reordering widgets, or selecting preset layouts (e.g., Storage Focus, Compute Focus, Minimalist).
+- **User Customization**: Users turn bricks on and off and reorder them by drag and drop in the dashboard editor; one layout per device, applied to every server (see [dashboard-architecture.md §6](docs/conventions/dashboard-architecture.md)). Presets and per-server layouts are deliberately left out.
 
 ### Platform Extensions
 Shared core features are augmented with desktop and mobile platform capabilities:
